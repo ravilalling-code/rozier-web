@@ -20,6 +20,7 @@ import {
 interface OrderCreatedData {
   id?: string;
   product_name: string;
+  customer_name?: string;
   recipient_name: string;
   phone: string;
   delivery_address: string;
@@ -287,6 +288,14 @@ export default function ChatBot() {
                               S/ {Number(msg.orderCreated.amount).toFixed(2)}
                             </span>
                           </div>
+                          {msg.orderCreated.customer_name && (
+                            <div className="flex justify-between items-baseline">
+                              <span className="text-stone-500">Comprador:</span>
+                              <span className="font-medium text-stone-800">
+                                {msg.orderCreated.customer_name} {msg.orderCreated.phone ? `(${msg.orderCreated.phone})` : ''}
+                              </span>
+                            </div>
+                          )}
                           <div className="flex justify-between items-baseline">
                             <span className="text-stone-500">Destinatario:</span>
                             <span className="font-medium text-stone-800">

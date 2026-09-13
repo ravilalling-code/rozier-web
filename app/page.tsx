@@ -18,7 +18,6 @@ import {
   Truck,
   Flower2,
   Clock,
-  ArrowUpRight,
   ExternalLink,
 } from 'lucide-react';
 import ChatBot from '@/components/ChatBot';
@@ -435,15 +434,6 @@ export default function HomePage() {
         <p className="text-[11px] text-stone-400">
           Taller floral en Lima, Perú • Pedidos y delivery coordinados por WhatsApp: +51 924 257 784
         </p>
-        <div className="pt-2">
-          <Link
-            href="/admin/products"
-            className="inline-flex items-center gap-1 text-stone-400 hover:text-stone-700 text-[11px] transition hover:underline"
-          >
-            <span>Acceso al Taller Administrativo</span>
-            <ArrowUpRight className="w-3 h-3" />
-          </Link>
-        </div>
       </footer>
     </div>
   );

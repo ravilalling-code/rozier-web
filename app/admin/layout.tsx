@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Flower2,
   Package,
@@ -14,6 +14,7 @@ import {
   Sparkles,
   Store,
   ChevronRight,
+  LogOut,
 } from 'lucide-react';
 
 const navigationItems = [
@@ -43,7 +44,23 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Si es la página de login, no mostrar la estructura del panel de administración
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+    } catch (e) {
+      // Continuar con redirección
+    }
+    router.push('/admin/login');
+    router.refresh();
+  };
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col lg:flex-row antialiased">
@@ -71,6 +88,14 @@ export default function AdminLayout({
             <Store className="w-3.5 h-3.5 text-emerald-400" />
             <span className="hidden sm:inline">Tienda</span>
           </Link>
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-lg text-neutral-400 hover:text-rose-400 hover:bg-neutral-800 transition"
+            title="Cerrar sesión"
+            aria-label="Cerrar sesión"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 rounded-lg text-neutral-300 hover:text-white hover:bg-neutral-800 transition"
@@ -183,6 +208,18 @@ export default function AdminLayout({
               </div>
               <p className="text-[11px] text-neutral-400 mt-1">+51 924 257 784</p>
             </div>
+
+            {/* Botón Cerrar Sesión */}
+            <button
+              onClick={handleLogout}
+              className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-rose-400 hover:bg-rose-950/30 hover:border-rose-800/40 transition group text-xs font-semibold"
+            >
+              <div className="flex items-center gap-2.5">
+                <LogOut className="w-4 h-4 text-neutral-500 group-hover:text-rose-400 transition" />
+                <span>Cerrar Sesión</span>
+              </div>
+              <span className="text-[10px] text-neutral-600 group-hover:text-rose-400/80">admin</span>
+            </button>
           </div>
         </div>
       </aside>

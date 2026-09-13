@@ -31,6 +31,8 @@ export type OrderStatus = 'pendiente' | 'confirmado' | 'en_taller' | 'entregado'
 export interface Order {
   id: string;
   customer_id: string | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
   total_amount: number;
   payment_method: string;
   operation_number: string | null;

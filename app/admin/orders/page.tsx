@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Order, Customer, OrderStatus, OCRResult } from '@/lib/types';
+import { Order, OrderStatus, OCRResult } from '@/lib/types';
 import {
   Plus,
   Search,
@@ -23,7 +23,7 @@ import {
   Calendar,
   MapPin,
   Heart,
-  ChevronDown,
+  Package,
 } from 'lucide-react';
 
 const STATUS_CONFIG: Record<
@@ -63,6 +63,7 @@ const STATUS_CONFIG: Record<
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('todos');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -78,11 +79,11 @@ export default function AdminOrdersPage() {
   const [customerName, setCustomerName] = useState('');
   const [anniversaryDate, setAnniversaryDate] = useState('');
   const [customerNotes, setCustomerNotes] = useState('');
-  const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [recipientName, setRecipientName] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [dedicationMessage, setDedicationMessage] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('Yape');
+  const [paymentMethod, setPaymentMethod] = useState<'yape' | 'plin' | 'transferencia' | 'efectivo'>('yape');
   const [totalAmount, setTotalAmount] = useState('');
   const [operationNumber, setOperationNumber] = useState('');
   const [orderStatus, setOrderStatus] = useState<OrderStatus>('confirmado');
@@ -96,27 +97,55 @@ export default function AdminOrdersPage() {
   const [selectedVoucherUrl, setSelectedVoucherUrl] = useState<string | null>(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<Order | null>(null);
 
-  // Cargar Pedidos
-  const fetchOrders = async () => {
-    setLoading(true);
+  // Cargar Pedidos de Supabase
+  const fetchOrders = useCallback(async (isManual = false) => {
+    if (isManual) setIsRefreshing(true);
     try {
       const { data, error } = await supabase
         .from('orders')
         .select('*, customer:customers(*)')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      if (data) setOrders(data as Order[]);
+      if (error) {
+        console.error('Error al consultar orders en Supabase:', error);
+      } else if (data) {
+        setOrders(data as Order[]);
+      }
     } catch (err: any) {
       console.error('Error fetching orders:', err);
     } finally {
       setLoading(false);
+      if (isManual) setIsRefreshing(false);
     }
-  };
+  }, []);
 
+  // Suscripción Realtime y Auto-refresco
   useEffect(() => {
     fetchOrders();
-  }, []);
+
+    // Polling cada 12 segundos para captar pedidos del Chatbot IA automáticamente
+    const interval = setInterval(() => {
+      fetchOrders();
+    }, 12000);
+
+    // Suscripción Realtime en Supabase a la tabla orders
+    const channel = supabase
+      .channel('admin-orders-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        (payload) => {
+          console.log('⚡ Cambio en tiempo real en orders:', payload);
+          fetchOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [fetchOrders]);
 
   // Búsqueda inteligente de cliente existente por teléfono en tiempo real
   const handlePhoneChange = async (phoneValue: string) => {
@@ -177,25 +206,25 @@ export default function AdminOrdersPage() {
 
       const [ocrResult, uploadRes] = await Promise.allSettled([ocrPromise, uploadPromise]);
 
-      // Manejo de la subida a Storage
       if (uploadRes.status === 'fulfilled' && !uploadRes.value.error) {
         const { data: publicUrlData } = supabase.storage
           .from('products')
           .getPublicUrl(cleanFileName);
         setVoucherStorageUrl(publicUrlData.publicUrl);
-      } else {
-        console.warn('Advertencia al subir voucher a Storage:', uploadRes);
       }
 
-      // Manejo del OCR
       if (ocrResult.status === 'fulfilled') {
         const ocrData: OCRResult & { error?: string } = ocrResult.value;
         if (ocrData.error) {
           setOcrErrorMessage(ocrData.error);
         } else {
-          // Autocompletar datos
           if (ocrData.monto) setTotalAmount(ocrData.monto.toString());
-          if (ocrData.billetera) setPaymentMethod(ocrData.billetera);
+          if (ocrData.billetera) {
+            const b = ocrData.billetera.toLowerCase();
+            if (b.includes('plin')) setPaymentMethod('plin');
+            else if (b.includes('transf')) setPaymentMethod('transferencia');
+            else setPaymentMethod('yape');
+          }
           if (ocrData.numero_operacion) setOperationNumber(ocrData.numero_operacion);
           if (ocrData.remitente && !customerName) {
             setCustomerName(ocrData.remitente);
@@ -218,7 +247,7 @@ export default function AdminOrdersPage() {
     }
   };
 
-  // Guardar Venta y Aplicar Lógica CRM
+  // Guardar Venta Manual con validaciones estrictas
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -237,80 +266,88 @@ export default function AdminOrdersPage() {
       const cleanPhone = customerPhone.replace(/\D/g, '');
       let customerId: string | null = null;
 
-      // 1. Lógica CRM: Buscar cliente por teléfono
-      const { data: existingCustomer } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('phone', cleanPhone)
-        .maybeSingle();
-
-      if (existingCustomer) {
-        customerId = existingCustomer.id;
-        // Si se especificó aniversario o notas actualizadas, enriquecemos el perfil
-        await supabase
+      // 1. Lógica CRM: Buscar o crear cliente
+      try {
+        const { data: existingCustomer } = await supabase
           .from('customers')
-          .update({
-            full_name: customerName.trim() || existingCustomer.full_name,
-            anniversary_date: anniversaryDate || existingCustomer.anniversary_date,
-            notes: customerNotes.trim()
-              ? existingCustomer.notes
-                ? `${existingCustomer.notes} | ${customerNotes.trim()}`
-                : customerNotes.trim()
-              : existingCustomer.notes,
-          })
-          .eq('id', existingCustomer.id);
-      } else {
-        // Crear nuevo cliente automáticamente
-        const { data: newCust, error: custError } = await supabase
-          .from('customers')
-          .insert([
-            {
-              full_name: customerName.trim() || 'Cliente WhatsApp',
-              phone: cleanPhone,
-              anniversary_date: anniversaryDate || null,
-              notes: customerNotes.trim() || null,
-            },
-          ])
-          .select()
-          .single();
+          .select('*')
+          .eq('phone', cleanPhone)
+          .maybeSingle();
 
-        if (custError) throw custError;
-        if (newCust) customerId = newCust.id;
+        if (existingCustomer) {
+          customerId = existingCustomer.id;
+          await supabase
+            .from('customers')
+            .update({
+              full_name: customerName.trim() || existingCustomer.full_name,
+              anniversary_date: anniversaryDate || existingCustomer.anniversary_date,
+              notes: customerNotes.trim()
+                ? existingCustomer.notes
+                  ? `${existingCustomer.notes} | ${customerNotes.trim()}`
+                  : customerNotes.trim()
+                : existingCustomer.notes,
+            })
+            .eq('id', existingCustomer.id);
+        } else {
+          const { data: newCust, error: custError } = await supabase
+            .from('customers')
+            .insert([
+              {
+                full_name: customerName.trim() || 'Cliente Taller',
+                phone: cleanPhone,
+                anniversary_date: anniversaryDate || null,
+                notes: customerNotes.trim() || null,
+              },
+            ])
+            .select()
+            .single();
+
+          if (!custError && newCust) {
+            customerId = newCust.id;
+          }
+        }
+      } catch (cErr) {
+        console.warn('Advertencia CRM al guardar cliente:', cErr);
       }
 
-      // 2. Registrar Pedido
+      // 2. Registrar Pedido con campos en minúsculas y fecha normalizada
+      const sqlDeliveryDate = deliveryDate || new Date().toISOString().split('T')[0];
+      const sqlPaymentMethod = (paymentMethod || 'yape').toLowerCase();
+      const sqlStatus = (orderStatus || 'confirmado').toLowerCase() as OrderStatus;
+
       const { data: newOrder, error: orderError } = await supabase
         .from('orders')
         .insert([
           {
             customer_id: customerId,
             total_amount: parseFloat(totalAmount),
-            payment_method: paymentMethod,
+            payment_method: sqlPaymentMethod,
             operation_number: operationNumber.trim() || null,
             voucher_url: voucherStorageUrl || null,
-            delivery_date: deliveryDate || null,
-            recipient_name: recipientName.trim() || null,
-            delivery_address: deliveryAddress.trim() || null,
+            delivery_date: sqlDeliveryDate,
+            recipient_name: recipientName.trim() || (customerName.trim() ? `${customerName.trim()} (Cel: ${cleanPhone})` : 'Cliente'),
+            delivery_address: deliveryAddress.trim() || 'Entrega en taller',
             dedication_message: dedicationMessage.trim() || null,
-            status: orderStatus,
+            status: sqlStatus,
           },
         ])
         .select('*, customer:customers(*)')
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('Error al insertar orden:', orderError);
+        throw orderError;
+      }
 
-      // Actualizar estado local
       if (newOrder) {
         setOrders((prev) => [newOrder as Order, ...prev]);
       }
 
-      // Resetear modal
       setIsCreateModalOpen(false);
       resetForm();
     } catch (err: any) {
       console.error('Error creando pedido:', err);
-      alert('Error al guardar la venta: ' + err.message);
+      alert('Error al guardar la venta: ' + (err.message || err));
     } finally {
       setCreateLoading(false);
     }
@@ -321,11 +358,11 @@ export default function AdminOrdersPage() {
     setCustomerName('');
     setAnniversaryDate('');
     setCustomerNotes('');
-    setDeliveryDate('');
+    setDeliveryDate(new Date().toISOString().split('T')[0]);
     setRecipientName('');
     setDeliveryAddress('');
     setDedicationMessage('');
-    setPaymentMethod('Yape');
+    setPaymentMethod('yape');
     setTotalAmount('');
     setOperationNumber('');
     setOrderStatus('confirmado');
@@ -338,18 +375,21 @@ export default function AdminOrdersPage() {
 
   // Actualizar estado rápido del pedido
   const handleUpdateStatus = async (orderId: string, nextStatus: OrderStatus) => {
+    const normalizedStatus = nextStatus.toLowerCase() as OrderStatus;
+
     // Optimistic update
     setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o))
+      prev.map((o) => (o.id === orderId ? { ...o, status: normalizedStatus } : o))
     );
 
     try {
       const { error } = await supabase
         .from('orders')
-        .update({ status: nextStatus })
+        .update({ status: normalizedStatus })
         .eq('id', orderId);
 
       if (error) {
+        console.error('Error actualizando estado en Supabase:', error);
         fetchOrders();
         alert('Error al actualizar estado: ' + error.message);
       }
@@ -359,30 +399,76 @@ export default function AdminOrdersPage() {
   };
 
   // Abrir chat de WhatsApp con el cliente
-  const handleOpenWhatsAppChat = (phone: string, customerFullName?: string) => {
+  const handleOpenWhatsAppChat = (phone?: string, customerFullName?: string) => {
+    if (!phone) return;
     const cleanPhone = phone.replace(/\D/g, '');
     const phoneWithCountry = cleanPhone.startsWith('51') ? cleanPhone : `51${cleanPhone}`;
     const greeting = customerFullName ? `¡Hola ${customerFullName}!` : '¡Hola!';
     const text = encodeURIComponent(
-      `${greeting} Te saludamos de *PETALIA diseño floral*. Nos comunicamos para confirmar y coordinar los detalles de tu pedido floral 🌸`
+      `${greeting} Te saludamos de *PETALIA diseño floral*. Nos comunicamos para coordinar los detalles de tu pedido 🌸`
     );
     window.open(`https://wa.me/${phoneWithCountry}?text=${text}`, '_blank');
   };
 
+  // Extraer teléfono, comprador, destinatario y dedicatoria para pedidos de Chatbot o manuales
+  const getOrderDetailsHelpers = (order: Order) => {
+    // 1. Teléfono del comprador
+    const phone =
+      (order as any).customer_phone ||
+      order.customer?.phone ||
+      order.recipient_name?.match(/\[(?:Comprador|Cliente):.*?\|\s*(?:Cel|Tel):\s*(\d{8,11})\]/)?.[1] ||
+      order.recipient_name?.match(/\(Cel:\s*(\d{8,11})\)/)?.[1] ||
+      order.dedication_message?.match(/\[(?:Comprador|Cliente):.*?\|\s*(?:Cel|Tel):\s*(\d{8,11})\]/)?.[1] ||
+      order.recipient_name?.match(/\b9\d{8}\b/)?.[0] ||
+      order.delivery_address?.match(/\b9\d{8}\b/)?.[0] ||
+      order.dedication_message?.match(/\b9\d{8}\b/)?.[0] ||
+      '';
+
+    // 2. Nombre del comprador
+    const clientName =
+      (order as any).customer_name ||
+      order.customer?.full_name ||
+      order.recipient_name?.match(/\[(?:Comprador|Cliente):\s*(.*?)\s*\|/)?.[1] ||
+      order.dedication_message?.match(/\[(?:Comprador|Cliente):\s*(.*?)\s*\|/)?.[1] ||
+      order.recipient_name?.split('[Comprador:')[0].split('(Cel:')[0].trim() ||
+      'Cliente';
+
+    // 3. Nombre limpio del destinatario
+    let cleanRecipient = order.recipient_name || 'Mismo cliente';
+    if (cleanRecipient.includes('[Comprador:')) {
+      cleanRecipient = cleanRecipient.split('[Comprador:')[0].trim();
+    } else if (cleanRecipient.includes('(Cel:')) {
+      cleanRecipient = cleanRecipient.split('(Cel:')[0].trim();
+    }
+
+    // 4. Arreglo extraído
+    const matchedArrangement = order.dedication_message?.match(/\[Arreglo:\s*(.*?)\]/)?.[1];
+
+    // 5. Dedicatoria limpia sin tags técnicos
+    let cleanDedication = order.dedication_message || '';
+    cleanDedication = cleanDedication
+      .replace(/\[Arreglo:\s*.*?\]\s*/g, '')
+      .replace(/\[(?:Comprador|Cliente):\s*.*?\]\s*/g, '')
+      .trim();
+
+    return { phone, clientName, cleanRecipient, matchedArrangement, cleanDedication };
+  };
+
   // Filtrado de pedidos
   const filteredOrders = orders.filter((order) => {
-    const matchesStatus = statusFilter === 'todos' || order.status === statusFilter;
-    const clientName = order.customer?.full_name || '';
-    const clientPhone = order.customer?.phone || '';
+    const matchesStatus = statusFilter === 'todos' || order.status.toLowerCase() === statusFilter.toLowerCase();
+    const { phone, clientName } = getOrderDetailsHelpers(order);
     const recipient = order.recipient_name || '';
     const opNum = order.operation_number || '';
+    const ded = order.dedication_message || '';
 
     const query = searchQuery.toLowerCase();
     const matchesSearch =
       clientName.toLowerCase().includes(query) ||
-      clientPhone.includes(query) ||
+      phone.includes(query) ||
       recipient.toLowerCase().includes(query) ||
-      opNum.toLowerCase().includes(query);
+      opNum.toLowerCase().includes(query) ||
+      ded.toLowerCase().includes(query);
 
     return matchesStatus && matchesSearch;
   });
@@ -401,18 +487,19 @@ export default function AdminOrdersPage() {
             </span>
           </div>
           <p className="text-sm text-neutral-400 mt-1">
-            Registro rápido con OCR de Yape/Plin, historial de clientes y estados del taller floral.
+            Pedidos de la tienda, Asistente Virtual IA y registro en taller sincronizados en tiempo real.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <button
-            onClick={fetchOrders}
-            disabled={loading}
-            className="p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 transition disabled:opacity-50"
-            title="Recargar pedidos"
+            onClick={() => fetchOrders(true)}
+            disabled={loading || isRefreshing}
+            className="p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 transition disabled:opacity-50 flex items-center gap-1.5 text-xs font-medium"
+            title="Recargar pedidos manualmente"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-rose-400' : ''}`} />
+            <span className="hidden sm:inline">Actualizar</span>
           </button>
           <button
             onClick={() => {
@@ -436,7 +523,7 @@ export default function AdminOrdersPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por cliente, destinatario, teléfono o N° de operación..."
+              placeholder="Buscar por cliente, destinatario, teléfono, arreglo o N° de operación..."
               className="w-full bg-neutral-950 border border-neutral-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition"
             />
             {searchQuery && (
@@ -461,7 +548,7 @@ export default function AdminOrdersPage() {
               Todos ({orders.length})
             </button>
             {(['pendiente', 'confirmado', 'en_taller', 'entregado'] as OrderStatus[]).map((st) => {
-              const count = orders.filter((o) => o.status === st).length;
+              const count = orders.filter((o) => (o.status || '').toLowerCase() === st).length;
               const cfg = STATUS_CONFIG[st];
               return (
                 <button
@@ -485,7 +572,7 @@ export default function AdminOrdersPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 text-neutral-500 space-y-3">
           <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
-          <p className="text-sm">Cargando ventas y pedidos...</p>
+          <p className="text-sm">Cargando ventas y pedidos en vivo...</p>
         </div>
       ) : filteredOrders.length === 0 ? (
         <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/80 p-12 text-center space-y-3">
@@ -496,14 +583,16 @@ export default function AdminOrdersPage() {
           <p className="text-xs text-neutral-400 max-w-sm mx-auto">
             {searchQuery || statusFilter !== 'todos'
               ? 'Prueba modificando los filtros de estado o búsqueda.'
-              : 'Registra la primera venta usando el botón verde superior con lectura automática de vouchers.'}
+              : 'Los pedidos que hagan los clientes en la tienda web o mediante la Asesora IA aparecerán aquí automáticamente.'}
           </p>
         </div>
       ) : (
         <div className="space-y-3">
           {filteredOrders.map((order) => {
-            const statusCfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.pendiente;
+            const currentStatus = (order.status || 'pendiente').toLowerCase() as OrderStatus;
+            const statusCfg = STATUS_CONFIG[currentStatus] || STATUS_CONFIG.pendiente;
             const StatusIcon = statusCfg.icon;
+            const { phone, clientName, cleanRecipient, matchedArrangement, cleanDedication } = getOrderDetailsHelpers(order);
 
             return (
               <div
@@ -516,13 +605,19 @@ export default function AdminOrdersPage() {
                       S/
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-lg font-bold text-white">
                           S/ {Number(order.total_amount).toFixed(2)}
                         </span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 font-medium">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 font-medium uppercase">
                           {order.payment_method}
                         </span>
+                        {matchedArrangement && (
+                          <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-950/70 border border-rose-800/60 text-rose-300 font-semibold flex items-center gap-1">
+                            <Package className="w-3 h-3" />
+                            <span>{matchedArrangement}</span>
+                          </span>
+                        )}
                         {order.operation_number && (
                           <span className="text-[11px] text-neutral-500 font-mono">
                             Op: {order.operation_number}
@@ -552,9 +647,9 @@ export default function AdminOrdersPage() {
                       <span>{statusCfg.label}</span>
                     </div>
 
-                    {/* Selector de estado rápido */}
+                    {/* Selector de estado rápido con valores normalizados */}
                     <select
-                      value={order.status}
+                      value={currentStatus}
                       onChange={(e) =>
                         handleUpdateStatus(order.id, e.target.value as OrderStatus)
                       }
@@ -576,18 +671,13 @@ export default function AdminOrdersPage() {
                       Cliente / Comprador
                     </span>
                     <p className="font-semibold text-white text-sm">
-                      {order.customer?.full_name || 'Sin nombre registrado'}
+                      {clientName}
                     </p>
                     <div className="flex items-center justify-between pt-1">
-                      <span className="text-neutral-400">{order.customer?.phone || 'Sin cel'}</span>
-                      {order.customer?.phone && (
+                      <span className="text-neutral-400">{phone || 'Sin cel'}</span>
+                      {phone && (
                         <button
-                          onClick={() =>
-                            handleOpenWhatsAppChat(
-                              order.customer!.phone,
-                              order.customer?.full_name
-                            )
-                          }
+                          onClick={() => handleOpenWhatsAppChat(phone, clientName)}
                           className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-2 py-1 rounded-lg transition font-medium text-[11px]"
                         >
                           <MessageCircle className="w-3 h-3" />
@@ -609,7 +699,7 @@ export default function AdminOrdersPage() {
                       Entrega & Destinatario
                     </span>
                     <p className="font-semibold text-white text-sm">
-                      {order.recipient_name || 'Mismo cliente'}
+                      {cleanRecipient || 'Mismo cliente'}
                     </p>
                     <div className="flex items-center gap-1.5 text-neutral-300">
                       <Calendar className="w-3.5 h-3.5 text-neutral-500" />
@@ -630,8 +720,8 @@ export default function AdminOrdersPage() {
                         Dedicatoria de Tarjeta
                       </span>
                       <p className="text-neutral-300 italic line-clamp-2 mt-1">
-                        {order.dedication_message
-                          ? `"${order.dedication_message}"`
+                        {cleanDedication
+                          ? `"${cleanDedication}"`
                           : 'Sin dedicatoria'}
                       </p>
                     </div>
@@ -643,7 +733,7 @@ export default function AdminOrdersPage() {
                           className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 font-medium text-[11px] hover:underline"
                         >
                           <Eye className="w-3.5 h-3.5" />
-                          <span>Ver Voucher Yape/Plin</span>
+                          <span>Ver Voucher</span>
                         </button>
                       ) : (
                         <span className="text-neutral-600 text-[11px]">Sin voucher adjunto</span>
@@ -653,7 +743,7 @@ export default function AdminOrdersPage() {
                         onClick={() => setSelectedOrderDetails(order)}
                         className="text-neutral-400 hover:text-white text-[11px] hover:underline"
                       >
-                        Ver detalles completos
+                        Ver detalles
                       </button>
                     </div>
                   </div>
@@ -768,9 +858,6 @@ export default function AdminOrdersPage() {
                       required
                       className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition font-mono"
                     />
-                    <p className="text-[10px] text-neutral-500 mt-0.5">
-                      Si el cliente ya compró antes, se autocompletará su historial.
-                    </p>
                   </div>
 
                   <div>
@@ -801,13 +888,13 @@ export default function AdminOrdersPage() {
 
                   <div>
                     <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                      Notas del Cliente (Preferencias, gustos)
+                      Notas del Cliente
                     </label>
                     <input
                       type="text"
                       value={customerNotes}
                       onChange={(e) => setCustomerNotes(e.target.value)}
-                      placeholder="Ej: Le gustan las rosas blancas y follaje fino"
+                      placeholder="Preferencias o detalles"
                       className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition"
                     />
                   </div>
@@ -842,13 +929,13 @@ export default function AdminOrdersPage() {
                     </label>
                     <select
                       value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      onChange={(e) => setPaymentMethod(e.target.value as any)}
                       className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500 transition"
                     >
-                      <option value="Yape">Yape</option>
-                      <option value="Plin">Plin</option>
-                      <option value="Transferencia">Transferencia Bancaria</option>
-                      <option value="Efectivo">Efectivo</option>
+                      <option value="yape">Yape</option>
+                      <option value="plin">Plin</option>
+                      <option value="transferencia">Transferencia Bancaria</option>
+                      <option value="efectivo">Efectivo</option>
                     </select>
                   </div>
 
@@ -875,12 +962,13 @@ export default function AdminOrdersPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                      Fecha de Entrega
+                      Fecha de Entrega *
                     </label>
                     <input
                       type="date"
                       value={deliveryDate}
                       onChange={(e) => setDeliveryDate(e.target.value)}
+                      required
                       className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-rose-500 transition"
                     />
                   </div>
@@ -910,7 +998,7 @@ export default function AdminOrdersPage() {
                       value={recipientName}
                       onChange={(e) => setRecipientName(e.target.value)}
                       placeholder="Persona que recibe el arreglo"
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition"
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition"
                     />
                   </div>
 
@@ -923,7 +1011,7 @@ export default function AdminOrdersPage() {
                       value={deliveryAddress}
                       onChange={(e) => setDeliveryAddress(e.target.value)}
                       placeholder="Calle, número, urbanización o distrito"
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition"
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition"
                     />
                   </div>
 
@@ -935,7 +1023,7 @@ export default function AdminOrdersPage() {
                       rows={2}
                       value={dedicationMessage}
                       onChange={(e) => setDedicationMessage(e.target.value)}
-                      placeholder="Escribe el mensaje exacto que irá en la tarjeta del arreglo..."
+                      placeholder="Escribe el mensaje que irá en la tarjeta..."
                       className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition"
                     />
                   </div>
@@ -1031,51 +1119,80 @@ export default function AdminOrdersPage() {
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-1">
-                <span className="text-neutral-500 font-medium">Cliente:</span>
-                <p className="text-sm font-semibold text-white">
-                  {selectedOrderDetails.customer?.full_name || 'Sin nombre'}
-                </p>
-                <p className="text-neutral-400">Teléfono: {selectedOrderDetails.customer?.phone}</p>
-                {selectedOrderDetails.customer?.anniversary_date && (
-                  <p className="text-pink-400">
-                    Aniversario / Cumpleaños: {selectedOrderDetails.customer.anniversary_date}
-                  </p>
-                )}
-                {selectedOrderDetails.customer?.notes && (
-                  <p className="text-neutral-400 italic">Notas CRM: {selectedOrderDetails.customer.notes}</p>
-                )}
-              </div>
+              {(() => {
+                const modalHelper = getOrderDetailsHelpers(selectedOrderDetails);
+                return (
+                  <>
+                    <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-1">
+                      <span className="text-neutral-500 font-medium">Cliente / Comprador:</span>
+                      <p className="text-sm font-semibold text-white">
+                        {modalHelper.clientName}
+                      </p>
+                      <div className="flex items-center justify-between pt-0.5">
+                        <span className="text-neutral-400">
+                          Teléfono: {modalHelper.phone || 'No registrado'}
+                        </span>
+                        {modalHelper.phone && (
+                          <button
+                            onClick={() => handleOpenWhatsAppChat(modalHelper.phone, modalHelper.clientName)}
+                            className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 text-[11px] font-medium"
+                          >
+                            <MessageCircle className="w-3 h-3" />
+                            <span>WhatsApp</span>
+                          </button>
+                        )}
+                      </div>
+                      {selectedOrderDetails.customer?.anniversary_date && (
+                        <p className="text-pink-400">
+                          Aniversario / Cumpleaños: {selectedOrderDetails.customer.anniversary_date}
+                        </p>
+                      )}
+                      {selectedOrderDetails.customer?.notes && (
+                        <p className="text-neutral-400 italic">Notas CRM: {selectedOrderDetails.customer.notes}</p>
+                      )}
+                    </div>
 
-              <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-1">
-                <span className="text-neutral-500 font-medium">Destinatario & Entrega:</span>
-                <p className="text-sm font-semibold text-white">
-                  {selectedOrderDetails.recipient_name || 'Mismo cliente'}
-                </p>
-                <p className="text-neutral-400">
-                  Fecha: {selectedOrderDetails.delivery_date || 'No definida'}
-                </p>
-                <p className="text-neutral-400">
-                  Dirección: {selectedOrderDetails.delivery_address || 'Entrega en taller / Por coordinar'}
-                </p>
-              </div>
+                    <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-1">
+                      <span className="text-neutral-500 font-medium">Destinatario & Entrega:</span>
+                      <p className="text-sm font-semibold text-white">
+                        {modalHelper.cleanRecipient || 'Mismo cliente'}
+                      </p>
+                      <p className="text-neutral-400">
+                        Fecha: {selectedOrderDetails.delivery_date || 'No definida'}
+                      </p>
+                      <p className="text-neutral-400">
+                        Dirección: {selectedOrderDetails.delivery_address || 'Entrega en taller'}
+                      </p>
+                    </div>
 
-              <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-1">
-                <span className="text-neutral-500 font-medium">Dedicatoria:</span>
-                <p className="text-neutral-200 italic">
-                  {selectedOrderDetails.dedication_message
-                    ? `"${selectedOrderDetails.dedication_message}"`
-                    : 'Sin dedicatoria'}
-                </p>
-              </div>
+                    {modalHelper.matchedArrangement && (
+                      <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-1">
+                        <span className="text-neutral-500 font-medium">Arreglo Solicitado:</span>
+                        <p className="text-sm font-semibold text-rose-400">
+                          {modalHelper.matchedArrangement}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-1">
+                      <span className="text-neutral-500 font-medium">Dedicatoria:</span>
+                      <p className="text-neutral-200 italic">
+                        {modalHelper.cleanDedication
+                          ? `"${modalHelper.cleanDedication}"`
+                          : 'Sin dedicatoria'}
+                      </p>
+                    </div>
+                  </>
+                );
+              })()}
 
               <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-1">
                 <span className="text-neutral-500 font-medium">Información de Pago:</span>
                 <div className="flex items-center justify-between">
-                  <span className="text-base font-bold text-white">
+                  <span className="text-base font-bold text-white font-mono">
                     S/ {Number(selectedOrderDetails.total_amount).toFixed(2)}
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300">
+                  <span className="px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 uppercase font-mono">
                     {selectedOrderDetails.payment_method}
                   </span>
                 </div>
