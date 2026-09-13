@@ -191,6 +191,66 @@ export default function AdminSettingsPage() {
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition"
                 />
               </div>
+
+              {/* Logo Oficial Web */}
+              <div className="space-y-2 md:col-span-1 bg-neutral-950/60 p-4 rounded-2xl border border-neutral-800/80">
+                <label className="text-xs font-semibold text-neutral-300 flex items-center justify-between">
+                  <span>Logo Oficial Web</span>
+                  <span className="text-[10px] text-neutral-500 font-mono">public/images/logo.jpg</span>
+                </label>
+                <input
+                  type="text"
+                  value={settings.logo_url || ''}
+                  onChange={(e) => setSettings({ ...settings, logo_url: e.target.value })}
+                  placeholder="/images/logo.jpg"
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white font-mono placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition"
+                />
+                <div className="flex items-center gap-3 pt-1">
+                  <div className="h-12 w-28 bg-black/40 rounded-xl p-1 border border-neutral-800 flex items-center justify-center overflow-hidden">
+                    <img
+                      src={settings.logo_url || '/images/logo.jpg'}
+                      alt="Logo Preview"
+                      className="max-h-full max-w-full object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/images/logo.jpg';
+                      }}
+                    />
+                  </div>
+                  <span className="text-[11px] text-neutral-400">
+                    Se muestra en la cabecera de la tienda, panel admin y login.
+                  </span>
+                </div>
+              </div>
+
+              {/* QR Oficial Yape */}
+              <div className="space-y-2 md:col-span-1 bg-neutral-950/60 p-4 rounded-2xl border border-neutral-800/80">
+                <label className="text-xs font-semibold text-neutral-300 flex items-center justify-between">
+                  <span>QR de Cobro Yape</span>
+                  <span className="text-[10px] text-neutral-500 font-mono">public/images/qr-yape.png</span>
+                </label>
+                <input
+                  type="text"
+                  value={settings.yape_qr_url || ''}
+                  onChange={(e) => setSettings({ ...settings, yape_qr_url: e.target.value })}
+                  placeholder="/images/qr-yape.png"
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white font-mono placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition"
+                />
+                <div className="flex items-center gap-3 pt-1">
+                  <div className="h-12 w-12 bg-black/40 rounded-xl p-1 border border-neutral-800 flex items-center justify-center overflow-hidden">
+                    <img
+                      src={settings.yape_qr_url || '/images/qr-yape.png'}
+                      alt="QR Yape Preview"
+                      className="max-h-full max-w-full object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/images/qr-yape.png';
+                      }}
+                    />
+                  </div>
+                  <span className="text-[11px] text-neutral-400">
+                    Se muestra al cliente al pagar y se envía en el Chatbot IA.
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="pt-4 border-t border-neutral-800 flex justify-end">

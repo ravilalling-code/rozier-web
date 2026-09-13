@@ -60,6 +60,8 @@ export interface StoreSettings {
   instagram_url: string;
   tiktok_url: string;
   whatsapp_number: string;
+  logo_url?: string;
+  yape_qr_url?: string;
   updated_at?: string;
 }
 

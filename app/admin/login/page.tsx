@@ -68,18 +68,24 @@ function LoginForm() {
     <div className="w-full max-w-md bg-neutral-900/90 backdrop-blur-xl border border-neutral-800 rounded-3xl p-7 sm:p-9 shadow-2xl shadow-black/80 relative z-10">
       {/* Cabecera con Branding Petalia */}
       <div className="text-center space-y-3 pb-6 border-b border-neutral-800/80">
-        <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-rose-500 via-rose-600 to-rose-700 flex items-center justify-center text-white shadow-xl shadow-rose-950 ring-1 ring-rose-400/30">
-          <Flower2 className="w-7 h-7" />
+        <div className="flex justify-center">
+          <Link href="/" title="Ir a la tienda">
+            <img
+              src="/images/logo.jpg"
+              alt="PETALIA Logo"
+              className="h-14 w-auto object-contain rounded-2xl shadow-xl shadow-black/50 border border-neutral-800/80 hover:opacity-90 transition"
+            />
+          </Link>
         </div>
         <div>
           <div className="flex items-center justify-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-white">PETALIA</h1>
+            <h1 className="text-xl font-bold tracking-tight text-white">Panel Administrativo</h1>
             <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400 bg-rose-950/70 border border-rose-800/60 px-2 py-0.5 rounded-full">
               ADMIN
             </span>
           </div>
           <p className="text-xs text-neutral-400 mt-1">
-            Acceso exclusivo al taller y gestión floral
+            Acceso exclusivo al taller y gestión floral de PETALIA
           </p>
         </div>
       </div>

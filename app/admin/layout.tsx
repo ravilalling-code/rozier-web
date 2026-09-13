@@ -74,15 +74,16 @@ export default function AdminLayout({
       {/* Mobile Top Navbar */}
       <div className="lg:hidden sticky top-0 z-40 bg-neutral-900/95 backdrop-blur-md border-b border-neutral-800/80 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center text-white shadow-lg shadow-rose-950">
-            <Flower2 className="w-4 h-4" />
-          </div>
-          <div>
-            <span className="font-bold text-base tracking-tight text-white">PETALIA</span>
-            <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wider text-rose-400 bg-rose-950/60 border border-rose-800/50 px-1.5 py-0.5 rounded-full">
+          <Link href="/admin/products" className="flex items-center gap-2">
+            <img
+              src="/images/logo.jpg"
+              alt="PETALIA Logo"
+              className="h-8 w-auto object-contain rounded-lg shadow-md"
+            />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-400 bg-rose-950/60 border border-rose-800/50 px-1.5 py-0.5 rounded-full">
               Admin
             </span>
-          </div>
+          </Link>
         </div>
 
         <div className="flex items-center gap-2">
@@ -131,18 +132,16 @@ export default function AdminLayout({
           {/* Brand Header */}
           <div className="flex items-center justify-between pb-6 border-b border-neutral-800/80">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center text-white shadow-xl shadow-rose-950 ring-1 ring-rose-400/20">
-                <Flower2 className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <h1 className="font-bold text-lg tracking-tight text-white">PETALIA</h1>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-400 bg-rose-950/70 border border-rose-800/60 px-1.5 py-0.5 rounded-full">
-                    PRO
-                  </span>
-                </div>
-                <p className="text-[11px] text-neutral-400 font-medium">Taller & Gestión Floral</p>
-              </div>
+              <Link href="/admin/products" className="flex items-center gap-2.5 group">
+                <img
+                  src="/images/logo.jpg"
+                  alt="PETALIA Logo"
+                  className="h-10 w-auto object-contain rounded-xl shadow-lg shadow-black/40 group-hover:opacity-90 transition"
+                />
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-400 bg-rose-950/70 border border-rose-800/60 px-1.5 py-0.5 rounded-full">
+                  PRO
+                </span>
+              </Link>
             </div>
             <button
               onClick={() => setMobileMenuOpen(false)}

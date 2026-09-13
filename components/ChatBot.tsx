@@ -15,6 +15,10 @@ import {
   ArrowRight,
   RefreshCw,
   Gift,
+  Copy,
+  Check,
+  Download,
+  QrCode,
 } from 'lucide-react';
 import { formatLocalDate } from '@/lib/format';
 
@@ -43,6 +47,7 @@ interface Message {
 
 const INITIAL_SUGGESTIONS = [
   '🌸 Ver catálogo y elegir arreglo',
+  '💜 Pagar con Yape / Plin (QR)',
   '🚚 Rastrear mi pedido',
   '🌹 Opciones para aniversario',
   '🎂 Arreglos para cumpleaños',
@@ -62,6 +67,13 @@ export default function ChatBot() {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnread, setHasUnread] = useState(true);
+  const [copiedPhone, setCopiedPhone] = useState(false);
+
+  const handleCopyPhone = () => {
+    navigator.clipboard.writeText('924257784');
+    setCopiedPhone(true);
+    setTimeout(() => setCopiedPhone(false), 2000);
+  };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -261,8 +273,86 @@ export default function ChatBot() {
                           : 'bg-white border border-stone-200/80 text-stone-700 rounded-bl-xs'
                       }`}
                     >
-                      {renderFormattedText(msg.content)}
+                      {renderFormattedText(msg.content.replace('[MOSTRAR_QR_YAPE]', ''))}
                     </div>
+
+                    {/* Tarjeta Visual Interactiva con QR de Yape */}
+                    {!isUser &&
+                      (msg.content.includes('[MOSTRAR_QR_YAPE]') ||
+                        msg.content.toLowerCase().includes('qr de yape') ||
+                        msg.content.toLowerCase().includes('código qr') ||
+                        msg.content.toLowerCase().includes('pagar con yape') ||
+                        msg.content.toLowerCase().includes('pagar con plin') ||
+                        (msg.orderCreated && (msg.orderCreated.payment_method === 'yape' || msg.orderCreated.payment_method === 'plin'))) && (
+                        <div className="bg-gradient-to-br from-purple-950 via-neutral-900 to-stone-950 text-white rounded-2xl p-4 border border-purple-800/60 shadow-lg space-y-3 animate-in fade-in">
+                          <div className="flex items-center justify-between border-b border-purple-800/40 pb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-purple-600 flex items-center justify-center text-white font-bold text-xs shadow">
+                                Y
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-xs text-purple-200">QR Oficial Yape / Plin</h4>
+                                <p className="text-[10px] text-purple-300/80">PETALIA • Florería</p>
+                              </div>
+                            </div>
+                            <span className="text-[10px] bg-purple-900/80 text-purple-300 border border-purple-700 px-2 py-0.5 rounded-full font-semibold">
+                              0% Comisión
+                            </span>
+                          </div>
+
+                          <div className="flex flex-col items-center bg-white rounded-xl p-3 shadow-inner">
+                            <img
+                              src="/images/qr-yape.png"
+                              alt="QR de Pago Yape PETALIA"
+                              className="w-44 h-44 object-contain rounded-lg"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/images/qr-yape.png';
+                              }}
+                            />
+                            <p className="text-[10px] text-stone-500 font-medium mt-1">
+                              Escanea desde tu app Yape o Plin
+                            </p>
+                          </div>
+
+                          {/* Número telefónico copiable con 1 clic */}
+                          <div className="bg-purple-950/80 rounded-xl p-2.5 border border-purple-800/60 flex items-center justify-between gap-2">
+                            <div>
+                              <span className="text-[10px] text-purple-300 block">Número de celular:</span>
+                              <span className="font-mono font-bold text-white text-xs tracking-wider">
+                                924 257 784
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleCopyPhone}
+                              className="flex items-center gap-1 bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition active:scale-95"
+                              title="Copiar número de Yape"
+                            >
+                              {copiedPhone ? (
+                                <>
+                                  <Check className="w-3 h-3 text-emerald-300" />
+                                  <span>¡Copiado!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3" />
+                                  <span>Copiar</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Botón Descargar QR */}
+                          <a
+                            href="/images/qr-yape.png"
+                            download="qr-yape-petalia.png"
+                            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold py-2 rounded-xl text-xs shadow transition active:scale-98"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Descargar QR en mi celular</span>
+                          </a>
+                        </div>
+                      )}
 
                     {/* Tarjeta Destacada de Pedido Creado */}
                     {msg.orderCreated && (

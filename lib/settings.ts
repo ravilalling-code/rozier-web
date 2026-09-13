@@ -7,6 +7,8 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   instagram_url: 'https://instagram.com',
   tiktok_url: 'https://tiktok.com',
   whatsapp_number: '51924257784',
+  logo_url: '/images/logo.jpg',
+  yape_qr_url: '/images/qr-yape.png',
 };
 
 export async function getStoreSettings(): Promise<StoreSettings> {
@@ -27,6 +29,8 @@ export async function getStoreSettings(): Promise<StoreSettings> {
       instagram_url: data.instagram_url || '',
       tiktok_url: data.tiktok_url || '',
       whatsapp_number: data.whatsapp_number || '51924257784',
+      logo_url: data.logo_url || '/images/logo.jpg',
+      yape_qr_url: data.yape_qr_url || '/images/qr-yape.png',
     };
   } catch (err) {
     console.error('Error obteniendo store_settings:', err);
@@ -43,6 +47,8 @@ export async function updateStoreSettings(settings: Partial<StoreSettings>): Pro
         instagram_url: settings.instagram_url ?? '',
         tiktok_url: settings.tiktok_url ?? '',
         whatsapp_number: settings.whatsapp_number ?? '51924257784',
+        logo_url: settings.logo_url ?? '/images/logo.jpg',
+        yape_qr_url: settings.yape_qr_url ?? '/images/qr-yape.png',
         updated_at: new Date().toISOString(),
       })
       .eq('id', 1)

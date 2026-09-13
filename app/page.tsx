@@ -29,6 +29,9 @@ import {
   MapPin,
   Loader2,
   DollarSign,
+  Copy,
+  Download,
+  QrCode,
 } from 'lucide-react';
 import { formatLocalDate } from '@/lib/format';
 import ChatBot from '@/components/ChatBot';
@@ -50,6 +53,16 @@ export default function HomePage() {
   const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackingError, setTrackingError] = useState<string | null>(null);
+
+  // Modal QR de Pago Yape / Plin
+  const [isYapeModalOpen, setIsYapeModalOpen] = useState(false);
+  const [copiedYapePhone, setCopiedYapePhone] = useState(false);
+
+  const handleCopyYapePhone = () => {
+    navigator.clipboard.writeText('924257784');
+    setCopiedYapePhone(true);
+    setTimeout(() => setCopiedYapePhone(false), 2000);
+  };
 
   // Ajustes de la tienda (Redes sociales y WhatsApp)
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
@@ -179,19 +192,16 @@ export default function HomePage() {
       {/* Header Fijo con Identidad PETALIA */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-stone-200/80 shadow-xs">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center text-white shadow-md shadow-rose-200">
-              <Flower2 className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-stone-900 leading-none">
-                PETALIA
-              </h1>
-              <p className="text-[10px] text-rose-600 font-semibold tracking-wider uppercase mt-0.5">
-                Diseño floral & decoraciones
-              </p>
-            </div>
-          </div>
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <img
+              src={storeSettings?.logo_url || '/images/logo.jpg'}
+              alt="PETALIA Diseño Floral"
+              className="h-11 sm:h-12 w-auto object-contain rounded-xl transition transform group-hover:scale-102 shadow-xs"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/images/logo.jpg';
+              }}
+            />
+          </Link>
 
           <div className="flex items-center gap-2">
             {/* Botón de Rastreo de Pedido */}
@@ -206,6 +216,17 @@ export default function HomePage() {
               <Truck className="w-3.5 h-3.5 text-rose-600" />
               <span className="hidden sm:inline">Rastrea tu pedido</span>
               <span className="sm:hidden">Rastrear</span>
+            </button>
+
+            {/* Botón Ver QR Yape / Plin */}
+            <button
+              onClick={() => setIsYapeModalOpen(true)}
+              className="flex items-center gap-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full text-xs font-semibold transition active:scale-95 border border-purple-200"
+              title="Ver QR y datos para pagar con Yape o Plin"
+            >
+              <QrCode className="w-3.5 h-3.5 text-purple-600" />
+              <span className="hidden sm:inline">Pagar con Yape</span>
+              <span className="sm:hidden">Yape</span>
             </button>
 
             {/* Botón WhatsApp de Atención Directa */}
@@ -493,6 +514,26 @@ export default function HomePage() {
                   Incluye tarjeta impresa de alta calidad sin costo adicional.
                 </p>
               </div>
+              {/* Sección Métodos de Pago: Yape / Plin */}
+              <div className="bg-purple-50/70 border border-purple-200/80 rounded-2xl p-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                    Y
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-purple-950">Pago 100% Seguro con Yape / Plin</p>
+                    <p className="text-[11px] text-purple-700">Aceptamos transferencias y billeteras digitales</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsYapeModalOpen(true)}
+                  className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
+                >
+                  <QrCode className="w-3.5 h-3.5" />
+                  <span>Ver QR</span>
+                </button>
+              </div>
             </div>
 
             {/* Botón WhatsApp Prominente */}
@@ -742,6 +783,89 @@ export default function HomePage() {
                 </a>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: QR de Pago Oficial Yape / Plin */}
+      {isYapeModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-stone-200 max-w-sm w-full rounded-3xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 text-stone-800">
+            {/* Header del Modal */}
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg shadow-xs">
+                  Y
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-stone-900">QR Oficial Yape / Plin</h3>
+                  <p className="text-xs text-stone-500">PETALIA • Florería y Arreglos</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsYapeModalOpen(false)}
+                className="p-1.5 text-stone-400 hover:text-stone-800 rounded-xl hover:bg-stone-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Imagen del QR Yape */}
+            <div className="flex flex-col items-center bg-purple-50/50 p-4 rounded-2xl border border-purple-100 shadow-inner">
+              <img
+                src={storeSettings?.yape_qr_url || '/images/qr-yape.png'}
+                alt="Código QR de Yape PETALIA"
+                className="w-56 h-56 object-contain rounded-xl shadow-xs bg-white p-2"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/images/qr-yape.png';
+                }}
+              />
+              <p className="text-xs text-purple-900 font-semibold mt-2.5 text-center">
+                Escanea desde tu app Yape o Plin sin comisión
+              </p>
+            </div>
+
+            {/* Número Copiable con 1 Clic */}
+            <div className="bg-stone-50 rounded-2xl p-3 border border-stone-200/80 flex items-center justify-between">
+              <div>
+                <span className="text-[11px] text-stone-500 block">Número de celular Yape / Plin:</span>
+                <span className="font-mono font-bold text-stone-900 text-sm tracking-wider">
+                  924 257 784
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleCopyYapePhone}
+                className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-xl text-xs font-semibold shadow-xs transition active:scale-95"
+                title="Copiar número"
+              >
+                {copiedYapePhone ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-300" />
+                    <span>¡Copiado!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copiar</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Botón de Descarga Directa del QR */}
+            <a
+              href={storeSettings?.yape_qr_url || '/images/qr-yape.png'}
+              download="qr-yape-petalia.png"
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white font-semibold py-3 rounded-2xl text-xs shadow-md transition active:scale-98"
+            >
+              <Download className="w-4 h-4" />
+              <span>Descargar QR en mi celular</span>
+            </a>
+
+            <p className="text-[11px] text-center text-stone-400">
+              Luego de realizar tu pago, envía la captura por WhatsApp para agilizar el despacho 🌸
+            </p>
           </div>
         </div>
       )}

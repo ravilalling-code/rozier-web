@@ -30,6 +30,8 @@ import {
   DollarSign,
   Send,
   Share2,
+  Edit3,
+  Trash2,
 } from 'lucide-react';
 
 const STATUS_CONFIG: Record<
@@ -131,6 +133,21 @@ export default function AdminOrdersPage() {
   const [valVoucherPreview, setValVoucherPreview] = useState<string | null>(null);
   const [valLoading, setValLoading] = useState(false);
   const [copiedTrackingId, setCopiedTrackingId] = useState<string | null>(null);
+
+  // Estados para Edición y Eliminación de Pedidos
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [editCustomerName, setEditCustomerName] = useState('');
+  const [editCustomerPhone, setEditCustomerPhone] = useState('');
+  const [editRecipientName, setEditRecipientName] = useState('');
+  const [editDeliveryAddress, setEditDeliveryAddress] = useState('');
+  const [editDeliveryDate, setEditDeliveryDate] = useState('');
+  const [editDedication, setEditDedication] = useState('');
+  const [editTotalAmount, setEditTotalAmount] = useState('');
+  const [editPaymentMethod, setEditPaymentMethod] = useState<'yape' | 'plin' | 'transferencia' | 'efectivo'>('yape');
+  const [editOperationNumber, setEditOperationNumber] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+  const [editLoading, setEditLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Cargar Pedidos de Supabase
   const fetchOrders = useCallback(async (isManual = false) => {
@@ -463,6 +480,120 @@ export default function AdminOrdersPage() {
       }
     } catch (err: any) {
       console.error('Error generando tracking code:', err);
+    }
+  };
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  // Abrir modal de edición con los datos actuales del pedido
+  const openEditModal = (order: Order) => {
+    const helper = getOrderDetailsHelpers(order);
+    setEditingOrder(order);
+    setEditCustomerName(helper.clientName);
+    setEditCustomerPhone(helper.phone);
+    setEditRecipientName(helper.cleanRecipient);
+    setEditDeliveryAddress(order.delivery_address || '');
+    setEditDeliveryDate(order.delivery_date || '');
+    setEditDedication(helper.cleanDedication);
+    setEditTotalAmount(String(order.total_amount));
+    const rawMethod = (order.payment_method || 'yape').toLowerCase();
+    setEditPaymentMethod(
+      (['yape', 'plin', 'transferencia', 'efectivo'].includes(rawMethod) ? rawMethod : 'yape') as any
+    );
+    setEditOperationNumber(order.operation_number || '');
+    setEditNotes(order.customer?.notes || '');
+  };
+
+  // Guardar cambios del pedido editado
+  const handleSaveEditedOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingOrder) return;
+    setEditLoading(true);
+
+    try {
+      const cleanPhone = editCustomerPhone.replace(/\D/g, '');
+      const numAmount = parseFloat(editTotalAmount) || editingOrder.total_amount;
+
+      // Actualizar cliente en customers si existe
+      if (editingOrder.customer_id) {
+        await supabase
+          .from('customers')
+          .update({
+            full_name: editCustomerName.trim() || undefined,
+            phone: cleanPhone || undefined,
+            notes: editNotes.trim() || undefined,
+          })
+          .eq('id', editingOrder.customer_id);
+      }
+
+      // Reconstruir dedicatoria manteniendo tags para CRM
+      const helper = getOrderDetailsHelpers(editingOrder);
+      const arrangementTag = helper.matchedArrangement ? `[Arreglo: ${helper.matchedArrangement}] ` : '';
+      const buyerTag = cleanPhone
+        ? `[Comprador: ${editCustomerName.trim()} | Cel: ${cleanPhone}] `
+        : `[Comprador: ${editCustomerName.trim()}] `;
+      const newDedication = `${arrangementTag}${buyerTag}${editDedication.trim()}`;
+
+      const updatedPayload: Record<string, any> = {
+        total_amount: numAmount,
+        payment_method: editPaymentMethod.toLowerCase(),
+        operation_number: editOperationNumber.trim() || null,
+        delivery_date: editDeliveryDate || editingOrder.delivery_date,
+        recipient_name: editRecipientName.trim() || 'Cliente',
+        delivery_address: editDeliveryAddress.trim() || null,
+        dedication_message: newDedication,
+      };
+
+      const { data, error } = await supabase
+        .from('orders')
+        .update(updatedPayload)
+        .eq('id', editingOrder.id)
+        .select('*, customer:customers(*)')
+        .single();
+
+      if (error) throw error;
+
+      const savedOrder = data as Order;
+      setOrders((prev) =>
+        prev.map((o) => (o.id === editingOrder.id ? savedOrder : o))
+      );
+      if (selectedOrderDetails?.id === editingOrder.id) {
+        setSelectedOrderDetails(savedOrder);
+      }
+
+      setEditingOrder(null);
+      showToast('¡Pedido actualizado con éxito!');
+    } catch (err: any) {
+      console.error('Error al actualizar pedido:', err);
+      alert('Error al guardar cambios del pedido: ' + (err.message || err));
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  // Eliminar pedido con confirmación
+  const handleDeleteOrder = async (order: Order) => {
+    const code = order.tracking_code || order.id.slice(0, 8);
+    const confirmed = window.confirm(
+      `¿Estás seguro de eliminar el pedido #${code}?\n\nEsta acción borrará el registro definitivamente de la base de datos.`
+    );
+    if (!confirmed) return;
+
+    try {
+      const { error } = await supabase.from('orders').delete().eq('id', order.id);
+      if (error) throw error;
+
+      setOrders((prev) => prev.filter((o) => o.id !== order.id));
+      if (selectedOrderDetails?.id === order.id) {
+        setSelectedOrderDetails(null);
+      }
+      showToast(`Pedido #${code} eliminado correctamente.`);
+    } catch (err: any) {
+      console.error('Error eliminando pedido:', err);
+      alert('Error al eliminar el pedido: ' + (err.message || err));
     }
   };
 
@@ -978,6 +1109,26 @@ export default function AdminOrdersPage() {
                       <option value="entregado">✨ Entregado</option>
                       <option value="cancelado">❌ Cancelado</option>
                     </select>
+
+                    {/* Botón Editar Pedido */}
+                    <button
+                      onClick={() => openEditModal(order)}
+                      className="p-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white border border-neutral-700 transition flex items-center gap-1 text-xs font-medium"
+                      title="Editar información del pedido"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-sky-400" />
+                      <span className="hidden sm:inline">Editar</span>
+                    </button>
+
+                    {/* Botón Eliminar Pedido */}
+                    <button
+                      onClick={() => handleDeleteOrder(order)}
+                      className="p-1.5 rounded-xl bg-neutral-800 hover:bg-rose-950/80 text-neutral-400 hover:text-rose-300 border border-neutral-700 hover:border-rose-800/80 transition flex items-center gap-1 text-xs font-medium"
+                      title="Eliminar pedido de la base de datos"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                      <span className="hidden sm:inline">Eliminar</span>
+                    </button>
                   </div>
                 </div>
 
@@ -1701,25 +1852,48 @@ export default function AdminOrdersPage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-neutral-800">
-              {selectedOrderDetails.voucher_url && (
+            <div className="flex items-center justify-between gap-2 pt-3 border-t border-neutral-800">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    const url = selectedOrderDetails.voucher_url;
+                    const orderToEdit = selectedOrderDetails;
                     setSelectedOrderDetails(null);
-                    setSelectedVoucherUrl(url);
+                    openEditModal(orderToEdit);
                   }}
-                  className="px-3.5 py-2 rounded-xl bg-emerald-950/60 border border-emerald-800/60 text-emerald-400 hover:bg-emerald-900/60 text-xs font-medium transition"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-sky-950/60 border border-sky-800/60 text-sky-400 hover:bg-sky-900/60 text-xs font-semibold transition"
                 >
-                  Ver Voucher
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Editar Pedido</span>
                 </button>
-              )}
-              <button
-                onClick={() => setSelectedOrderDetails(null)}
-                className="px-4 py-2 rounded-xl bg-neutral-800 text-neutral-300 hover:text-white text-xs font-medium"
-              >
-                Cerrar
-              </button>
+                <button
+                  onClick={() => handleDeleteOrder(selectedOrderDetails)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-950/60 border border-rose-800/60 text-rose-400 hover:bg-rose-900/60 text-xs font-semibold transition"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Eliminar</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {selectedOrderDetails.voucher_url && (
+                  <button
+                    onClick={() => {
+                      const url = selectedOrderDetails.voucher_url;
+                      setSelectedOrderDetails(null);
+                      setSelectedVoucherUrl(url);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-emerald-950/60 border border-emerald-800/60 text-emerald-400 hover:bg-emerald-900/60 text-xs font-medium transition"
+                  >
+                    Ver Voucher
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedOrderDetails(null)}
+                  className="px-4 py-2 rounded-xl bg-neutral-800 text-neutral-300 hover:text-white text-xs font-medium"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
         </div>
