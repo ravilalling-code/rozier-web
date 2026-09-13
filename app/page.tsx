@@ -19,7 +19,9 @@ import {
   Flower2,
   Clock,
   ExternalLink,
+  Lock,
 } from 'lucide-react';
+import { formatLocalDate } from '@/lib/format';
 import ChatBot from '@/components/ChatBot';
 
 const WHATSAPP_NUMBER = '51924257784';
@@ -60,6 +62,13 @@ export default function HomePage() {
     fetchCatalogAndCategories();
   }, []);
 
+  // Píldoras de categorías dinámicas: sólo aquellas con productos activos en Supabase
+  const activeCategories = categories.filter((cat) =>
+    products.some(
+      (p) => (p.category || '').toLowerCase().trim() === cat.slug.toLowerCase().trim()
+    )
+  );
+
   const filteredProducts =
     category === 'todos'
       ? products
@@ -77,7 +86,7 @@ export default function HomePage() {
       `📦 *Arreglo:* ${selectedProduct.name}`,
       `💰 *Precio:* S/ ${finalPrice.toFixed(2)}`,
       deliveryDate
-        ? `📅 *Fecha de entrega:* ${deliveryDate}`
+        ? `📅 *Fecha de entrega:* ${formatLocalDate(deliveryDate)}`
         : `📅 *Fecha de entrega:* Lo antes posible / Hoy`,
       dedication.trim()
         ? `✍️ *Dedicatoria:* "${dedication.trim()}"`
@@ -128,10 +137,20 @@ export default function HomePage() {
               <MessageCircle className="w-4 h-4 fill-white/20" />
               <span>Consultar</span>
             </a>
+
+            {/* Acceso Administrativo Elegante */}
+            <Link
+              href="/admin/login"
+              className="p-2 text-stone-400 hover:text-stone-800 hover:bg-stone-100 rounded-full transition"
+              title="Panel Administrativo"
+              aria-label="Acceso al Panel Administrativo"
+            >
+              <Lock className="w-4 h-4" />
+            </Link>
           </div>
         </div>
 
-        {/* Pestañas Dinámicas de Categoría desde Supabase */}
+        {/* Pestañas Dinámicas de Categoría desde Supabase con productos activos */}
         <div className="border-t border-stone-100">
           <div className="max-w-5xl mx-auto px-4 py-2.5 flex gap-2 overflow-x-auto no-scrollbar text-xs">
             {/* Pestaña "Todos" */}
@@ -146,8 +165,8 @@ export default function HomePage() {
               Todos
             </button>
 
-            {/* Pestañas Dinámicas conectadas a public.categories */}
-            {categories.map((tab) => {
+            {/* Pestañas Dinámicas conectadas a public.categories con productos activos */}
+            {activeCategories.map((tab) => {
               const isActive = category.toLowerCase() === tab.slug.toLowerCase();
               return (
                 <button

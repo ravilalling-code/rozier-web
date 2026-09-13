@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
 import { supabase } from '@/lib/supabase';
+import { formatLocalDate } from '@/lib/format';
 
 const WHATSAPP_NUMBER = '51924257784';
 
@@ -412,6 +413,8 @@ Reglas estrictas de conversación:
         }
 
         // Generar enlace preformateado para WhatsApp con datos del comprador y entrega
+        const displayDeliveryDate = formatLocalDate(sqlDeliveryDate);
+
         const waLines = [
           `¡Hola *PETALIA*! 🌸 Acabo de generar mi pedido con su Asesora Virtual:`,
           ``,
@@ -420,7 +423,7 @@ Reglas estrictas de conversación:
           `💰 *Monto a pagar:* S/ ${finalAmount.toFixed(2)}`,
           `🎁 *Destinatario:* ${recipient}`,
           `📍 *Dirección de entrega:* ${args.delivery_address}`,
-          `📅 *Fecha de entrega:* ${sqlDeliveryDate}`,
+          `📅 *Fecha de entrega:* ${displayDeliveryDate}`,
           userDedication !== 'Sin dedicatoria'
             ? `✍️ *Dedicatoria:* "${userDedication}"`
             : `✍️ *Dedicatoria:* Sin dedicatoria por ahora`,
@@ -434,7 +437,7 @@ Reglas estrictas de conversación:
         )}`;
 
         return NextResponse.json({
-          text: `¡Qué gran elección, **${buyerName}**! He registrado formalmente tu pedido de **${args.product_name}** en nuestro sistema con estado **Pendiente de pago**. 🌸\n\nPara que nuestro taller comience con la preparación de tus flores frescas y confirme la ruta de entrega, por favor envía la constancia de tu ${sqlPaymentMethod.toUpperCase()} haciendo clic en el botón de WhatsApp a continuación:`,
+          text: `¡Qué gran elección, **${buyerName}**! He registrado formalmente tu pedido de **${args.product_name}** en nuestro sistema para el **${displayDeliveryDate}** con estado **Pendiente de pago**. 🌸\n\nPara que nuestro taller comience con la preparación de tus flores frescas y confirme la ruta de entrega, por favor envía la constancia de tu ${sqlPaymentMethod.toUpperCase()} haciendo clic en el botón de WhatsApp a continuación:`,
           orderCreated: {
             id: newOrder?.id,
             product_name: args.product_name,
@@ -442,7 +445,7 @@ Reglas estrictas de conversación:
             recipient_name: recipient,
             phone: cleanPhone,
             delivery_address: args.delivery_address,
-            delivery_date: sqlDeliveryDate,
+            delivery_date: displayDeliveryDate,
             dedication_message: userDedication,
             amount: finalAmount,
             payment_method: sqlPaymentMethod,

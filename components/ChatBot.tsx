@@ -16,6 +16,7 @@ import {
   RefreshCw,
   Gift,
 } from 'lucide-react';
+import { formatLocalDate } from '@/lib/format';
 
 interface OrderCreatedData {
   id?: string;
@@ -305,7 +306,7 @@ export default function ChatBot() {
                           <div className="flex justify-between items-baseline">
                             <span className="text-stone-500">Fecha entrega:</span>
                             <span className="font-medium text-stone-800">
-                              {msg.orderCreated.delivery_date}
+                              {formatLocalDate(msg.orderCreated.delivery_date)}
                             </span>
                           </div>
                           <div className="flex justify-between items-baseline">

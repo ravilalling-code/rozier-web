@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Order, OrderStatus, OCRResult } from '@/lib/types';
+import { formatLocalDate, formatLocalDateTime } from '@/lib/format';
 import {
   Plus,
   Search,
@@ -373,28 +374,85 @@ export default function AdminOrdersPage() {
     setOcrErrorMessage(null);
   };
 
-  // Actualizar estado rápido del pedido
-  const handleUpdateStatus = async (orderId: string, nextStatus: OrderStatus) => {
-    const normalizedStatus = nextStatus.toLowerCase() as OrderStatus;
+  // Actualizar estado rápido del pedido con validación estricta y sincronización dual
+  const handleUpdateStatus = async (orderId: string, nextStatus: string) => {
+    // Normalizar estrictamente a minúsculas para cumplir con el check constraint "orders_status_check"
+    const raw = (nextStatus || '').toString().toLowerCase().trim().replace(/\s+/g, '_');
+    const validStatusMap: Record<string, OrderStatus> = {
+      pendiente: 'pendiente',
+      confirmado: 'confirmado',
+      en_taller: 'en_taller',
+      entregado: 'entregado',
+    };
+    const normalizedStatus: OrderStatus = validStatusMap[raw] || 'pendiente';
 
-    // Optimistic update
+    // Guardar estado previo para rollback en caso de fallo
+    const previousOrder = orders.find((o) => o.id === orderId);
+    const previousStatus = (previousOrder?.status || 'pendiente').toLowerCase() as OrderStatus;
+
+    if (previousStatus === normalizedStatus && previousOrder) return;
+
+    // 1. Actualización optimista inmediata en la interfaz
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status: normalizedStatus } : o))
     );
+    if (selectedOrderDetails?.id === orderId) {
+      setSelectedOrderDetails((prev) => (prev ? { ...prev, status: normalizedStatus } : null));
+    }
 
     try {
-      const { error } = await supabase
+      // 2. Intentar actualizar directamente en Supabase con .select() para confirmar persistencia
+      console.log(`📡 [Orders] Actualizando pedido ${orderId} a estado "${normalizedStatus}"...`);
+      const { data, error } = await supabase
         .from('orders')
         .update({ status: normalizedStatus })
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .select();
 
       if (error) {
-        console.error('Error actualizando estado en Supabase:', error);
-        fetchOrders();
-        alert('Error al actualizar estado: ' + error.message);
+        console.error('❌ Error devuelto por Supabase en update directo:', error);
+
+        // Fallback inmediato a ruta API del servidor
+        console.log('🔄 Intentando fallback mediante ruta API /api/admin/orders/status...');
+        const apiRes = await fetch('/api/admin/orders/status', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId, status: normalizedStatus }),
+        });
+        const apiData = await apiRes.json();
+
+        if (!apiRes.ok || !apiData.success) {
+          throw new Error(apiData.error || error.message || 'Error al persistir el estado');
+        } else {
+          console.log('✅ Fallback API exitoso:', apiData.order);
+        }
+      } else if (!data || data.length === 0) {
+        console.warn('⚠️ Supabase no reportó filas actualizadas directamente. Invocando API...');
+        const apiRes = await fetch('/api/admin/orders/status', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId, status: normalizedStatus }),
+        });
+        const apiData = await apiRes.json();
+
+        if (!apiRes.ok || !apiData.success) {
+          throw new Error('No se pudo modificar el pedido en la base de datos (0 filas afectadas)');
+        }
+      } else {
+        console.log(`✅ Estado actualizado con éxito a "${normalizedStatus}" en Supabase:`, data[0]);
       }
-    } catch (e) {
-      fetchOrders();
+    } catch (err: any) {
+      console.error('❌ Error crítico al actualizar estado del pedido:', err);
+      // Revertir el estado local
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: previousStatus } : o))
+      );
+      if (selectedOrderDetails?.id === orderId) {
+        setSelectedOrderDetails((prev) => (prev ? { ...prev, status: previousStatus } : null));
+      }
+      alert(
+        `Error al guardar el nuevo estado:\n${err?.message || err}\n\nEl pedido se restauró a "${previousStatus}".`
+      );
     }
   };
 
@@ -627,12 +685,7 @@ export default function AdminOrdersPage() {
                       <p className="text-xs text-neutral-400 mt-0.5">
                         Registrado:{' '}
                         {order.created_at
-                          ? new Date(order.created_at).toLocaleDateString('es-PE', {
-                              day: '2-digit',
-                              month: 'short',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
+                          ? formatLocalDateTime(order.created_at)
                           : 'Reciente'}
                       </p>
                     </div>
@@ -688,7 +741,7 @@ export default function AdminOrdersPage() {
                     {order.customer?.anniversary_date && (
                       <div className="flex items-center gap-1 text-[11px] text-pink-400 pt-1">
                         <Heart className="w-3 h-3" />
-                        <span>Aniversario: {order.customer.anniversary_date}</span>
+                        <span>Aniversario: {formatLocalDate(order.customer.anniversary_date)}</span>
                       </div>
                     )}
                   </div>
@@ -703,7 +756,7 @@ export default function AdminOrdersPage() {
                     </p>
                     <div className="flex items-center gap-1.5 text-neutral-300">
                       <Calendar className="w-3.5 h-3.5 text-neutral-500" />
-                      <span>{order.delivery_date || 'Fecha no fijada'}</span>
+                      <span>{formatLocalDate(order.delivery_date)}</span>
                     </div>
                     {order.delivery_address && (
                       <div className="flex items-start gap-1.5 text-neutral-400 line-clamp-1">
@@ -1144,7 +1197,7 @@ export default function AdminOrdersPage() {
                       </div>
                       {selectedOrderDetails.customer?.anniversary_date && (
                         <p className="text-pink-400">
-                          Aniversario / Cumpleaños: {selectedOrderDetails.customer.anniversary_date}
+                          Aniversario / Cumpleaños: {formatLocalDate(selectedOrderDetails.customer.anniversary_date)}
                         </p>
                       )}
                       {selectedOrderDetails.customer?.notes && (
@@ -1158,7 +1211,7 @@ export default function AdminOrdersPage() {
                         {modalHelper.cleanRecipient || 'Mismo cliente'}
                       </p>
                       <p className="text-neutral-400">
-                        Fecha: {selectedOrderDetails.delivery_date || 'No definida'}
+                        Fecha: {formatLocalDate(selectedOrderDetails.delivery_date)}
                       </p>
                       <p className="text-neutral-400">
                         Dirección: {selectedOrderDetails.delivery_address || 'Entrega en taller'}
@@ -1201,6 +1254,33 @@ export default function AdminOrdersPage() {
                     N° Operación: {selectedOrderDetails.operation_number}
                   </p>
                 )}
+              </div>
+
+              <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-2">
+                <span className="text-neutral-500 font-medium">Estado Actual del Pedido:</span>
+                <div className="flex items-center justify-between gap-2">
+                  {(() => {
+                    const mStatus = (selectedOrderDetails.status || 'pendiente').toLowerCase() as OrderStatus;
+                    const mCfg = STATUS_CONFIG[mStatus] || STATUS_CONFIG.pendiente;
+                    const MIcon = mCfg.icon;
+                    return (
+                      <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${mCfg.bg} ${mCfg.text} ${mCfg.border}`}>
+                        <MIcon className="w-3.5 h-3.5" />
+                        <span>{mCfg.label}</span>
+                      </div>
+                    );
+                  })()}
+                  <select
+                    value={(selectedOrderDetails.status || 'pendiente').toLowerCase()}
+                    onChange={(e) => handleUpdateStatus(selectedOrderDetails.id, e.target.value)}
+                    className="bg-neutral-800 text-neutral-200 text-xs rounded-xl px-3 py-1.5 border border-neutral-700 focus:outline-none focus:border-rose-500 transition cursor-pointer font-medium"
+                  >
+                    <option value="pendiente">Marcar Pendiente</option>
+                    <option value="confirmado">Marcar Confirmado</option>
+                    <option value="en_taller">Pasar a Taller</option>
+                    <option value="entregado">Marcar Entregado</option>
+                  </select>
+                </div>
               </div>
             </div>
 

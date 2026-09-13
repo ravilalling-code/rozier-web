@@ -6,6 +6,7 @@ import { Product, Category } from '@/lib/types';
 import {
   getCategories,
   addCategory,
+  updateCategory,
   deleteCategory,
 } from '@/lib/categories';
 import {
@@ -70,6 +71,8 @@ export default function AdminProductsPage() {
   // MODAL GESTIÓN DE CATEGORÍAS (SUPABASE TABLE)
   const [isCategoriesModalOpen, setIsCategoriesModalOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState('');
   const [categoryActionLoading, setCategoryActionLoading] = useState(false);
   const [categoryModalError, setCategoryModalError] = useState<string | null>(null);
 
@@ -383,19 +386,74 @@ export default function AdminProductsPage() {
     }
   };
 
-  // 6. ELIMINAR CATEGORÍA DIRECTO EN SUPABASE
+  // 6. EDITAR / RENOMBRAR CATEGORÍA DIRECTO EN SUPABASE
+  const handleStartEditCategory = (cat: Category) => {
+    setEditingCategoryId(cat.id);
+    setEditingCategoryName(cat.name);
+    setCategoryModalError(null);
+  };
+
+  const handleSaveEditCategory = async (cat: Category) => {
+    const clean = editingCategoryName.trim();
+    if (!clean) {
+      setCategoryModalError('El nombre de la categoría no puede estar vacío.');
+      return;
+    }
+    if (clean === cat.name) {
+      setEditingCategoryId(null);
+      return;
+    }
+
+    setCategoryActionLoading(true);
+    setCategoryModalError(null);
+
+    try {
+      const updatedCat = await updateCategory(cat.id, clean, undefined, cat.slug);
+
+      setCategories((prev) =>
+        prev.map((c) => (c.id === cat.id ? updatedCat : c))
+      );
+
+      // Si el slug cambió, actualizar también los productos en el estado local
+      if (updatedCat.slug !== cat.slug) {
+        setProducts((prev) =>
+          prev.map((p) =>
+            (p.category || '').toLowerCase() === cat.slug.toLowerCase()
+              ? { ...p, category: updatedCat.slug }
+              : p
+          )
+        );
+        if (filterCategory === cat.slug) {
+          setFilterCategory(updatedCat.slug);
+        }
+      }
+
+      setEditingCategoryId(null);
+      setEditingCategoryName('');
+      showToast(`Categoría renombrada a "${updatedCat.name}"`);
+    } catch (err: any) {
+      console.error('Error renombrando categoría:', err);
+      setCategoryModalError(err.message || 'Error al actualizar categoría en Supabase.');
+    } finally {
+      setCategoryActionLoading(false);
+    }
+  };
+
+  // 7. ELIMINAR CATEGORÍA DIRECTO EN SUPABASE CON VALIDACIÓN
   const handleDeleteCategory = async (cat: Category) => {
     const assignedCount = products.filter(
       (p) => (p.category || '').toLowerCase() === cat.slug.toLowerCase()
     ).length;
 
-    const confirmMsg = assignedCount > 0
-      ? `La categoría "${cat.name}" tiene ${assignedCount} arreglo(s) asignado(s). ¿Estás seguro de que deseas eliminarla permanentemente de la base de datos y de la tienda web?`
-      : `¿Eliminar permanentemente la categoría "${cat.name}" de Supabase?`;
+    const confirmMsg =
+      assignedCount > 0
+        ? `⚠️ ATENCIÓN: La categoría "${cat.name}" tiene ${assignedCount} arreglo(s) asociado(s).\n\nSi la eliminas, esos arreglos deberán ser trasladados a otra categoría activa. ¿Estás seguro de eliminarla permanentemente de la base de datos?`
+        : `¿Eliminar permanentemente la categoría "${cat.name}" de Supabase?`;
 
     if (!window.confirm(confirmMsg)) return;
 
     setCategoryActionLoading(true);
+    setCategoryModalError(null);
     try {
       await deleteCategory(cat.id);
       setCategories((prev) => prev.filter((c) => c.id !== cat.id));
@@ -407,9 +465,40 @@ export default function AdminProductsPage() {
       showToast(`Categoría "${cat.name}" eliminada de Supabase`);
     } catch (err: any) {
       console.error('Error eliminando categoría:', err);
+      setCategoryModalError('Error al eliminar categoría: ' + (err.message || err));
       showToast('Error al eliminar categoría: ' + err.message, 'error');
     } finally {
       setCategoryActionLoading(false);
+    }
+  };
+
+  // 8. TRASLADAR / MOVER PRODUCTO RÁPIDAMENTE DE CATEGORÍA
+  const handleQuickChangeCategory = async (productId: string, newSlug: string) => {
+    const product = products.find((p) => p.id === productId);
+    if (!product || product.category === newSlug) return;
+    const oldSlug = product.category;
+
+    // Actualización optimista inmediata
+    setProducts((prev) =>
+      prev.map((p) => (p.id === productId ? { ...p, category: newSlug } : p))
+    );
+
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ category: newSlug })
+        .eq('id', productId);
+
+      if (error) throw error;
+      const catDisplayName = getCategoryDisplayName(newSlug);
+      showToast(`Arreglo movido a "${catDisplayName}"`);
+    } catch (err: any) {
+      console.error('Error al mover de categoría:', err);
+      // Revertir estado local
+      setProducts((prev) =>
+        prev.map((p) => (p.id === productId ? { ...p, category: oldSlug } : p))
+      );
+      showToast('Error al mover de categoría: ' + (err.message || err), 'error');
     }
   };
 
@@ -483,6 +572,19 @@ export default function AdminProductsPage() {
           >
             <Tags className="w-4 h-4 text-rose-400" />
             <span>Categorías ({categories.length})</span>
+          </button>
+
+          {/* Botón Simple Nueva Categoría */}
+          <button
+            onClick={() => {
+              setNewCategoryName('');
+              setCategoryModalError(null);
+              setIsCategoriesModalOpen(true);
+            }}
+            className="flex items-center gap-1.5 bg-neutral-900 border border-rose-800/70 hover:bg-rose-950/40 text-rose-300 font-medium px-3.5 py-2.5 rounded-xl transition text-sm shadow-sm"
+          >
+            <Plus className="w-4 h-4 text-rose-400" />
+            <span>Nueva Categoría</span>
           </button>
 
           {/* Botón Crear Arreglo */}
@@ -655,6 +757,26 @@ export default function AdminProductsPage() {
                     <p className="text-xs text-neutral-400 line-clamp-2 mt-1">
                       {product.description || 'Sin descripción especificada'}
                     </p>
+                  </div>
+
+                  {/* Selector de categoría rápido para mover arreglo */}
+                  <div className="pt-2 border-t border-neutral-800/60 flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-neutral-400 font-medium flex items-center gap-1">
+                      <Tag className="w-3 h-3 text-rose-400 flex-shrink-0" />
+                      <span>Categoría:</span>
+                    </span>
+                    <select
+                      value={(product.category || '').toLowerCase()}
+                      onChange={(e) => handleQuickChangeCategory(product.id, e.target.value)}
+                      className="bg-neutral-950 border border-neutral-800 hover:border-neutral-700 text-neutral-200 text-xs rounded-xl px-2.5 py-1 focus:outline-none focus:border-rose-500 transition cursor-pointer max-w-[140px] truncate"
+                      title="Mover arreglo a otra categoría"
+                    >
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.slug.toLowerCase()}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Precios & Botones de Acción */}
@@ -1147,34 +1269,90 @@ export default function AdminProductsPage() {
                   const productCount = products.filter(
                     (p) => (p.category || '').toLowerCase() === cat.slug.toLowerCase()
                   ).length;
+                  const isEditingThis = editingCategoryId === cat.id;
 
                   return (
                     <div
                       key={cat.id}
-                      className="flex items-center justify-between p-3 rounded-xl bg-neutral-950 border border-neutral-800/80 hover:border-neutral-700 transition"
+                      className="p-3 rounded-xl bg-neutral-950 border border-neutral-800/80 hover:border-neutral-700 transition"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <Tag className="w-3.5 h-3.5 text-rose-400" />
-                        <div>
-                          <span className="text-sm font-medium text-white">{cat.name}</span>
-                          <span className="text-[11px] text-neutral-500 font-mono ml-2">
-                            ({cat.slug})
-                          </span>
+                      {isEditingThis ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={editingCategoryName}
+                            onChange={(e) => setEditingCategoryName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleSaveEditCategory(cat);
+                              } else if (e.key === 'Escape') {
+                                setEditingCategoryId(null);
+                              }
+                            }}
+                            autoFocus
+                            placeholder="Nombre de la categoría"
+                            className="flex-1 bg-neutral-900 border border-rose-500 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleSaveEditCategory(cat)}
+                            disabled={categoryActionLoading || !editingCategoryName.trim()}
+                            className="p-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition disabled:opacity-50"
+                            title="Guardar nombre"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingCategoryId(null)}
+                            disabled={categoryActionLoading}
+                            className="p-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white rounded-lg transition"
+                            title="Cancelar"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
                         </div>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400">
-                          {productCount} {productCount === 1 ? 'arreglo' : 'arreglos'}
-                        </span>
-                      </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <Tag className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" />
+                            <div className="truncate">
+                              <span className="text-sm font-medium text-white">{cat.name}</span>
+                              <span className="text-[11px] text-neutral-500 font-mono ml-2">
+                                ({cat.slug})
+                              </span>
+                            </div>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 flex-shrink-0">
+                              {productCount} {productCount === 1 ? 'arreglo' : 'arreglos'}
+                            </span>
+                          </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteCategory(cat)}
-                        disabled={categoryActionLoading}
-                        className="p-1.5 text-neutral-500 hover:text-rose-400 hover:bg-neutral-800 rounded-lg transition disabled:opacity-50"
-                        title={`Eliminar categoría ${cat.name}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {/* Botón Renombrar Categoría */}
+                            <button
+                              type="button"
+                              onClick={() => handleStartEditCategory(cat)}
+                              disabled={categoryActionLoading}
+                              className="p-1.5 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded-lg transition"
+                              title={`Renombrar categoría ${cat.name}`}
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Botón Eliminar Categoría */}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCategory(cat)}
+                              disabled={categoryActionLoading}
+                              className="p-1.5 text-neutral-500 hover:text-rose-400 hover:bg-neutral-800 rounded-lg transition disabled:opacity-50"
+                              title={`Eliminar categoría ${cat.name}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
