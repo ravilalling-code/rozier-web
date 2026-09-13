@@ -26,7 +26,14 @@ export interface Customer {
   created_at?: string;
 }
 
-export type OrderStatus = 'pendiente' | 'confirmado' | 'en_taller' | 'entregado';
+export type OrderStatus =
+  | 'pendiente'
+  | 'confirmado'
+  | 'en_preparacion'
+  | 'en_taller'
+  | 'en_despacho'
+  | 'entregado'
+  | 'cancelado';
 
 export interface Order {
   id: string;
@@ -42,8 +49,18 @@ export interface Order {
   delivery_address: string | null;
   dedication_message: string | null;
   status: OrderStatus;
+  tracking_code?: string | null;
   created_at?: string;
   customer?: Customer | null;
+}
+
+export interface StoreSettings {
+  id: number;
+  facebook_url: string;
+  instagram_url: string;
+  tiktok_url: string;
+  whatsapp_number: string;
+  updated_at?: string;
 }
 
 export type ExpenseCategory =

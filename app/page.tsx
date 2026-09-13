@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Product, Category } from '@/lib/types';
+import { Product, Category, Order, OrderStatus, StoreSettings } from '@/lib/types';
 import { getCategories } from '@/lib/categories';
+import { getStoreSettings } from '@/lib/settings';
 import {
   MessageCircle,
   Heart,
@@ -20,6 +21,14 @@ import {
   Clock,
   ExternalLink,
   Lock,
+  Search,
+  Package,
+  CheckCircle2,
+  Hammer,
+  Check,
+  MapPin,
+  Loader2,
+  DollarSign,
 } from 'lucide-react';
 import { formatLocalDate } from '@/lib/format';
 import ChatBot from '@/components/ChatBot';
@@ -35,23 +44,37 @@ export default function HomePage() {
   const [deliveryDate, setDeliveryDate] = useState('');
   const [dedication, setDedication] = useState('');
 
+  // Estados de Rastreo de Pedido (Tracking)
+  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
+  const [trackingInput, setTrackingInput] = useState('');
+  const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [trackingError, setTrackingError] = useState<string | null>(null);
+
+  // Ajustes de la tienda (Redes sociales y WhatsApp)
+  const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
+
   useEffect(() => {
     const fetchCatalogAndCategories = async () => {
       setLoading(true);
       try {
-        const [prodsRes, catsData] = await Promise.all([
+        const [prodsRes, catsData, settingsData] = await Promise.all([
           supabase
             .from('products')
             .select('*')
             .eq('is_active', true)
             .order('created_at', { ascending: false }),
           getCategories(),
+          getStoreSettings(),
         ]);
 
         if (!prodsRes.error && prodsRes.data) {
           setProducts(prodsRes.data as Product[]);
         }
         setCategories(catsData);
+        if (settingsData) {
+          setStoreSettings(settingsData);
+        }
       } catch (err) {
         console.error('Error cargando catálogo:', err);
       } finally {
@@ -60,7 +83,52 @@ export default function HomePage() {
     };
 
     fetchCatalogAndCategories();
+
+    // Soportar lectura directa por URL (?track=CODIGO)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const trackParam = params.get('track');
+      if (trackParam) {
+        const cleanTrack = trackParam.trim().toUpperCase();
+        setTrackingInput(cleanTrack);
+        setIsTrackingModalOpen(true);
+        lookupTrackingOrder(cleanTrack);
+      }
+    }
   }, []);
+
+  // Función para consultar estado del pedido en tiempo real
+  const lookupTrackingOrder = async (codeToSearch: string) => {
+    const clean = codeToSearch.trim().toUpperCase();
+    if (!clean) return;
+
+    setTrackingLoading(true);
+    setTrackingError(null);
+
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, customer:customers(*)')
+        .ilike('tracking_code', clean)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        setTrackingOrder(null);
+        setTrackingError(
+          `No encontramos ningún pedido registrado con el código "${clean}". Por favor verifica el número o escríbenos por WhatsApp.`
+        );
+      } else {
+        setTrackingOrder(data as Order);
+      }
+    } catch (err: any) {
+      console.error('Error consultando pedido por tracking:', err);
+      setTrackingError('Ocurrió un error al consultar el pedido. Intenta nuevamente.');
+    } finally {
+      setTrackingLoading(false);
+    }
+  };
 
   // Píldoras de categorías dinámicas: sólo aquellas con productos activos en Supabase
   const activeCategories = categories.filter((cat) =>
@@ -126,16 +194,31 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Botón de Rastreo de Pedido */}
+            <button
+              onClick={() => {
+                setTrackingError(null);
+                setIsTrackingModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 px-3 py-1.5 rounded-full text-xs font-semibold transition active:scale-95 border border-stone-200"
+              title="Rastrear estado de pedido en vivo"
+            >
+              <Truck className="w-3.5 h-3.5 text-rose-600" />
+              <span className="hidden sm:inline">Rastrea tu pedido</span>
+              <span className="sm:hidden">Rastrear</span>
+            </button>
+
+            {/* Botón WhatsApp de Atención Directa */}
             <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-                '¡Hola PETALIA! Deseo consultar sobre su catálogo de flores y detalles 🌸'
+              href={`https://wa.me/${storeSettings?.whatsapp_number || WHATSAPP_NUMBER}?text=${encodeURIComponent(
+                '¡Hola PETALIA! Deseo realizar una consulta sobre flores y pedidos 🌸'
               )}`}
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-sm transition active:scale-95"
             >
               <MessageCircle className="w-4 h-4 fill-white/20" />
-              <span>Consultar</span>
+              <span>WhatsApp</span>
             </a>
 
             {/* Acceso Administrativo Elegante */}
@@ -424,15 +507,15 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Botón Flotante Permanente de WhatsApp (Esquina inferior izquierda) */}
+      {/* Botón Flotante Permanente de WhatsApp (Ubicado ARRIBA de la burbuja de la Asesora Virtual para no taparse) */}
       <a
-        href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+        href={`https://wa.me/${storeSettings?.whatsapp_number || WHATSAPP_NUMBER}?text=${encodeURIComponent(
           '¡Hola PETALIA! Deseo realizar una consulta sobre un arreglo floral 🌸'
         )}`}
         target="_blank"
         rel="noreferrer"
-        className="fixed bottom-5 left-5 z-40 bg-emerald-600 hover:bg-emerald-500 text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition transform hover:scale-105 active:scale-95 group"
-        title="Consultar por WhatsApp"
+        className="fixed bottom-24 right-5 z-40 bg-emerald-600 hover:bg-emerald-500 text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition transform hover:scale-105 active:scale-95 group shadow-emerald-950/20 border border-emerald-500/40"
+        title="Consultar al WhatsApp de PETALIA"
       >
         <MessageCircle className="w-6 h-6 fill-white/20" />
         <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out text-xs font-semibold pl-0 group-hover:pl-2">
@@ -443,15 +526,290 @@ export default function HomePage() {
       {/* Asistente Virtual Inteligente (Chatbot IA - Esquina inferior derecha) */}
       <ChatBot />
 
-      {/* Footer Minimalista */}
-      <footer className="mt-16 border-t border-stone-200 bg-white py-8 px-4 text-center text-xs text-stone-500 space-y-3">
+      {/* MODAL: Rastreo de Pedido en Tiempo Real */}
+      {isTrackingModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-stone-200 max-w-lg w-full rounded-3xl p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
+            {/* Header del Modal */}
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shadow-xs">
+                  <Truck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-stone-900">Rastrea tu Pedido</h3>
+                  <p className="text-xs text-stone-500">
+                    Sigue en vivo la preparación y despacho de tus flores
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsTrackingModalOpen(false)}
+                className="p-1.5 text-stone-400 hover:text-stone-800 rounded-xl hover:bg-stone-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Buscador de Código */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                lookupTrackingOrder(trackingInput);
+              }}
+              className="flex gap-2"
+            >
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                <input
+                  type="text"
+                  value={trackingInput}
+                  onChange={(e) => setTrackingInput(e.target.value.toUpperCase())}
+                  placeholder="Ingresa tu código (ej: PET-8492)"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-stone-900 font-mono uppercase placeholder:font-sans focus:outline-none focus:border-stone-800 focus:bg-white transition"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={trackingLoading || !trackingInput.trim()}
+                className="px-4 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold shadow transition disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {trackingLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <span>Buscar</span>
+                )}
+              </button>
+            </form>
+
+            {/* Mensaje de Error */}
+            {trackingError && (
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-xs text-rose-700 space-y-1">
+                <p className="font-semibold">No se encontró el pedido</p>
+                <p className="text-[11px]">{trackingError}</p>
+                <div className="pt-2">
+                  <a
+                    href={`https://wa.me/${storeSettings?.whatsapp_number || WHATSAPP_NUMBER}?text=${encodeURIComponent(
+                      `¡Hola PETALIA! Deseo consultar sobre mi código de pedido: ${trackingInput}`
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:underline text-[11px]"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>Consultar por WhatsApp con una asesora</span>
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {/* Resultados y Línea de Tiempo del Pedido */}
+            {trackingOrder && (
+              <div className="space-y-5 animate-in fade-in duration-200">
+                {/* Código y Estado Destacado */}
+                <div className="bg-stone-50 border border-stone-200/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-stone-400">
+                      Código de Seguimiento
+                    </span>
+                    <p className="text-lg font-bold font-mono text-stone-900">
+                      {trackingOrder.tracking_code || 'PET-TALLER'}
+                    </p>
+                    <p className="text-xs text-stone-500 mt-0.5">
+                      Fecha programada: {formatLocalDate(trackingOrder.delivery_date)}
+                    </p>
+                  </div>
+
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-100/80 text-rose-800 border border-rose-200 self-start sm:self-auto">
+                    <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
+                    <span className="capitalize">
+                      {trackingOrder.status === 'en_taller' ? 'En Preparación' : trackingOrder.status}
+                    </span>
+                  </div>
+                </div>
+
+                {/* LÍNEA DE TIEMPO VISUAL (5 ETAPAS) */}
+                <div className="bg-white border border-stone-200/80 rounded-2xl p-4 space-y-4 shadow-xs">
+                  <h4 className="text-xs font-bold text-stone-800 uppercase tracking-wider">
+                    Línea de Tiempo del Arreglo
+                  </h4>
+
+                  {(() => {
+                    const normStatus = (trackingOrder.status || 'pendiente').toLowerCase();
+                    const getRank = (st: string) => {
+                      if (st === 'pendiente') return 1;
+                      if (st === 'confirmado') return 2;
+                      if (st === 'en_preparacion' || st === 'en_taller') return 3;
+                      if (st === 'en_despacho') return 4;
+                      if (st === 'entregado') return 5;
+                      return 1;
+                    };
+                    const currentRank = getRank(normStatus);
+
+                    const stages = [
+                      { rank: 1, label: 'Recibido', desc: 'Pedido registrado' },
+                      { rank: 2, label: 'Confirmado', desc: 'Pago validado' },
+                      { rank: 3, label: 'En Preparación', desc: 'Taller floral' },
+                      { rank: 4, label: 'En Despacho', desc: 'Chofer en camino' },
+                      { rank: 5, label: 'Entregado', desc: 'Entrega exitosa' },
+                    ];
+
+                    return (
+                      <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2.5 before:bottom-2.5 before:w-0.5 before:bg-stone-200">
+                        {stages.map((st) => {
+                          const isCompleted = currentRank > st.rank;
+                          const isCurrent = currentRank === st.rank;
+                          const isPending = currentRank < st.rank;
+
+                          return (
+                            <div key={st.rank} className="relative flex items-start gap-3">
+                              {/* Icono de Etapa */}
+                              <div
+                                className={`absolute -left-6 top-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition ${
+                                  isCompleted
+                                    ? 'bg-emerald-500 text-white ring-4 ring-emerald-50'
+                                    : isCurrent
+                                    ? 'bg-rose-600 text-white ring-4 ring-rose-100 animate-pulse'
+                                    : 'bg-stone-200 text-stone-500'
+                                }`}
+                              >
+                                {isCompleted ? (
+                                  <Check className="w-3 h-3 stroke-[3]" />
+                                ) : (
+                                  <span>{st.rank}</span>
+                                )}
+                              </div>
+
+                              <div>
+                                <p
+                                  className={`text-xs font-bold leading-none ${
+                                    isCurrent
+                                      ? 'text-rose-600'
+                                      : isCompleted
+                                      ? 'text-stone-900'
+                                      : 'text-stone-400'
+                                  }`}
+                                >
+                                  {st.label}
+                                </p>
+                                <p className="text-[11px] text-stone-500 mt-1">{st.desc}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Resumen del Arreglo y Destinatario */}
+                <div className="bg-stone-50 rounded-2xl p-4 border border-stone-200/80 space-y-2 text-xs">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-stone-500">Destinatario:</span>
+                    <span className="font-semibold text-stone-900">
+                      {trackingOrder.recipient_name?.split('[Comprador:')[0].split('(Cel:')[0].trim() || 'Cliente'}
+                    </span>
+                  </div>
+
+                  {trackingOrder.delivery_address && (
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-stone-500">Destino:</span>
+                      <span className="font-medium text-stone-800 text-right truncate max-w-[200px]">
+                        {trackingOrder.delivery_address}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-baseline pt-1 border-t border-stone-200/60">
+                    <span className="text-stone-500">Total del pedido:</span>
+                    <span className="font-bold text-stone-900 font-mono text-sm">
+                      S/ {Number(trackingOrder.total_amount).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Botón WhatsApp para consultas sobre este pedido */}
+                <a
+                  href={`https://wa.me/${storeSettings?.whatsapp_number || WHATSAPP_NUMBER}?text=${encodeURIComponent(
+                    `¡Hola PETALIA! 🌸 Deseo consultar sobre el estado de mi pedido con código ${trackingOrder.tracking_code || 'PET-TALLER'}.`
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-2xl shadow-md transition flex items-center justify-center gap-2 text-xs"
+                >
+                  <MessageCircle className="w-4 h-4 fill-white/20" />
+                  <span>Consultar por WhatsApp</span>
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Footer Minimalista con Redes Sociales Conectadas */}
+      <footer className="mt-16 border-t border-stone-200 bg-white py-10 px-4 text-center text-xs text-stone-500 space-y-4">
+        {/* Redes Sociales Dinámicas */}
+        <div className="flex items-center justify-center gap-4 text-stone-600">
+          {storeSettings?.instagram_url && (
+            <a
+              href={storeSettings.instagram_url}
+              target="_blank"
+              rel="noreferrer"
+              className="w-9 h-9 rounded-full bg-stone-100 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center transition"
+              title="Instagram de PETALIA"
+            >
+              <svg className="w-4 h-4 fill-currentColor" viewBox="0 0 24 24">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+              </svg>
+            </a>
+          )}
+
+          {storeSettings?.facebook_url && (
+            <a
+              href={storeSettings.facebook_url}
+              target="_blank"
+              rel="noreferrer"
+              className="w-9 h-9 rounded-full bg-stone-100 hover:bg-blue-50 hover:text-blue-600 flex items-center justify-center transition"
+              title="Facebook de PETALIA"
+            >
+              <svg className="w-4 h-4 fill-currentColor" viewBox="0 0 24 24">
+                <path d="M9 8H6v4h3v12h5V12h3.642L18 8h-4V6.333C14 5.374 14.5 5 15.667 5H18V0h-3.808C10.592 0 9 1.583 9 4.615V8z" />
+              </svg>
+            </a>
+          )}
+
+          {storeSettings?.tiktok_url && (
+            <a
+              href={storeSettings.tiktok_url}
+              target="_blank"
+              rel="noreferrer"
+              className="w-9 h-9 rounded-full bg-stone-100 hover:bg-stone-900 hover:text-white flex items-center justify-center transition"
+              title="TikTok de PETALIA"
+            >
+              <svg className="w-4 h-4 fill-currentColor" viewBox="0 0 24 24">
+                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-1.01v8.12c0 1.34-.33 2.69-.99 3.86-.96 1.7-2.6 2.94-4.52 3.44-1.39.37-2.88.33-4.24-.13-2.02-.68-3.69-2.19-4.57-4.14-.88-1.94-.85-4.22.09-6.14.93-1.92 2.62-3.4 4.65-4.08 1.19-.4 2.47-.49 3.71-.3v4.13c-.63-.16-1.3-.17-1.93-.03-.98.21-1.84.82-2.35 1.68-.52.86-.64 1.91-.34 2.88.3 1 .98 1.83 1.89 2.29.91.46 1.98.53 2.94.19.96-.34 1.71-1.12 2.06-2.09.21-.59.3-1.22.3-1.85V.02z" />
+              </svg>
+            </a>
+          )}
+
+          <a
+            href={`https://wa.me/${storeSettings?.whatsapp_number || WHATSAPP_NUMBER}`}
+            target="_blank"
+            rel="noreferrer"
+            className="w-9 h-9 rounded-full bg-stone-100 hover:bg-emerald-50 hover:text-emerald-600 flex items-center justify-center transition"
+            title="WhatsApp de PETALIA"
+          >
+            <MessageCircle className="w-4 h-4 fill-currentColor" />
+          </a>
+        </div>
+
         <div className="flex items-center justify-center gap-2">
           <span className="font-bold tracking-tight text-stone-800 text-sm">PETALIA</span>
           <span>•</span>
           <span>Diseño Floral & Decoraciones</span>
         </div>
         <p className="text-[11px] text-stone-400">
-          Taller floral en Lima, Perú • Pedidos y delivery coordinados por WhatsApp: +51 924 257 784
+          Taller floral en Lima, Perú • Pedidos y delivery coordinados por WhatsApp: +{storeSettings?.whatsapp_number || WHATSAPP_NUMBER}
         </p>
       </footer>
     </div>

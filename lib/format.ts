@@ -109,3 +109,11 @@ export function parseToSqlDate(rawDate?: string | null): string {
 
   return now.toISOString().split('T')[0];
 }
+
+/**
+ * Genera un código de rastreo único y legible para el cliente (ej: PET-8492)
+ */
+export function generateTrackingCode(): string {
+  const randomDigits = Math.floor(1000 + Math.random() * 9000);
+  return `PET-${randomDigits}`;
+}

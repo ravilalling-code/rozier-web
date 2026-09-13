@@ -20,6 +20,7 @@ import { formatLocalDate } from '@/lib/format';
 
 interface OrderCreatedData {
   id?: string;
+  tracking_code?: string;
   product_name: string;
   customer_name?: string;
   recipient_name: string;
@@ -41,10 +42,10 @@ interface Message {
 }
 
 const INITIAL_SUGGESTIONS = [
+  '🌸 Ver catálogo y elegir arreglo',
+  '🚚 Rastrear mi pedido',
   '🌹 Opciones para aniversario',
   '🎂 Arreglos para cumpleaños',
-  '🚚 ¿Tienen delivery hoy en Lima?',
-  '💳 ¿Cómo pagar con Yape o Plin?',
 ];
 
 export default function ChatBot() {
@@ -54,7 +55,7 @@ export default function ChatBot() {
       id: 'welcome',
       role: 'assistant',
       content:
-        '¡Hola! 🌸 Soy la asesora floral de **PETALIA**.\n\nEstoy aquí para ayudarte a elegir el arreglo ideal según tu ocasión especial, informarte sobre nuestras entregas en Lima y Callao, y coordinar tu pedido de inmediato.',
+        '¡Hola! 🌸 Soy la asesora floral de **PETALIA**.\n\nEstoy aquí para acompañarte en cada detalle. ¿Qué deseas hacer hoy?\n\n1️⃣ **🌸 Ver catálogo y elegir arreglo**\n2️⃣ **🚚 Rastrear mi pedido**\n\nCuéntame qué buscas o escribe tu código de seguimiento (ejemplo: **PET-8492**).',
       timestamp: 'Ahora',
     },
   ]);
@@ -275,6 +276,25 @@ export default function ChatBot() {
                             Pendiente de pago
                           </span>
                         </div>
+
+                        {msg.orderCreated.tracking_code && (
+                          <div className="flex justify-between items-center bg-rose-50/80 p-2 rounded-xl border border-rose-200/80 text-[11px]">
+                            <span className="text-stone-600 font-semibold flex items-center gap-1">
+                              <Truck className="w-3.5 h-3.5 text-rose-500" />
+                              Código de Seguimiento:
+                            </span>
+                            <a
+                              href={`/?track=${msg.orderCreated.tracking_code}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-mono font-bold text-rose-600 hover:underline flex items-center gap-1"
+                              title="Ver en rastreador web"
+                            >
+                              <span>{msg.orderCreated.tracking_code}</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                        )}
 
                         <div className="space-y-1.5 text-[11px] text-stone-700">
                           <div className="flex justify-between items-baseline">

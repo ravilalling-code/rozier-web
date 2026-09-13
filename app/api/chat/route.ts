@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
 import { supabase } from '@/lib/supabase';
-import { formatLocalDate } from '@/lib/format';
+import { formatLocalDate, generateTrackingCode } from '@/lib/format';
 
 const WHATSAPP_NUMBER = '51924257784';
 
@@ -115,9 +115,9 @@ export async function POST(req: NextRequest) {
           .join('\n')
       : 'Actualmente estamos preparando nuevos diseños florales en taller.';
 
-    // 2. System prompt con directiva imperativa de Function Calling
+    // 2. System prompt con directivas de Function Calling para pedidos y rastreo
     const systemInstruction = `Eres la asesora floral virtual y experta de "PETALIA diseño floral & decoraciones" en Lima, Perú.
-Tu personalidad es cálida, amable, educada, elegante y orientada a cerrar pedidos.
+Tu personalidad es cálida, amable, educada, elegante y orientada a brindar una excelente atención y cerrar pedidos.
 
 Contexto y políticas de PETALIA:
 - Ubicación: Taller floral en Lima, Perú.
@@ -129,24 +129,24 @@ Contexto y políticas de PETALIA:
 Catálogo de productos activos disponibles en taller:
 ${catalogText}
 
-Reglas estrictas de conversación:
-1. Recomienda EXCLUSIVAMENTE productos reales del catálogo anterior con sus nombres y precios exactos en Soles (S/).
-2. Orienta al cliente según la ocasión (aniversario, cumpleaños, perdón, condolencias, agradecimiento).
-3. Si el cliente decide pedir o confirma qué arreglo desea, DEBES SOLICITAR AMABLEMENTE LOS DATOS COMPLETOS:
+Rutas principales y reglas de conversación:
+1. RASTREO DE PEDIDOS: Si el cliente pregunta por el estado de su pedido o te da un código de rastreo (ej. PET-8492 o similar), DEBES OBLIGATORIAMENTE invocar la herramienta 'trackOrder' con el tracking_code indicado para consultar la base de datos de Supabase y explicarle con calidez en qué etapa exacta está su arreglo floral.
+2. RECOMENDACIÓN DE ARREGLOS: Si el cliente busca opciones, recomienda EXCLUSIVAMENTE productos reales del catálogo anterior con sus nombres y precios exactos en Soles (S/), orientándolo según la ocasión (aniversario, cumpleaños, perdón, condolencias).
+3. SI EL CLIENTE DECIDE COMPRAR: DEBES solicitar amablemente los datos completos:
    DATOS DEL COMPRADOR (Obligatorios):
-   - 1. Nombre completo del comprador (quien realiza la compra y el pago).
+   - 1. Nombre completo del comprador (quien realiza la compra).
    - 2. Teléfono o WhatsApp de contacto del comprador.
    DATOS DE ENTREGA:
-   - 3. Nombre del destinatario (a quién van dirigidas las flores, o si es para el mismo comprador).
+   - 3. Nombre del destinatario (a quién van dirigidas las flores).
    - 4. Dirección exacta y distrito de entrega en Lima o Callao.
    - 5. Fecha de entrega (ej: Hoy, Mañana o fecha específica).
-   - 6. Dedicatoria para la tarjeta de cortesía (o si prefiere sin dedicatoria).
+   - 6. Dedicatoria para la tarjeta de cortesía.
    - 7. Método de pago preferido (Yape, Plin o Transferencia).
 
-4. REGLA CRUCIAL DE CIERRE: En cuanto el cliente te proporcione o confirme estos datos (especialmente nombre y teléfono del comprador, destinatario, dirección, fecha y arreglo), DEBES OBLIGATORIAMENTE invocar la herramienta/función 'createOrder'. NO digas en texto plano "He registrado tu pedido" sin invocar 'createOrder', ya que la llamada a la herramienta es lo que guarda el pedido en la base de datos de PETALIA.
-5. Sé concisa y amigable, con viñetas limpias y emojis elegantes (🌸, 💐, ✨, 🌿, 🎁).`;
+4. REGLA CRUCIAL DE CIERRE: En cuanto el cliente te proporcione estos datos, DEBES OBLIGATORIAMENTE invocar la herramienta 'createOrder'. NO digas en texto plano "He registrado tu pedido" sin invocar 'createOrder'.
+5. Sé concisa, cálida y amigable, con viñetas limpias y emojis elegantes (🌸, 💐, ✨, 🌿, 🎁, 🚚).`;
 
-    // 3. Declaración formal de la función createOrder
+    // 3. Declaraciones formales de herramientas
     const createOrderDeclaration = {
       name: 'createOrder',
       description:
@@ -206,6 +206,22 @@ Reglas estrictas de conversación:
       },
     };
 
+    const trackOrderDeclaration = {
+      name: 'trackOrder',
+      description:
+        'Consulta el estado de un pedido en tiempo real cuando el cliente proporciona su código de rastreo (ej. PET-8492) o consulta por el seguimiento de su pedido.',
+      parameters: {
+        type: Type.OBJECT,
+        properties: {
+          tracking_code: {
+            type: Type.STRING,
+            description: 'El código de seguimiento del pedido, por ejemplo PET-8492',
+          },
+        },
+        required: ['tracking_code'],
+      },
+    };
+
     // 4. Formatear historial de mensajes
     const contents = messages.map((m: { role: string; content: string }) => ({
       role: m.role === 'assistant' ? 'model' : 'user',
@@ -214,45 +230,117 @@ Reglas estrictas de conversación:
 
     const ai = new GoogleGenAI({ apiKey });
 
-    // 5. Invocar modelo Gemini con fallback
+    // 5. Invocar modelo Gemini con herramientas
     let response: any;
+    const tools = [{ functionDeclarations: [createOrderDeclaration, trackOrderDeclaration] }];
+
     try {
       response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
+        model: 'gemini-2.5-flash',
         contents,
         config: {
           systemInstruction,
-          tools: [{ functionDeclarations: [createOrderDeclaration] }],
+          tools,
         },
       });
     } catch (genErr) {
-      console.warn('Error con gemini-3.6-flash en chat, probando gemini-2.5-flash...', genErr);
+      console.warn('Error con gemini-2.5-flash en chat, probando fallback...', genErr);
       try {
-        response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents,
-          config: {
-            systemInstruction,
-            tools: [{ functionDeclarations: [createOrderDeclaration] }],
-          },
-        });
-      } catch (fallbackErr) {
         response = await ai.models.generateContent({
           model: 'gemini-1.5-flash',
           contents,
           config: {
             systemInstruction,
-            tools: [{ functionDeclarations: [createOrderDeclaration] }],
+            tools,
+          },
+        });
+      } catch (fallbackErr) {
+        response = await ai.models.generateContent({
+          model: 'gemini-3.6-flash',
+          contents,
+          config: {
+            systemInstruction,
+            tools,
           },
         });
       }
     }
 
-    // 6. Procesar invocación de createOrder
+    // 6. Procesar invocación de herramientas (createOrder o trackOrder)
     const functionCalls = response.functionCalls;
 
     if (functionCalls && functionCalls.length > 0) {
       const call = functionCalls[0];
+
+      // HERRAMIENTA 1: Rastrear Pedido (trackOrder)
+      if (call.name === 'trackOrder') {
+        const { tracking_code } = (call.args || {}) as { tracking_code: string };
+        const cleanCode = (tracking_code || '').trim().toUpperCase();
+
+        console.log('🔍 Chatbot consultando rastreo para código:', cleanCode);
+
+        const { data: foundOrder, error: trackError } = await supabase
+          .from('orders')
+          .select('*, customer:customers(*)')
+          .ilike('tracking_code', cleanCode)
+          .maybeSingle();
+
+        if (trackError || !foundOrder) {
+          return NextResponse.json({
+            text: `No encontré ningún pedido registrado con el código **${cleanCode}** 🔍.\n\nPor favor verifica que esté bien escrito (ejemplo: **PET-8492**) o escríbenos directamente a nuestro WhatsApp oficial: **+51 924 257 784** para ayudarte a ubicarlo de inmediato 🌸.`,
+          });
+        }
+
+        const rawStatus = (foundOrder.status || 'pendiente').toLowerCase();
+        const stageDescriptions: Record<string, { stage: string; desc: string }> = {
+          pendiente: {
+            stage: '⏳ Recibido / Pendiente de Pago',
+            desc: 'Tu solicitud de pedido fue registrada y estamos a la espera de la validación del comprobante de pago.',
+          },
+          confirmado: {
+            stage: '✅ Confirmado',
+            desc: 'Tu pago ha sido validado con éxito. Tu pedido ya está programado para ingresar a nuestro taller floral.',
+          },
+          en_preparacion: {
+            stage: '🌸 En Preparación (Taller Floral)',
+            desc: '¡Nuestros floristas expertos están elaborando tu hermoso arreglo con las flores más frescas del día!',
+          },
+          en_taller: {
+            stage: '🌸 En Preparación (Taller Floral)',
+            desc: '¡Nuestros floristas expertos están elaborando tu hermoso arreglo con las flores más frescas del día!',
+          },
+          en_despacho: {
+            stage: '🚗 En Despacho (En camino)',
+            desc: 'Tu arreglo ya salió de nuestro taller y nuestro chofer se encuentra en ruta para realizar la entrega.',
+          },
+          entregado: {
+            stage: '✨ Entregado con Éxito',
+            desc: '¡El pedido ha sido entregado en la dirección indicada! Esperamos haber alegrado el día de esa persona especial.',
+          },
+          cancelado: {
+            stage: '❌ Cancelado',
+            desc: 'Este pedido fue cancelado. Si tienes alguna duda, por favor contáctanos por WhatsApp.',
+          },
+        };
+
+        const currentStage = stageDescriptions[rawStatus] || stageDescriptions.pendiente;
+        const trackingUrl = `https://petalia-web.vercel.app/?track=${foundOrder.tracking_code || cleanCode}`;
+        const recipient = foundOrder.recipient_name?.split('[Comprador:')[0].split('(Cel:')[0].trim() || 'Cliente';
+        const formattedDate = formatLocalDate(foundOrder.delivery_date);
+
+        const responseText =
+          `¡Hola! Aquí tienes el estado en vivo de tu pedido **${foundOrder.tracking_code || cleanCode}** 🌸:\n\n` +
+          `📌 **Etapa actual:** ${currentStage.stage}\n` +
+          `ℹ️ **Detalle:** ${currentStage.desc}\n\n` +
+          `🎁 **Destinatario:** ${recipient}\n` +
+          `📅 **Fecha de entrega:** ${formattedDate}\n` +
+          `💰 **Total:** S/ ${Number(foundOrder.total_amount).toFixed(2)}\n\n` +
+          `Puedes ver la línea de tiempo visual y detalles completos haciendo clic aquí: [Rastrear Pedido en Vivo](${trackingUrl}) 🚚`;
+
+        return NextResponse.json({ text: responseText });
+      }
+
+      // HERRAMIENTA 2: Crear Pedido (createOrder)
       if (call.name === 'createOrder') {
         const args = call.args as {
           customer_name?: string;
@@ -291,6 +379,9 @@ Reglas estrictas de conversación:
 
         // Normalizar método de pago al check constraint ('yape' | 'plin' | 'transferencia' | 'efectivo')
         const sqlPaymentMethod = normalizePaymentMethod(args.payment_method);
+
+        // Generar código de rastreo único para este pedido
+        const trackingCode = generateTrackingCode();
 
         // Guardar constancia del comprador en recipient_name si el destinatario es otra persona
         const formattedRecipient =
@@ -352,8 +443,7 @@ Reglas estrictas de conversación:
           }
         }
 
-        // Insertar formalmente en public.orders con estado 'pendiente'
-        // Intentar primero con columnas directas si existen en la tabla orders
+        // Insertar formalmente en public.orders con estado 'pendiente' y tracking_code
         const directPayload = {
           customer_id: customerId,
           customer_name: buyerName,
@@ -365,12 +455,12 @@ Reglas estrictas de conversación:
           delivery_date: sqlDeliveryDate,
           dedication_message: finalDedication,
           status: 'pendiente' as const,
+          tracking_code: trackingCode,
         };
 
-        console.log('📦 Intentando registrar pedido en Supabase...', {
+        console.log('📦 Intentando registrar pedido con tracking en Supabase...', {
+          tracking: trackingCode,
           comprador: buyerName,
-          telefono: cleanPhone,
-          destinatario: recipient,
           total: finalAmount,
         });
 
@@ -393,6 +483,7 @@ Reglas estrictas de conversación:
             delivery_date: sqlDeliveryDate,
             dedication_message: finalDedication,
             status: 'pendiente' as const,
+            tracking_code: trackingCode,
           };
 
           const retryRes = await supabase
@@ -409,15 +500,17 @@ Reglas estrictas de conversación:
           console.error('❌ Error crítico insertando pedido en Supabase:', orderError);
         } else {
           newOrder = insertedOrder;
-          console.log('✅ Pedido insertado exitosamente en public.orders con ID:', newOrder?.id);
+          console.log('✅ Pedido insertado exitosamente en public.orders con tracking:', trackingCode);
         }
 
-        // Generar enlace preformateado para WhatsApp con datos del comprador y entrega
+        // Generar enlace preformateado para WhatsApp con datos del comprador, entrega y link de seguimiento
         const displayDeliveryDate = formatLocalDate(sqlDeliveryDate);
+        const trackingLink = `https://petalia-web.vercel.app/?track=${trackingCode}`;
 
         const waLines = [
           `¡Hola *PETALIA*! 🌸 Acabo de generar mi pedido con su Asesora Virtual:`,
           ``,
+          `🔖 *Código de rastreo:* ${trackingCode}`,
           `👤 *Comprador:* ${buyerName}${cleanPhone ? ` (${cleanPhone})` : ''}`,
           `📦 *Arreglo:* ${args.product_name}`,
           `💰 *Monto a pagar:* S/ ${finalAmount.toFixed(2)}`,
@@ -429,6 +522,8 @@ Reglas estrictas de conversación:
             : `✍️ *Dedicatoria:* Sin dedicatoria por ahora`,
           ``,
           `💳 *Método de pago:* ${sqlPaymentMethod.toUpperCase()}`,
+          `🔍 *Rastreo en vivo:* ${trackingLink}`,
+          ``,
           `Adjunto por este medio mi comprobante de pago para que inicien la preparación en taller. ¡Muchas gracias! ✨`,
         ];
 
@@ -437,9 +532,10 @@ Reglas estrictas de conversación:
         )}`;
 
         return NextResponse.json({
-          text: `¡Qué gran elección, **${buyerName}**! He registrado formalmente tu pedido de **${args.product_name}** en nuestro sistema para el **${displayDeliveryDate}** con estado **Pendiente de pago**. 🌸\n\nPara que nuestro taller comience con la preparación de tus flores frescas y confirme la ruta de entrega, por favor envía la constancia de tu ${sqlPaymentMethod.toUpperCase()} haciendo clic en el botón de WhatsApp a continuación:`,
+          text: `¡Qué gran elección, **${buyerName}**! He registrado tu pedido de **${args.product_name}** en nuestro sistema con código de rastreo **${trackingCode}** 🌸.\n\nPara que nuestro taller comience con la preparación de tus flores frescas y confirme la ruta de entrega, por favor envía la constancia de tu ${sqlPaymentMethod.toUpperCase()} haciendo clic en el botón de WhatsApp a continuación:`,
           orderCreated: {
             id: newOrder?.id,
+            tracking_code: trackingCode,
             product_name: args.product_name,
             customer_name: buyerName,
             recipient_name: recipient,

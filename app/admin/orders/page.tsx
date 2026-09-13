@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Order, OrderStatus, OCRResult } from '@/lib/types';
-import { formatLocalDate, formatLocalDateTime } from '@/lib/format';
+import { formatLocalDate, formatLocalDateTime, generateTrackingCode } from '@/lib/format';
 import {
   Plus,
   Search,
@@ -25,10 +25,15 @@ import {
   MapPin,
   Heart,
   Package,
+  Copy,
+  Check,
+  DollarSign,
+  Send,
+  Share2,
 } from 'lucide-react';
 
 const STATUS_CONFIG: Record<
-  OrderStatus,
+  string,
   { label: string; bg: string; text: string; border: string; icon: any }
 > = {
   pendiente: {
@@ -45,19 +50,40 @@ const STATUS_CONFIG: Record<
     border: 'border-sky-800/60',
     icon: CheckCircle2,
   },
-  en_taller: {
-    label: 'En Taller',
+  en_preparacion: {
+    label: 'En Preparación',
     bg: 'bg-purple-950/50',
     text: 'text-purple-400',
     border: 'border-purple-800/60',
     icon: Hammer,
+  },
+  en_taller: {
+    label: 'En Preparación',
+    bg: 'bg-purple-950/50',
+    text: 'text-purple-400',
+    border: 'border-purple-800/60',
+    icon: Hammer,
+  },
+  en_despacho: {
+    label: 'En Despacho',
+    bg: 'bg-indigo-950/50',
+    text: 'text-indigo-400',
+    border: 'border-indigo-800/60',
+    icon: Truck,
   },
   entregado: {
     label: 'Entregado',
     bg: 'bg-emerald-950/50',
     text: 'text-emerald-400',
     border: 'border-emerald-800/60',
-    icon: Truck,
+    icon: CheckCircle2,
+  },
+  cancelado: {
+    label: 'Cancelado',
+    bg: 'bg-rose-950/50',
+    text: 'text-rose-400',
+    border: 'border-rose-800/60',
+    icon: AlertCircle,
   },
 };
 
@@ -97,6 +123,14 @@ export default function AdminOrdersPage() {
   // Modal Ver Voucher / Detalle
   const [selectedVoucherUrl, setSelectedVoucherUrl] = useState<string | null>(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<Order | null>(null);
+
+  // Modal Validar Pago / Adjuntar Voucher & Pase a Taller
+  const [validatingOrder, setValidatingOrder] = useState<Order | null>(null);
+  const [valPaymentMethod, setValPaymentMethod] = useState<'yape' | 'plin' | 'transferencia' | 'efectivo'>('yape');
+  const [valVoucherFile, setValVoucherFile] = useState<File | null>(null);
+  const [valVoucherPreview, setValVoucherPreview] = useState<string | null>(null);
+  const [valLoading, setValLoading] = useState(false);
+  const [copiedTrackingId, setCopiedTrackingId] = useState<string | null>(null);
 
   // Cargar Pedidos de Supabase
   const fetchOrders = useCallback(async (isManual = false) => {
@@ -330,6 +364,7 @@ export default function AdminOrdersPage() {
             delivery_address: deliveryAddress.trim() || 'Entrega en taller',
             dedication_message: dedicationMessage.trim() || null,
             status: sqlStatus,
+            tracking_code: generateTrackingCode(),
           },
         ])
         .select('*, customer:customers(*)')
@@ -374,6 +409,167 @@ export default function AdminOrdersPage() {
     setOcrErrorMessage(null);
   };
 
+  // Copiar código de seguimiento
+  const handleCopyTrackingCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedTrackingId(code);
+    setTimeout(() => setCopiedTrackingId(null), 2500);
+  };
+
+  // Notificación automática por WhatsApp según estado
+  const handleSendStatusWhatsApp = (order: Order, targetStatus: string) => {
+    const { phone, clientName } = getOrderDetailsHelpers(order);
+    if (!phone) {
+      alert('Este pedido no cuenta con un número de celular o WhatsApp registrado.');
+      return;
+    }
+
+    const tracking = order.tracking_code || 'PET-TALLER';
+    const trackingUrl = `https://petalia-web.vercel.app/?track=${tracking}`;
+    const cleanPhone = phone.replace(/\D/g, '');
+    const phoneWithCountry = cleanPhone.startsWith('51') ? cleanPhone : `51${cleanPhone}`;
+
+    let message = '';
+    const norm = (targetStatus || '').toLowerCase();
+    if (norm === 'en_preparacion' || norm === 'en_taller') {
+      message = `¡Hola ${clientName}! Tu pedido ${tracking} ha sido confirmado y ya se encuentra *En Preparación* en nuestro taller floral 🌸. Puedes rastrearlo aquí: ${trackingUrl}`;
+    } else if (norm === 'en_despacho') {
+      message = `¡Hola ${clientName}! Tu arreglo floral de PETALIA (${tracking}) ya está *En Despacho* en camino a la dirección indicada 🚗💐. Puedes seguir su recorrido aquí: ${trackingUrl}`;
+    } else if (norm === 'entregado') {
+      message = `¡Hola ${clientName}! Tu pedido ${tracking} ha sido *Entregado* con éxito ✨. ¡Esperamos que sea un momento inolvidable! Muchas gracias por confiar en PETALIA 🌸`;
+    } else {
+      message = `¡Hola ${clientName}! Te saludamos de *PETALIA diseño floral*. Te informamos que tu pedido ${tracking} se encuentra en estado *${STATUS_CONFIG[norm]?.label || targetStatus}*. Puedes consultarlo aquí: ${trackingUrl}`;
+    }
+
+    window.open(`https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  // Asignar o regenerar tracking_code para un pedido
+  const handleAssignTrackingCode = async (orderId: string) => {
+    const newCode = generateTrackingCode();
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ tracking_code: newCode })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, tracking_code: newCode } : o))
+      );
+      if (selectedOrderDetails?.id === orderId) {
+        setSelectedOrderDetails((prev) => (prev ? { ...prev, tracking_code: newCode } : null));
+      }
+    } catch (err: any) {
+      console.error('Error generando tracking code:', err);
+    }
+  };
+
+  // Validar Pago / Adjuntar Voucher y pasar a taller
+  const handleConfirmValidation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validatingOrder) return;
+
+    setValLoading(true);
+
+    try {
+      let finalVoucherUrl = validatingOrder.voucher_url;
+
+      // 1. Si adjuntó archivo, subir a bucket 'vouchers'
+      if (valVoucherFile) {
+        const ext = valVoucherFile.name.split('.').pop() || 'jpg';
+        const cleanName = `${Date.now()}-${Math.random().toString(36).substring(5)}.${ext}`;
+
+        const { error: upErr } = await supabase.storage
+          .from('vouchers')
+          .upload(cleanName, valVoucherFile, {
+            contentType: valVoucherFile.type || 'image/jpeg',
+            upsert: true,
+          });
+
+        if (upErr) {
+          console.warn('Subida a vouchers falló, probando fallback en products/vouchers...', upErr);
+          const fallbackPath = `vouchers/${cleanName}`;
+          await supabase.storage.from('products').upload(fallbackPath, valVoucherFile, { upsert: true });
+          const { data: pUrl } = supabase.storage.from('products').getPublicUrl(fallbackPath);
+          finalVoucherUrl = pUrl.publicUrl;
+        } else {
+          const { data: vUrl } = supabase.storage.from('vouchers').getPublicUrl(cleanName);
+          finalVoucherUrl = vUrl.publicUrl;
+        }
+      }
+
+      // 2. Generar tracking_code si no lo tiene
+      const trackingCode = validatingOrder.tracking_code || generateTrackingCode();
+
+      // 3. Al validar comprobante o marcar efectivo, la orden pasa a 'confirmado' e inmediatamente a 'en_preparacion' (taller)
+      const targetStatus: OrderStatus = 'en_preparacion';
+
+      const updateData: Record<string, any> = {
+        payment_method: valPaymentMethod,
+        voucher_url: finalVoucherUrl,
+        tracking_code: trackingCode,
+        status: targetStatus,
+      };
+
+      let { data, error } = await supabase
+        .from('orders')
+        .update(updateData)
+        .eq('id', validatingOrder.id)
+        .select();
+
+      // Fallback a 'en_taller' si la base de datos aún no ejecutó la migración
+      if (error && error.message?.includes('orders_status_check')) {
+        updateData.status = 'en_taller';
+        const retryRes = await supabase
+          .from('orders')
+          .update(updateData)
+          .eq('id', validatingOrder.id)
+          .select();
+        data = retryRes.data;
+        error = retryRes.error;
+      }
+
+      if (error) throw error;
+
+      const updatedOrder: Order = {
+        ...validatingOrder,
+        payment_method: valPaymentMethod,
+        voucher_url: finalVoucherUrl,
+        tracking_code: trackingCode,
+        status: (updateData.status as OrderStatus) || 'en_preparacion',
+      };
+
+      setOrders((prev) =>
+        prev.map((o) => (o.id === validatingOrder.id ? updatedOrder : o))
+      );
+
+      if (selectedOrderDetails?.id === validatingOrder.id) {
+        setSelectedOrderDetails(updatedOrder);
+      }
+
+      const orderToNotify = updatedOrder;
+      setValidatingOrder(null);
+      setValVoucherFile(null);
+      setValVoucherPreview(null);
+
+      // Abrir o sugerir confirmación inmediata por WhatsApp
+      if (
+        window.confirm(
+          `¡Pago validado con éxito! Pedido asignado a ${trackingCode} y pasado al taller.\n\n¿Deseas abrir WhatsApp para enviar la confirmación y enlace de rastreo al cliente?`
+        )
+      ) {
+        handleSendStatusWhatsApp(orderToNotify, 'en_preparacion');
+      }
+    } catch (err: any) {
+      console.error('Error al validar comprobante:', err);
+      alert('Error al validar el pago: ' + (err.message || err));
+    } finally {
+      setValLoading(false);
+    }
+  };
+
   // Actualizar estado rápido del pedido con validación estricta y sincronización dual
   const handleUpdateStatus = async (orderId: string, nextStatus: string) => {
     // Normalizar estrictamente a minúsculas para cumplir con el check constraint "orders_status_check"
@@ -381,8 +577,11 @@ export default function AdminOrdersPage() {
     const validStatusMap: Record<string, OrderStatus> = {
       pendiente: 'pendiente',
       confirmado: 'confirmado',
+      en_preparacion: 'en_preparacion',
       en_taller: 'en_taller',
+      en_despacho: 'en_despacho',
       entregado: 'entregado',
+      cancelado: 'cancelado',
     };
     const normalizedStatus: OrderStatus = validStatusMap[raw] || 'pendiente';
 
@@ -392,22 +591,51 @@ export default function AdminOrdersPage() {
 
     if (previousStatus === normalizedStatus && previousOrder) return;
 
+    // Generar tracking_code si no tenía y pasa a confirmado/preparación/despacho
+    let trackingToSave = previousOrder?.tracking_code;
+    if (
+      !trackingToSave &&
+      ['confirmado', 'en_preparacion', 'en_taller', 'en_despacho'].includes(normalizedStatus)
+    ) {
+      trackingToSave = generateTrackingCode();
+    }
+
     // 1. Actualización optimista inmediata en la interfaz
     setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: normalizedStatus } : o))
+      prev.map((o) =>
+        o.id === orderId ? { ...o, status: normalizedStatus, tracking_code: trackingToSave || o.tracking_code } : o
+      )
     );
     if (selectedOrderDetails?.id === orderId) {
-      setSelectedOrderDetails((prev) => (prev ? { ...prev, status: normalizedStatus } : null));
+      setSelectedOrderDetails((prev) =>
+        prev ? { ...prev, status: normalizedStatus, tracking_code: trackingToSave || prev.tracking_code } : null
+      );
     }
 
     try {
       // 2. Intentar actualizar directamente en Supabase con .select() para confirmar persistencia
       console.log(`📡 [Orders] Actualizando pedido ${orderId} a estado "${normalizedStatus}"...`);
-      const { data, error } = await supabase
+      const updatePayload: Record<string, any> = { status: normalizedStatus };
+      if (trackingToSave) updatePayload.tracking_code = trackingToSave;
+
+      let { data, error } = await supabase
         .from('orders')
-        .update({ status: normalizedStatus })
+        .update(updatePayload)
         .eq('id', orderId)
         .select();
+
+      // Fallback a 'en_taller' si constraint orders_status_check aún no incluye 'en_preparacion'
+      if (error && error.message?.includes('orders_status_check') && normalizedStatus === 'en_preparacion') {
+        console.warn('⚠️ Base de datos tiene constraint antiguo. Intentando fallback con "en_taller"...');
+        updatePayload.status = 'en_taller';
+        const retryDirect = await supabase
+          .from('orders')
+          .update(updatePayload)
+          .eq('id', orderId)
+          .select();
+        data = retryDirect.data;
+        error = retryDirect.error;
+      }
 
       if (error) {
         console.error('❌ Error devuelto por Supabase en update directo:', error);
@@ -417,7 +645,7 @@ export default function AdminOrdersPage() {
         const apiRes = await fetch('/api/admin/orders/status', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId, status: normalizedStatus }),
+          body: JSON.stringify({ orderId, status: normalizedStatus, trackingCode: trackingToSave }),
         });
         const apiData = await apiRes.json();
 
@@ -431,7 +659,7 @@ export default function AdminOrdersPage() {
         const apiRes = await fetch('/api/admin/orders/status', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId, status: normalizedStatus }),
+          body: JSON.stringify({ orderId, status: normalizedStatus, trackingCode: trackingToSave }),
         });
         const apiData = await apiRes.json();
 
@@ -514,11 +742,18 @@ export default function AdminOrdersPage() {
 
   // Filtrado de pedidos
   const filteredOrders = orders.filter((order) => {
-    const matchesStatus = statusFilter === 'todos' || order.status.toLowerCase() === statusFilter.toLowerCase();
+    const rawSt = (order.status || 'pendiente').toLowerCase();
+    const matchesStatus =
+      statusFilter === 'todos' ||
+      rawSt === statusFilter.toLowerCase() ||
+      ((statusFilter === 'en_preparacion' || statusFilter === 'en_taller') &&
+        (rawSt === 'en_preparacion' || rawSt === 'en_taller'));
+
     const { phone, clientName } = getOrderDetailsHelpers(order);
     const recipient = order.recipient_name || '';
     const opNum = order.operation_number || '';
     const ded = order.dedication_message || '';
+    const tracking = order.tracking_code || '';
 
     const query = searchQuery.toLowerCase();
     const matchesSearch =
@@ -526,7 +761,8 @@ export default function AdminOrdersPage() {
       phone.includes(query) ||
       recipient.toLowerCase().includes(query) ||
       opNum.toLowerCase().includes(query) ||
-      ded.toLowerCase().includes(query);
+      ded.toLowerCase().includes(query) ||
+      tracking.toLowerCase().includes(query);
 
     return matchesStatus && matchesSearch;
   });
@@ -605,15 +841,19 @@ export default function AdminOrdersPage() {
             >
               Todos ({orders.length})
             </button>
-            {(['pendiente', 'confirmado', 'en_taller', 'entregado'] as OrderStatus[]).map((st) => {
-              const count = orders.filter((o) => (o.status || '').toLowerCase() === st).length;
-              const cfg = STATUS_CONFIG[st];
+            {(['pendiente', 'confirmado', 'en_preparacion', 'en_despacho', 'entregado'] as OrderStatus[]).map((st) => {
+              const count = orders.filter((o) => {
+                const s = (o.status || '').toLowerCase();
+                if (st === 'en_preparacion') return s === 'en_preparacion' || s === 'en_taller';
+                return s === st;
+              }).length;
+              const cfg = STATUS_CONFIG[st] || STATUS_CONFIG.pendiente;
               return (
                 <button
                   key={st}
                   onClick={() => setStatusFilter(st)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition ${
-                    statusFilter === st
+                    statusFilter === st || (statusFilter === 'en_taller' && st === 'en_preparacion')
                       ? 'bg-rose-500 text-white'
                       : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white'
                   }`}
@@ -670,6 +910,29 @@ export default function AdminOrdersPage() {
                         <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 font-medium uppercase">
                           {order.payment_method}
                         </span>
+                        {/* Tracking Code Badge */}
+                        {order.tracking_code ? (
+                          <button
+                            onClick={() => handleCopyTrackingCode(order.tracking_code!)}
+                            className="flex items-center gap-1 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-800/60 transition group"
+                            title="Clic para copiar código de rastreo"
+                          >
+                            <Truck className="w-3 h-3 text-rose-400" />
+                            <span className="font-semibold">{order.tracking_code}</span>
+                            {copiedTrackingId === order.tracking_code ? (
+                              <Check className="w-3 h-3 text-emerald-400" />
+                            ) : (
+                              <Copy className="w-3 h-3 text-rose-400/70 group-hover:text-rose-300" />
+                            )}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleAssignTrackingCode(order.id)}
+                            className="text-[10px] text-amber-400 hover:underline flex items-center gap-1 bg-amber-950/40 border border-amber-800/40 px-2 py-0.5 rounded-full"
+                          >
+                            + Asignar código
+                          </button>
+                        )}
                         {matchedArrangement && (
                           <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-950/70 border border-rose-800/60 text-rose-300 font-semibold flex items-center gap-1">
                             <Package className="w-3 h-3" />
@@ -692,7 +955,7 @@ export default function AdminOrdersPage() {
                   </div>
 
                   {/* Estado Badge & Switcher */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <div
                       className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
                     >
@@ -702,16 +965,18 @@ export default function AdminOrdersPage() {
 
                     {/* Selector de estado rápido con valores normalizados */}
                     <select
-                      value={currentStatus}
+                      value={currentStatus === 'en_taller' ? 'en_preparacion' : currentStatus}
                       onChange={(e) =>
                         handleUpdateStatus(order.id, e.target.value as OrderStatus)
                       }
-                      className="bg-neutral-800 text-neutral-300 text-xs rounded-xl px-2.5 py-1 border border-neutral-700 focus:outline-none focus:border-rose-500 transition"
+                      className="bg-neutral-800 text-neutral-300 text-xs rounded-xl px-2.5 py-1 border border-neutral-700 focus:outline-none focus:border-rose-500 transition cursor-pointer"
                     >
-                      <option value="pendiente">Marcar Pendiente</option>
-                      <option value="confirmado">Marcar Confirmado</option>
-                      <option value="en_taller">Pasar a Taller</option>
-                      <option value="entregado">Marcar Entregado</option>
+                      <option value="pendiente">⏳ Pendiente</option>
+                      <option value="confirmado">✅ Confirmado</option>
+                      <option value="en_preparacion">🌸 En Preparación</option>
+                      <option value="en_despacho">🚗 En Despacho</option>
+                      <option value="entregado">✨ Entregado</option>
+                      <option value="cancelado">❌ Cancelado</option>
                     </select>
                   </div>
                 </div>
@@ -800,6 +1065,80 @@ export default function AdminOrdersPage() {
                       </button>
                     </div>
                   </div>
+                </div>
+
+                {/* BARRA OPERATIVA: Validar Voucher & Notificaciones WhatsApp */}
+                <div className="pt-2 border-t border-neutral-800/60 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Botón para validar pago si está pendiente o falta voucher */}
+                    {(currentStatus === 'pendiente' || (!order.voucher_url && (order.payment_method || '').toLowerCase() !== 'efectivo')) && (
+                      <button
+                        onClick={() => {
+                          setValidatingOrder(order);
+                          const pm = (order.payment_method || 'yape').toLowerCase();
+                          setValPaymentMethod(
+                            (['yape', 'plin', 'transferencia', 'efectivo'].includes(pm)
+                              ? pm
+                              : 'yape') as 'yape' | 'plin' | 'transferencia' | 'efectivo'
+                          );
+                          setValVoucherFile(null);
+                          setValVoucherPreview(order.voucher_url || null);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-emerald-950/40 transition active:scale-95"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Validar Pago & Pasar a Taller</span>
+                      </button>
+                    )}
+
+                    {/* Botón WhatsApp contextual por estado */}
+                    {(currentStatus === 'en_preparacion' || currentStatus === 'en_taller') && (
+                      <button
+                        onClick={() => handleSendStatusWhatsApp(order, 'en_preparacion')}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-950/50 hover:bg-purple-900/50 border border-purple-800/60 text-purple-300 text-xs font-semibold transition"
+                        title="Avisar al cliente que su arreglo está en preparación con link de rastreo"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Avisar Taller 🌸</span>
+                      </button>
+                    )}
+
+                    {currentStatus === 'en_despacho' && (
+                      <button
+                        onClick={() => handleSendStatusWhatsApp(order, 'en_despacho')}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-950/50 hover:bg-sky-900/50 border border-sky-800/60 text-sky-300 text-xs font-semibold transition"
+                        title="Avisar al cliente que el chofer va en camino con link de rastreo"
+                      >
+                        <Truck className="w-3.5 h-3.5 text-sky-400" />
+                        <span>Avisar Chofer en Camino 🚗</span>
+                      </button>
+                    )}
+
+                    {currentStatus === 'entregado' && (
+                      <button
+                        onClick={() => handleSendStatusWhatsApp(order, 'entregado')}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/50 hover:bg-emerald-900/50 border border-emerald-800/60 text-emerald-300 text-xs font-semibold transition"
+                        title="Avisar entrega completada"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Avisar Entrega Exitosa ✨</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Acceso directo a URL de rastreo pública */}
+                  {order.tracking_code && (
+                    <a
+                      href={`/?track=${order.tracking_code}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-1 text-[11px] text-neutral-400 hover:text-rose-400 transition ml-auto"
+                      title="Ver vista del cliente de este pedido"
+                    >
+                      <span>Ver Tracking</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
                 </div>
               </div>
             );
@@ -1256,9 +1595,53 @@ export default function AdminOrdersPage() {
                 )}
               </div>
 
+              {/* Tracking Code en Detalle */}
+              <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-1.5">
+                <span className="text-neutral-500 font-medium">Código de Rastreo para el Cliente:</span>
+                <div className="flex items-center justify-between">
+                  {selectedOrderDetails.tracking_code ? (
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm font-bold text-rose-400">
+                        {selectedOrderDetails.tracking_code}
+                      </span>
+                      <button
+                        onClick={() => handleCopyTrackingCode(selectedOrderDetails.tracking_code!)}
+                        className="p-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition"
+                        title="Copiar código"
+                      >
+                        {copiedTrackingId === selectedOrderDetails.tracking_code ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleAssignTrackingCode(selectedOrderDetails.id)}
+                      className="text-xs text-amber-400 hover:underline"
+                    >
+                      + Generar código de rastreo
+                    </button>
+                  )}
+
+                  {selectedOrderDetails.tracking_code && (
+                    <a
+                      href={`/?track=${selectedOrderDetails.tracking_code}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] text-rose-400 hover:underline flex items-center gap-1"
+                    >
+                      <span>Abrir vista pública</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              </div>
+
               <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-2">
                 <span className="text-neutral-500 font-medium">Estado Actual del Pedido:</span>
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                   {(() => {
                     const mStatus = (selectedOrderDetails.status || 'pendiente').toLowerCase() as OrderStatus;
                     const mCfg = STATUS_CONFIG[mStatus] || STATUS_CONFIG.pendiente;
@@ -1271,15 +1654,49 @@ export default function AdminOrdersPage() {
                     );
                   })()}
                   <select
-                    value={(selectedOrderDetails.status || 'pendiente').toLowerCase()}
+                    value={
+                      (selectedOrderDetails.status || 'pendiente').toLowerCase() === 'en_taller'
+                        ? 'en_preparacion'
+                        : (selectedOrderDetails.status || 'pendiente').toLowerCase()
+                    }
                     onChange={(e) => handleUpdateStatus(selectedOrderDetails.id, e.target.value)}
                     className="bg-neutral-800 text-neutral-200 text-xs rounded-xl px-3 py-1.5 border border-neutral-700 focus:outline-none focus:border-rose-500 transition cursor-pointer font-medium"
                   >
-                    <option value="pendiente">Marcar Pendiente</option>
-                    <option value="confirmado">Marcar Confirmado</option>
-                    <option value="en_taller">Pasar a Taller</option>
-                    <option value="entregado">Marcar Entregado</option>
+                    <option value="pendiente">⏳ Marcar Pendiente</option>
+                    <option value="confirmado">✅ Marcar Confirmado</option>
+                    <option value="en_preparacion">🌸 Pasar a Preparación</option>
+                    <option value="en_despacho">🚗 Pasar a Despacho</option>
+                    <option value="entregado">✨ Marcar Entregado</option>
+                    <option value="cancelado">❌ Cancelar Pedido</option>
                   </select>
+                </div>
+
+                {/* Acciones de WhatsApp rápidas desde la ficha */}
+                <div className="pt-2 border-t border-neutral-800/80 flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-neutral-400">Notificar al cliente:</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleSendStatusWhatsApp(selectedOrderDetails, 'en_preparacion')}
+                      className="px-2.5 py-1 rounded-lg bg-purple-950/60 border border-purple-800/60 text-purple-300 hover:bg-purple-900/60 text-[11px] font-medium transition flex items-center gap-1"
+                    >
+                      <MessageCircle className="w-3 h-3 text-emerald-400" />
+                      <span>Taller</span>
+                    </button>
+                    <button
+                      onClick={() => handleSendStatusWhatsApp(selectedOrderDetails, 'en_despacho')}
+                      className="px-2.5 py-1 rounded-lg bg-sky-950/60 border border-sky-800/60 text-sky-300 hover:bg-sky-900/60 text-[11px] font-medium transition flex items-center gap-1"
+                    >
+                      <Truck className="w-3 h-3" />
+                      <span>Despacho</span>
+                    </button>
+                    <button
+                      onClick={() => handleSendStatusWhatsApp(selectedOrderDetails, 'entregado')}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-800/60 text-emerald-300 hover:bg-emerald-900/60 text-[11px] font-medium transition flex items-center gap-1"
+                    >
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>Entregado</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1304,6 +1721,170 @@ export default function AdminOrdersPage() {
                 Cerrar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Validar Pago / Subir Voucher y Pasar a Taller */}
+      {validatingOrder && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-neutral-900 border border-neutral-800 max-w-lg w-full rounded-3xl p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Validar Pago & Pasar a Taller</h3>
+                  <p className="text-xs text-neutral-400">
+                    Confirma el pago recibido para asignar tracking y pasar el arreglo a preparación.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setValidatingOrder(null)}
+                className="p-1.5 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Resumen del Pedido */}
+            <div className="bg-neutral-950 rounded-2xl p-4 border border-neutral-800 space-y-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-neutral-400">Monto del Pedido:</span>
+                <span className="text-base font-bold text-white font-mono">
+                  S/ {Number(validatingOrder.total_amount).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-neutral-400">Destinatario:</span>
+                <span className="text-neutral-200 font-medium">
+                  {validatingOrder.recipient_name || 'Cliente'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-neutral-400">Código de Rastreo:</span>
+                <span className="font-mono text-rose-400 font-bold">
+                  {validatingOrder.tracking_code || 'Se generará automáticamente (ej. PET-XXXX)'}
+                </span>
+              </div>
+            </div>
+
+            <form onSubmit={handleConfirmValidation} className="space-y-4">
+              {/* Método de Pago */}
+              <div>
+                <label className="block text-xs font-semibold text-neutral-300 mb-2">
+                  Método de Pago Confirmado
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { id: 'yape' as const, label: 'Yape', color: 'border-purple-700 bg-purple-950/40 text-purple-300' },
+                    { id: 'plin' as const, label: 'Plin', color: 'border-cyan-700 bg-cyan-950/40 text-cyan-300' },
+                    { id: 'transferencia' as const, label: 'Transferencia', color: 'border-blue-700 bg-blue-950/40 text-blue-300' },
+                    { id: 'efectivo' as const, label: 'Efectivo', color: 'border-emerald-700 bg-emerald-950/40 text-emerald-300' },
+                  ].map((m) => (
+                    <button
+                      type="button"
+                      key={m.id}
+                      onClick={() => setValPaymentMethod(m.id)}
+                      className={`p-2.5 rounded-xl border text-xs font-semibold text-center transition ${
+                        valPaymentMethod.toLowerCase() === m.id
+                          ? `${m.color} ring-2 ring-rose-500`
+                          : 'border-neutral-800 bg-neutral-950 text-neutral-400 hover:border-neutral-700'
+                      }`}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Subir Comprobante (Voucher) */}
+              {valPaymentMethod.toLowerCase() !== 'efectivo' ? (
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-neutral-300">
+                    Comprobante de Pago / Voucher (Captura)
+                  </label>
+                  <label className="border-2 border-dashed border-neutral-800 hover:border-neutral-700 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer bg-neutral-950/60 transition group">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setValVoucherFile(file);
+                          setValVoucherPreview(URL.createObjectURL(file));
+                        }
+                      }}
+                      className="hidden"
+                    />
+                    {valVoucherPreview ? (
+                      <div className="space-y-2 flex flex-col items-center">
+                        <img
+                          src={valVoucherPreview}
+                          alt="Preview comprobante"
+                          className="h-28 object-contain rounded-lg border border-neutral-800 shadow"
+                        />
+                        <span className="text-xs text-rose-400 group-hover:underline">
+                          Cambiar imagen
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="text-center space-y-1">
+                        <Upload className="w-6 h-6 text-neutral-500 mx-auto group-hover:text-rose-400 transition" />
+                        <p className="text-xs text-neutral-300 font-medium">
+                          Haz clic para seleccionar o arrastra la foto del voucher
+                        </p>
+                        <p className="text-[11px] text-neutral-500">JPG, PNG o WEBP</p>
+                      </div>
+                    )}
+                  </label>
+                </div>
+              ) : (
+                <div className="bg-emerald-950/40 border border-emerald-800/60 rounded-xl p-3 text-xs text-emerald-300 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-400" />
+                  <span>
+                    Marcado como <strong>Efectivo contra entrega</strong>. No se requiere adjuntar comprobante previo.
+                  </span>
+                </div>
+              )}
+
+              <div className="bg-neutral-950/80 rounded-xl p-3 border border-neutral-800/80 text-[11px] text-neutral-400 space-y-1">
+                <p className="font-semibold text-neutral-300">⚡ Automatización de Taller & Tracking:</p>
+                <p>
+                  Al confirmar, el pedido pasará de inmediato a <strong>En Preparación</strong>, se generará el código único de rastreo y podrás abrir WhatsApp con el mensaje preformateado para el cliente con un solo clic.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-neutral-800">
+                <button
+                  type="button"
+                  onClick={() => setValidatingOrder(null)}
+                  disabled={valLoading}
+                  className="px-4 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-medium transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={valLoading}
+                  className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold px-5 py-2.5 rounded-xl text-xs shadow-lg shadow-emerald-950/50 transition active:scale-95 disabled:opacity-50"
+                >
+                  {valLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Guardando & Pasando a Taller...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Confirmar Pago y Pasar a Taller</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

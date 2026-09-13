@@ -15,6 +15,7 @@ import {
   Store,
   ChevronRight,
   LogOut,
+  Share2,
 } from 'lucide-react';
 
 const navigationItems = [
@@ -35,6 +36,12 @@ const navigationItems = [
     href: '/admin/expenses',
     icon: TrendingDown,
     description: 'Flujo de caja y balance',
+  },
+  {
+    name: 'Redes & Ajustes',
+    href: '/admin/settings',
+    icon: Share2,
+    description: 'Instagram, TikTok y WhatsApp',
   },
 ];
 
@@ -226,6 +233,29 @@ export default function AdminLayout({
 
       {/* Main Content Area */}
       <main className="flex-1 min-w-0 bg-neutral-950 flex flex-col min-h-screen">
+        {/* Desktop Top Header Bar */}
+        <header className="hidden lg:flex items-center justify-between px-8 py-3.5 border-b border-neutral-800/70 bg-neutral-900/40 backdrop-blur-md">
+          <div className="flex items-center gap-2 text-xs text-neutral-400">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-medium text-neutral-300">Taller PETALIA</span>
+            <span className="text-neutral-600">•</span>
+            <span>Panel de Control Operativo</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              target="_blank"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-950/80 to-emerald-900/60 hover:from-emerald-900/90 hover:to-emerald-800/80 border border-emerald-700/60 text-emerald-300 hover:text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition active:scale-98 group"
+              title="Abrir tienda pública en nueva pestaña"
+            >
+              <Store className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Ver tienda pública</span>
+              <ExternalLink className="w-3 h-3 opacity-70 group-hover:opacity-100 transition" />
+            </Link>
+          </div>
+        </header>
+
         <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">{children}</div>
       </main>
     </div>

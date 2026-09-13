@@ -1,18 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
-const VALID_STATUSES = ['pendiente', 'confirmado', 'en_taller', 'entregado'];
+const VALID_STATUSES = [
+  'pendiente',
+  'confirmado',
+  'en_preparacion',
+  'en_taller',
+  'en_despacho',
+  'entregado',
+  'cancelado',
+];
 
 export async function PATCH(req: NextRequest) {
   try {
-    const { orderId, status } = await req.json();
+    const { orderId, status, voucherUrl, paymentMethod, trackingCode } = await req.json();
 
     if (!orderId) {
       return NextResponse.json({ error: 'Falta el ID del pedido (orderId)' }, { status: 400 });
     }
 
     // Normalizar estrictamente a minúsculas y snake_case para el check constraint
-    const cleanStatus = (status || '')
+    let cleanStatus = (status || '')
       .toString()
       .toLowerCase()
       .trim()
@@ -21,7 +29,7 @@ export async function PATCH(req: NextRequest) {
     if (!VALID_STATUSES.includes(cleanStatus)) {
       return NextResponse.json(
         {
-          error: `Estado inválido "${status}". Valores permitidos por la base de datos: ${VALID_STATUSES.join(', ')}`,
+          error: `Estado inválido "${status}". Valores permitidos: ${VALID_STATUSES.join(', ')}`,
         },
         { status: 400 }
       );
@@ -29,11 +37,29 @@ export async function PATCH(req: NextRequest) {
 
     console.log(`🔄 Actualizando estado del pedido ${orderId} a "${cleanStatus}"...`);
 
-    const { data, error } = await supabase
+    const updatePayload: Record<string, any> = { status: cleanStatus };
+    if (voucherUrl !== undefined) updatePayload.voucher_url = voucherUrl;
+    if (paymentMethod !== undefined) updatePayload.payment_method = paymentMethod;
+    if (trackingCode !== undefined) updatePayload.tracking_code = trackingCode;
+
+    let { data, error } = await supabase
       .from('orders')
-      .update({ status: cleanStatus })
+      .update(updatePayload)
       .eq('id', orderId)
       .select();
+
+    // Fallback inteligente: si la base de datos aún tiene el check constraint previo que no incluye 'en_preparacion'
+    if (error && error.message?.includes('orders_status_check') && cleanStatus === 'en_preparacion') {
+      console.warn('⚠️ Base de datos tiene constraint antiguo. Intentando fallback con "en_taller"...');
+      updatePayload.status = 'en_taller';
+      const retryRes = await supabase
+        .from('orders')
+        .update(updatePayload)
+        .eq('id', orderId)
+        .select();
+      data = retryRes.data;
+      error = retryRes.error;
+    }
 
     if (error) {
       console.error('❌ Error de Supabase al actualizar status en orders:', error);
@@ -51,7 +77,7 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    console.log(`✅ Pedido ${orderId} actualizado con éxito a "${cleanStatus}"`);
+    console.log(`✅ Pedido ${orderId} actualizado con éxito a "${updatePayload.status}"`);
     return NextResponse.json({ success: true, order: data[0] });
   } catch (err: any) {
     console.error('❌ Excepción en /api/admin/orders/status:', err);
