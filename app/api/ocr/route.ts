@@ -50,10 +50,10 @@ Reglas:
 
     let responseText: string | undefined;
 
-    // Intentamos con gemini-2.5-flash y fallback a gemini-1.5-flash
+    // Intentamos con gemini-3.6-flash y fallback a gemini-2.5-flash y gemini-1.5-flash
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
         contents: [
           {
             role: 'user',
@@ -76,30 +76,56 @@ Reglas:
       });
       responseText = response.text;
     } catch (primaryErr) {
-      console.warn('Error con gemini-2.5-flash, probando gemini-1.5-flash...', primaryErr);
-      const fallbackResponse = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              {
-                inlineData: {
-                  mimeType,
-                  data: base64Data,
+      console.warn('Error con gemini-3.6-flash, probando gemini-2.5-flash / gemini-1.5-flash...', primaryErr);
+      try {
+        const fallbackResponse = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  inlineData: {
+                    mimeType,
+                    data: base64Data,
+                  },
                 },
-              },
-              {
-                text: promptText,
-              },
-            ],
+                {
+                  text: promptText,
+                },
+              ],
+            },
+          ],
+          config: {
+            responseMimeType: 'application/json',
           },
-        ],
-        config: {
-          responseMimeType: 'application/json',
-        },
-      });
-      responseText = fallbackResponse.text;
+        });
+        responseText = fallbackResponse.text;
+      } catch (secErr) {
+        const lastResponse = await ai.models.generateContent({
+          model: 'gemini-1.5-flash',
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  inlineData: {
+                    mimeType,
+                    data: base64Data,
+                  },
+                },
+                {
+                  text: promptText,
+                },
+              ],
+            },
+          ],
+          config: {
+            responseMimeType: 'application/json',
+          },
+        });
+        responseText = lastResponse.text;
+      }
     }
 
     if (!responseText) {

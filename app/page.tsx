@@ -21,6 +21,7 @@ import {
   ArrowUpRight,
   ExternalLink,
 } from 'lucide-react';
+import ChatBot from '@/components/ChatBot';
 
 const WHATSAPP_NUMBER = '51924257784';
 
@@ -405,14 +406,14 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Botón Flotante Permanente de WhatsApp */}
+      {/* Botón Flotante Permanente de WhatsApp (Esquina inferior izquierda) */}
       <a
         href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
           '¡Hola PETALIA! Deseo realizar una consulta sobre un arreglo floral 🌸'
         )}`}
         target="_blank"
         rel="noreferrer"
-        className="fixed bottom-5 right-5 z-40 bg-emerald-600 hover:bg-emerald-500 text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition transform hover:scale-105 active:scale-95 group"
+        className="fixed bottom-5 left-5 z-40 bg-emerald-600 hover:bg-emerald-500 text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition transform hover:scale-105 active:scale-95 group"
         title="Consultar por WhatsApp"
       >
         <MessageCircle className="w-6 h-6 fill-white/20" />
@@ -420,6 +421,9 @@ export default function HomePage() {
           WhatsApp Taller
         </span>
       </a>
+
+      {/* Asistente Virtual Inteligente (Chatbot IA - Esquina inferior derecha) */}
+      <ChatBot />
 
       {/* Footer Minimalista */}
       <footer className="mt-16 border-t border-stone-200 bg-white py-8 px-4 text-center text-xs text-stone-500 space-y-3">
