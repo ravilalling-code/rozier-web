@@ -14,6 +14,7 @@ import HeroSlider from '@/components/HeroSlider';
 import TrustBar from '@/components/TrustBar';
 import TopOccasions from '@/components/TopOccasions';
 import PinnedScrollUnfold from '@/components/PinnedScrollUnfold';
+import Footer from '@/components/Footer';
 import {
   MessageCircle,
   Heart,
@@ -2526,72 +2527,17 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Footer Minimalista de Alta Gama */}
-      <footer className="mt-16 border-t border-warm-100 bg-white py-12 px-4 text-center text-xs text-warm-500 space-y-4">
-        {/* Redes Sociales Dinámicas */}
-        <div className="flex items-center justify-center gap-4">
-          {storeSettings?.instagram_url && (
-            <a
-              href={storeSettings.instagram_url}
-              target="_blank"
-              rel="noreferrer"
-              className="w-9 h-9 rounded-full bg-rose-100 hover:bg-rose-500 text-warm-500 hover:text-ink-900 border border-warm-100 flex items-center justify-center transition active:scale-[0.98]"
-              title="Instagram de PETALIA"
-            >
-              <svg className="w-4 h-4 fill-currentColor" viewBox="0 0 24 24">
-                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-              </svg>
-            </a>
-          )}
-
-          {storeSettings?.facebook_url && (
-            <a
-              href={storeSettings.facebook_url}
-              target="_blank"
-              rel="noreferrer"
-              className="w-9 h-9 rounded-full bg-rose-100 hover:bg-rose-500 text-warm-500 hover:text-ink-900 border border-warm-100 flex items-center justify-center transition active:scale-[0.98]"
-              title="Facebook de PETALIA"
-            >
-              <svg className="w-4 h-4 fill-currentColor" viewBox="0 0 24 24">
-                <path d="M9 8H6v4h3v12h5V12h3.642L18 8h-4V6.333C14 5.374 14.5 5 15.667 5H18V0h-3.808C10.592 0 9 1.583 9 4.615V8z" />
-              </svg>
-            </a>
-          )}
-
-          {storeSettings?.tiktok_url && (
-            <a
-              href={storeSettings.tiktok_url}
-              target="_blank"
-              rel="noreferrer"
-              className="w-9 h-9 rounded-full bg-rose-100 hover:bg-ink-900 text-warm-500 hover:text-white border border-warm-100 flex items-center justify-center transition active:scale-[0.98]"
-              title="TikTok de PETALIA"
-            >
-              <svg className="w-4 h-4 fill-currentColor" viewBox="0 0 24 24">
-                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-1.01v8.12c0 1.34-.33 2.69-.99 3.86-.96 1.7-2.6 2.94-4.52 3.44-1.39.37-2.88.33-4.24-.13-2.02-.68-3.69-2.19-4.57-4.14-.88-1.94-.85-4.22.09-6.14.93-1.92 2.62-3.4 4.65-4.08 1.19-.4 2.47-.49 3.71-.3v4.13c-.63-.16-1.3-.17-1.93-.03-.98.21-1.84.82-2.35 1.68-.52.86-.64 1.91-.34 2.88.3 1 .98 1.83 1.89 2.29.91.46 1.98.53 2.94.19.96-.34 1.71-1.12 2.06-2.09.21-.59.3-1.22.3-1.85V.02z" />
-              </svg>
-            </a>
-          )}
-
-          <a
-            href={`https://wa.me/${storeSettings?.whatsapp_number || WHATSAPP_NUMBER}`}
-            target="_blank"
-            rel="noreferrer"
-            className="w-9 h-9 rounded-full bg-rose-100 hover:bg-rose-500 text-warm-500 hover:text-ink-900 border border-warm-100 flex items-center justify-center transition active:scale-[0.98]"
-            title="WhatsApp de PETALIA"
-          >
-            <MessageCircle className="w-4 h-4 fill-currentColor" />
-          </a>
-        </div>
-
-        <div className="flex items-center justify-center gap-2">
-          <span className="font-bold tracking-tight text-ink-900 text-sm">PETALIA</span>
-          <span>•</span>
-          <span className="text-warm-500">Diseño Floral & Decoraciones</span>
-        </div>
-        <p className="text-[11px] text-warm-500">
-          Florería en Lima, Perú • Pedidos y delivery coordinados por WhatsApp: +{storeSettings?.whatsapp_number || WHATSAPP_NUMBER}
-        </p>
-      </footer>
+      {/* Footer Editorial de Alta Gama */}
+      <Footer
+        onOpenTracking={() => {
+          setTrackingError(null);
+          setIsTrackingModalOpen(true);
+        }}
+        whatsappNumber={storeSettings?.whatsapp_number || WHATSAPP_NUMBER}
+        instagramUrl={storeSettings?.instagram_url || 'https://instagram.com/petalia.pe'}
+        facebookUrl={storeSettings?.facebook_url || 'https://facebook.com/petalia.pe'}
+        tiktokUrl={storeSettings?.tiktok_url || 'https://tiktok.com/@petalia.pe'}
+      />
     </div>
   );
 }
