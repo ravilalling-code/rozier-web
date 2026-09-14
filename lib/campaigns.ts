@@ -8,7 +8,13 @@ export const DEFAULT_CAMPAIGN: Campaign = {
   subtitle: 'Arreglos florales radiantes en tonos dorados y girasoles seleccionados.',
   badge_text: 'Campaña Especial',
   layout_type: 'carousel',
+  is_carousel: true,
   images: [
+    'https://images.unsplash.com/photo-1597848212624-a19eb35e2651?auto=format&fit=crop&w=900&q=80',
+    'https://images.unsplash.com/photo-1543257580-7269da773bf5?auto=format&fit=crop&w=900&q=80',
+    'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=900&q=80',
+  ],
+  banner_images: [
     'https://images.unsplash.com/photo-1597848212624-a19eb35e2651?auto=format&fit=crop&w=900&q=80',
     'https://images.unsplash.com/photo-1543257580-7269da773bf5?auto=format&fit=crop&w=900&q=80',
     'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=900&q=80',
@@ -19,6 +25,27 @@ export const DEFAULT_CAMPAIGN: Campaign = {
   is_active: true,
 };
 
+function normalizeCampaign(camp: any): Campaign {
+  const images = (camp.banner_images && camp.banner_images.length > 0)
+    ? camp.banner_images.slice(0, 3)
+    : ((camp.images && camp.images.length > 0)
+      ? camp.images.slice(0, 3)
+      : (camp.banner_url ? [camp.banner_url] : []));
+
+  const isCarousel = typeof camp.is_carousel === 'boolean'
+    ? camp.is_carousel
+    : (camp.layout_type === 'carousel' || images.length > 1);
+
+  return {
+    ...camp,
+    is_carousel: isCarousel,
+    layout_type: isCarousel ? 'carousel' : 'banner',
+    banner_images: images,
+    images,
+    banner_url: camp.banner_url || images[0] || null,
+  };
+}
+
 export async function getAllCampaigns(): Promise<Campaign[]> {
   try {
     const { data, error } = await supabase
@@ -27,7 +54,7 @@ export async function getAllCampaigns(): Promise<Campaign[]> {
       .order('updated_at', { ascending: false });
 
     if (!error && data) {
-      return data as Campaign[];
+      return data.map(normalizeCampaign);
     }
   } catch (err) {
     console.error('Error al obtener campañas:', err);
@@ -46,7 +73,7 @@ export async function getActiveCampaign(): Promise<Campaign | null> {
       .maybeSingle();
 
     if (!error) {
-      if (data) return data as Campaign;
+      if (data) return normalizeCampaign(data);
       return null;
     }
   } catch (err) {
@@ -57,17 +84,26 @@ export async function getActiveCampaign(): Promise<Campaign | null> {
 
 export async function createCampaign(campaign: Omit<Campaign, 'id'> & { id?: string }): Promise<Campaign> {
   const id = campaign.id || `camp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-  const bannerUrl = campaign.banner_url || (campaign.images && campaign.images[0]) || null;
-  const images = (campaign.images && campaign.images.length > 0)
-    ? campaign.images
-    : (bannerUrl ? [bannerUrl] : []);
+  const bannerImages = (campaign.banner_images && campaign.banner_images.length > 0)
+    ? campaign.banner_images.slice(0, 3)
+    : ((campaign.images && campaign.images.length > 0)
+      ? campaign.images.slice(0, 3)
+      : (campaign.banner_url ? [campaign.banner_url] : []));
 
-  const payload = {
+  const bannerUrl = campaign.banner_url || bannerImages[0] || null;
+  const isCarousel = typeof campaign.is_carousel === 'boolean'
+    ? campaign.is_carousel
+    : (campaign.layout_type === 'carousel');
+
+  const payload: any = {
     ...campaign,
     id,
     name: campaign.name || campaign.title,
     banner_url: bannerUrl,
-    images,
+    images: bannerImages,
+    banner_images: bannerImages,
+    is_carousel: isCarousel,
+    layout_type: isCarousel ? 'carousel' : 'banner',
     updated_at: new Date().toISOString(),
   };
 
@@ -79,14 +115,26 @@ export async function createCampaign(campaign: Omit<Campaign, 'id'> & { id?: str
       .neq('id', id);
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('campaigns')
     .insert([payload])
     .select()
     .single();
 
+  // Si la tabla no tiene columnas banner_images o is_carousel todavía
+  if (error && error.code === 'PGRST204') {
+    const { banner_images, is_carousel, ...fallbackPayload } = payload;
+    const retry = await supabase
+      .from('campaigns')
+      .insert([fallbackPayload])
+      .select()
+      .single();
+    data = retry.data;
+    error = retry.error;
+  }
+
   if (error) throw error;
-  return data as Campaign;
+  return normalizeCampaign(data);
 }
 
 export async function updateCampaign(id: string, updates: Partial<Campaign>): Promise<Campaign> {
@@ -98,20 +146,54 @@ export async function updateCampaign(id: string, updates: Partial<Campaign>): Pr
       .neq('id', id);
   }
 
-  const payload = {
+  const bannerImages = (updates.banner_images && updates.banner_images.length > 0)
+    ? updates.banner_images.slice(0, 3)
+    : (updates.images && updates.images.length > 0 ? updates.images.slice(0, 3) : undefined);
+
+  const isCarousel = typeof updates.is_carousel === 'boolean'
+    ? updates.is_carousel
+    : (updates.layout_type ? updates.layout_type === 'carousel' : undefined);
+
+  const payload: any = {
     ...updates,
     updated_at: new Date().toISOString(),
   };
 
-  const { data, error } = await supabase
+  if (bannerImages) {
+    payload.banner_images = bannerImages;
+    payload.images = bannerImages;
+    if (!payload.banner_url && bannerImages.length > 0) {
+      payload.banner_url = bannerImages[0];
+    }
+  }
+
+  if (typeof isCarousel === 'boolean') {
+    payload.is_carousel = isCarousel;
+    payload.layout_type = isCarousel ? 'carousel' : 'banner';
+  }
+
+  let { data, error } = await supabase
     .from('campaigns')
     .update(payload)
     .eq('id', id)
     .select()
     .single();
 
+  // Si la tabla no tiene columnas banner_images o is_carousel todavía
+  if (error && error.code === 'PGRST204') {
+    const { banner_images, is_carousel, ...fallbackPayload } = payload;
+    const retry = await supabase
+      .from('campaigns')
+      .update(fallbackPayload)
+      .eq('id', id)
+      .select()
+      .single();
+    data = retry.data;
+    error = retry.error;
+  }
+
   if (error) throw error;
-  return data as Campaign;
+  return normalizeCampaign(data);
 }
 
 export async function toggleCampaignStatus(id: string, isActive: boolean): Promise<boolean> {

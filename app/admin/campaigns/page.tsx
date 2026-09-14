@@ -69,6 +69,9 @@ export default function AdminCampaignsPage() {
   const [formStartDate, setFormStartDate] = useState('');
   const [formEndDate, setFormEndDate] = useState('');
   const [formLayoutType, setFormLayoutType] = useState<'carousel' | 'banner'>('carousel');
+  const [formIsCarousel, setFormIsCarousel] = useState(false);
+  const [formBannerImages, setFormBannerImages] = useState<string[]>(['']);
+  const [carouselUploadingIndex, setCarouselUploadingIndex] = useState<number | null>(null);
   const [formCtaText, setFormCtaText] = useState('Explorar Colección');
   const [formCtaLink, setFormCtaLink] = useState('#catalogo');
   const [formIsActive, setFormIsActive] = useState(true);
@@ -171,6 +174,8 @@ export default function AdminCampaignsPage() {
     setFormTitle('');
     setFormSubtitle('');
     setFormBannerUrl('');
+    setFormIsCarousel(false);
+    setFormBannerImages(['']);
     setFormStartDate('');
     setFormEndDate('');
     setFormLayoutType('carousel');
@@ -191,9 +196,20 @@ export default function AdminCampaignsPage() {
     setFormBadgeText(campaign.badge_text || 'EDICIÓN LIMITADA');
     setFormTitle(campaign.title || '');
     setFormSubtitle(campaign.subtitle || '');
-    const currentImg = campaign.banner_url || campaign.images?.[0] || '';
-    setFormBannerUrl(currentImg);
-    setImagePreview(currentImg || null);
+    const isCar = campaign.is_carousel ?? (campaign.layout_type === 'carousel' || (campaign.images && campaign.images.length > 1));
+    setFormIsCarousel(Boolean(isCar));
+
+    const existingImgs = (campaign.banner_images && campaign.banner_images.length > 0)
+      ? campaign.banner_images.slice(0, 3)
+      : ((campaign.images && campaign.images.length > 0)
+        ? campaign.images.slice(0, 3)
+        : (campaign.banner_url ? [campaign.banner_url] : ['']));
+
+    setFormBannerImages(existingImgs.length > 0 ? existingImgs : ['']);
+    const mainImg = campaign.banner_url || existingImgs[0] || '';
+    setFormBannerUrl(mainImg);
+    setImagePreview(mainImg || null);
+
     setFormStartDate(campaign.start_date || '');
     setFormEndDate(campaign.end_date || '');
     setFormLayoutType(campaign.layout_type || 'carousel');
@@ -205,7 +221,7 @@ export default function AdminCampaignsPage() {
     setIsModalOpen(true);
   };
 
-  // Carga y preview de imagen local
+  // Carga y preview de imagen local (para banner único)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -213,6 +229,48 @@ export default function AdminCampaignsPage() {
       const previewUrl = URL.createObjectURL(file);
       setImagePreview(previewUrl);
       setFormBannerUrl('');
+    }
+  };
+
+  // Manejadores de slots de imágenes para carrusel (1 a 3 imágenes)
+  const handleAddImageSlot = () => {
+    if (formBannerImages.length < 3) {
+      setFormBannerImages((prev) => [...prev, '']);
+    }
+  };
+
+  const handleRemoveImageSlot = (index: number) => {
+    setFormBannerImages((prev) => {
+      const filtered = prev.filter((_, i) => i !== index);
+      return filtered.length > 0 ? filtered : [''];
+    });
+  };
+
+  const handleSlotUrlChange = (index: number, url: string) => {
+    setFormBannerImages((prev) => {
+      const copy = [...prev];
+      copy[index] = url;
+      return copy;
+    });
+  };
+
+  const handleUploadSlotImage = async (index: number, file: File) => {
+    setCarouselUploadingIndex(index);
+    setFormError(null);
+    try {
+      const uploadedUrl = await uploadCampaignImage(file);
+      setFormBannerImages((prev) => {
+        const copy = [...prev];
+        copy[index] = uploadedUrl;
+        return copy;
+      });
+      if (index === 0 && !formBannerUrl) {
+        setFormBannerUrl(uploadedUrl);
+      }
+    } catch (err: any) {
+      setFormError('Error al subir imagen: ' + (err.message || err));
+    } finally {
+      setCarouselUploadingIndex(null);
     }
   };
 
@@ -232,22 +290,43 @@ export default function AdminCampaignsPage() {
     setFormLoading(true);
 
     try {
-      let finalImageUrl = formBannerUrl.trim();
+      let finalBannerUrl = formBannerUrl.trim();
+      let finalImages: string[] = [];
 
-      // Subir archivo a Supabase Storage si se seleccionó uno
-      if (selectedFile) {
-        setUploadingImage(true);
-        try {
-          finalImageUrl = await uploadCampaignImage(selectedFile);
-        } catch (uploadErr: any) {
-          throw new Error('Fallo al subir la imagen: ' + uploadErr.message);
-        } finally {
-          setUploadingImage(false);
+      if (formIsCarousel) {
+        // Validación estricta de carrusel (1 a 3 imágenes)
+        const validImages = formBannerImages
+          .map((img) => img.trim())
+          .filter((img) => img.length > 0)
+          .slice(0, 3);
+
+        if (validImages.length === 0) {
+          setFormError('Debes ingresar o subir al menos 1 imagen para el carrusel.');
+          setFormLoading(false);
+          return;
         }
-      }
 
-      if (!finalImageUrl) {
-        finalImageUrl = 'https://images.unsplash.com/photo-1597848212624-a19eb35e2651?auto=format&fit=crop&w=900&q=80';
+        finalImages = validImages;
+        finalBannerUrl = validImages[0];
+      } else {
+        // Banner único
+        if (selectedFile) {
+          setUploadingImage(true);
+          try {
+            finalBannerUrl = await uploadCampaignImage(selectedFile);
+          } catch (uploadErr: any) {
+            throw new Error('Fallo al subir la imagen: ' + uploadErr.message);
+          } finally {
+            setUploadingImage(false);
+          }
+        }
+
+        if (!finalBannerUrl) {
+          setFormError('Debes ingresar una URL o subir la foto del banner.');
+          setFormLoading(false);
+          return;
+        }
+        finalImages = [finalBannerUrl];
       }
 
       const campaignPayload: Partial<Campaign> = {
@@ -255,11 +334,13 @@ export default function AdminCampaignsPage() {
         title: cleanTitle,
         subtitle: formSubtitle.trim(),
         badge_text: formBadgeText.trim() || 'EDICIÓN ESPECIAL',
-        banner_url: finalImageUrl,
-        images: [finalImageUrl],
+        banner_url: finalBannerUrl,
+        images: finalImages,
+        banner_images: finalImages,
+        is_carousel: formIsCarousel,
+        layout_type: formIsCarousel ? 'carousel' : 'banner',
         start_date: formStartDate || null,
         end_date: formEndDate || null,
-        layout_type: formLayoutType,
         cta_text: formCtaText.trim() || 'Explorar Colección',
         cta_link: formCtaLink.trim() || '#catalogo',
         is_active: formIsActive,
@@ -642,275 +723,358 @@ export default function AdminCampaignsPage() {
 
       {/* MODAL CREAR / EDITAR CAMPAÑA */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 w-full max-w-2xl shadow-2xl space-y-5 my-8">
-            <div className="flex items-center justify-between pb-4 border-b border-neutral-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-ink-950/70 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[85vh] sm:max-h-[90vh] flex flex-col overflow-hidden border border-rose-100 animate-spring-modal text-ink-900">
+            {/* Cabecera fija */}
+            <div className="p-5 border-b border-rose-100 bg-white sticky top-0 z-10 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base sm:text-lg font-bold text-white">
+                  <h2 className="text-base sm:text-lg font-bold text-ink-900">
                     {modalMode === 'create' ? 'Nueva Campaña Estacional' : 'Editar Campaña Estacional'}
                   </h2>
-                  <p className="text-xs text-neutral-400">
-                    Define la identidad, textos y banner de la temporada.
+                  <p className="text-xs text-warm-500">
+                    Define la identidad, carrusel o banner y textos de la temporada.
                   </p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="p-1.5 text-neutral-400 hover:text-white rounded-xl hover:bg-neutral-800 transition"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-warm-500 hover:text-ink-900 hover:bg-rose-50 transition"
               >
-                <X className="w-5 h-5" />
+                ✕
               </button>
             </div>
 
-            {formError && (
-              <div className="bg-rose-950/80 border border-rose-800 text-rose-200 text-xs p-3.5 rounded-2xl flex items-center gap-2.5">
-                <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
-                <span>{formError}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmitForm} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Nombre de la Campaña */}
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                    Nombre Interno de la Campaña *
-                  </label>
-                  <input
-                    type="text"
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    placeholder="Ej: San Valentín 2027, Flores Amarillas"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-rose-500"
-                    required
-                  />
-                </div>
-
-                {/* Badge Superior */}
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                    Badge Superior *
-                  </label>
-                  <input
-                    type="text"
-                    value={formBadgeText}
-                    onChange={(e) => setFormBadgeText(e.target.value)}
-                    placeholder="Ej: EDICIÓN LIMITADA, TENDENCIA"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-rose-500"
-                    required
-                  />
-                </div>
-
-                {/* Título Principal */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                    Título Promocional en Tienda *
-                  </label>
-                  <input
-                    type="text"
-                    value={formTitle}
-                    onChange={(e) => setFormTitle(e.target.value)}
-                    placeholder="Ej: Día de las Flores Amarillas"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-rose-500"
-                    required
-                  />
-                </div>
-
-                {/* Subtítulo Descriptivo */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                    Subtítulo / Bajada Descriptiva
-                  </label>
-                  <textarea
-                    value={formSubtitle}
-                    onChange={(e) => setFormSubtitle(e.target.value)}
-                    placeholder="Ej: Arreglos florales radiantes en tonos dorados y girasoles seleccionados."
-                    rows={2}
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-rose-500"
-                  />
-                </div>
-
-                {/* Rango de Fechas */}
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                    Fecha de Inicio (Opcional)
-                  </label>
-                  <input
-                    type="date"
-                    value={formStartDate}
-                    onChange={(e) => setFormStartDate(e.target.value)}
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-rose-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                    Fecha de Fin (Opcional)
-                  </label>
-                  <input
-                    type="date"
-                    value={formEndDate}
-                    onChange={(e) => setFormEndDate(e.target.value)}
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-rose-500"
-                  />
-                </div>
-
-                {/* Modo de Presentación */}
-                <div className="sm:col-span-2 space-y-1.5">
-                  <label className="block text-xs font-semibold text-neutral-300">
-                    Modo de Presentación Visual
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div
-                      onClick={() => setFormLayoutType('carousel')}
-                      className={`cursor-pointer rounded-xl p-3 border transition flex items-center gap-3 ${
-                        formLayoutType === 'carousel'
-                          ? 'bg-rose-950/20 border-rose-500 text-white'
-                          : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700'
-                      }`}
-                    >
-                      <Sliders className="w-4 h-4 text-rose-400" />
-                      <div>
-                        <span className="text-xs font-bold block">Carrusel de Fotos</span>
-                        <span className="text-[10px] text-neutral-400 block">Scroll táctil con snap</span>
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={() => setFormLayoutType('banner')}
-                      className={`cursor-pointer rounded-xl p-3 border transition flex items-center gap-3 ${
-                        formLayoutType === 'banner'
-                          ? 'bg-rose-950/20 border-rose-500 text-white'
-                          : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700'
-                      }`}
-                    >
-                      <Layers className="w-4 h-4 text-rose-400" />
-                      <div>
-                        <span className="text-xs font-bold block">Banner Panorámico</span>
-                        <span className="text-[10px] text-neutral-400 block">Editorial de alto impacto</span>
-                      </div>
-                    </div>
+            {/* Formulario con cuerpo con scroll vertical fluido */}
+            <form onSubmit={handleSubmitForm} className="flex flex-col flex-1 min-h-0">
+              <div className="overflow-y-auto p-6 space-y-4 flex-1 scrollbar-thin scrollbar-thumb-rose-200 scrollbar-track-transparent text-xs sm:text-sm">
+                {formError && (
+                  <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs p-3.5 rounded-2xl flex items-center gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                    <span>{formError}</span>
                   </div>
-                </div>
+                )}
 
-                {/* Banner / Imagen Promocional */}
-                <div className="sm:col-span-2 space-y-2">
-                  <label className="block text-xs font-semibold text-neutral-300">
-                    Banner Promocional de la Campaña
-                  </label>
-
-                  <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                    {/* Preview */}
-                    <div className="w-28 h-20 rounded-xl overflow-hidden bg-neutral-950 border border-neutral-800 flex items-center justify-center flex-shrink-0">
-                      {imagePreview ? (
-                        <img
-                          src={imagePreview}
-                          alt="Preview"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <ImageIcon className="w-6 h-6 text-neutral-600" />
-                      )}
-                    </div>
-
-                    {/* Controles de Subida & URL */}
-                    <div className="flex-1 space-y-2 w-full">
-                      <div className="flex gap-2">
-                        <label className="btn-tactile inline-flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-white font-medium px-3.5 py-2 rounded-xl text-xs cursor-pointer border border-neutral-700 transition">
-                          <Upload className="w-3.5 h-3.5 text-rose-400" />
-                          <span>{uploadingImage ? 'Subiendo...' : 'Subir Imagen'}</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleFileChange}
-                            disabled={uploadingImage || formLoading}
-                            className="hidden"
-                          />
-                        </label>
-                        {selectedFile && (
-                          <span className="text-xs text-emerald-400 self-center">
-                            Archivo listo ({selectedFile.name.slice(0, 20)}...)
-                          </span>
-                        )}
-                      </div>
-
-                      <input
-                        type="url"
-                        value={formBannerUrl}
-                        onChange={(e) => {
-                          setFormBannerUrl(e.target.value);
-                          setImagePreview(e.target.value || null);
-                          setSelectedFile(null);
-                        }}
-                        placeholder="O pega una URL directa de imagen (https://...)"
-                        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-rose-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Botón CTA y Enlace */}
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                    Texto del Botón (CTA)
-                  </label>
-                  <input
-                    type="text"
-                    value={formCtaText}
-                    onChange={(e) => setFormCtaText(e.target.value)}
-                    placeholder="Ej: Explorar Colección, Ver Flores"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-rose-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                    Enlace o Slug de Categoría
-                  </label>
-                  <input
-                    type="text"
-                    value={formCtaLink}
-                    onChange={(e) => setFormCtaLink(e.target.value)}
-                    placeholder="Ej: girasoles, ramos o #catalogo"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-rose-500"
-                  />
-                </div>
-
-                {/* Toggle Inicial Activar en la Tienda */}
-                <div className="sm:col-span-2 pt-2 border-t border-neutral-800 flex items-center justify-between">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Nombre de la Campaña */}
                   <div>
-                    <span className="text-xs font-bold text-white block">
-                      ¿Activar de inmediato en la tienda web?
-                    </span>
-                    <span className="text-[11px] text-neutral-400 block">
-                      Si se activa, se mostrará en la landing page de PETALIA en tiempo real.
-                    </span>
+                    <label className="block text-xs font-semibold text-ink-900 mb-1">
+                      Nombre Interno de la Campaña *
+                    </label>
+                    <input
+                      type="text"
+                      value={formName}
+                      onChange={(e) => setFormName(e.target.value)}
+                      placeholder="Ej: San Valentín 2027, Flores Amarillas"
+                      className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2 text-sm text-ink-900 focus:outline-none focus:border-rose-500"
+                      required
+                    />
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setFormIsActive(!formIsActive)}
-                    className={`w-11 h-6 flex items-center rounded-full p-1 transition duration-300 ${
-                      formIsActive ? 'bg-emerald-500 justify-end' : 'bg-neutral-700 justify-start'
-                    }`}
-                    aria-label="Toggle activar campaña"
-                  >
-                    <span className="bg-white w-4 h-4 rounded-full shadow-md transform transition" />
-                  </button>
+                  {/* Badge Superior */}
+                  <div>
+                    <label className="block text-xs font-semibold text-ink-900 mb-1">
+                      Badge Superior *
+                    </label>
+                    <input
+                      type="text"
+                      value={formBadgeText}
+                      onChange={(e) => setFormBadgeText(e.target.value)}
+                      placeholder="Ej: EDICIÓN LIMITADA, TENDENCIA"
+                      className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2 text-sm text-ink-900 focus:outline-none focus:border-rose-500"
+                      required
+                    />
+                  </div>
+
+                  {/* Título Principal */}
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-semibold text-ink-900 mb-1">
+                      Título Promocional en Tienda *
+                    </label>
+                    <input
+                      type="text"
+                      value={formTitle}
+                      onChange={(e) => setFormTitle(e.target.value)}
+                      placeholder="Ej: Día de las Flores Amarillas"
+                      className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2 text-sm text-ink-900 focus:outline-none focus:border-rose-500"
+                      required
+                    />
+                  </div>
+
+                  {/* Subtítulo Descriptivo */}
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-semibold text-ink-900 mb-1">
+                      Subtítulo / Bajada Descriptiva
+                    </label>
+                    <textarea
+                      value={formSubtitle}
+                      onChange={(e) => setFormSubtitle(e.target.value)}
+                      placeholder="Ej: Arreglos florales radiantes en tonos dorados y girasoles seleccionados."
+                      rows={2}
+                      className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2 text-sm text-ink-900 focus:outline-none focus:border-rose-500"
+                    />
+                  </div>
+
+                  {/* Rango de Fechas */}
+                  <div>
+                    <label className="block text-xs font-semibold text-ink-900 mb-1">
+                      Fecha de Inicio (Opcional)
+                    </label>
+                    <input
+                      type="date"
+                      value={formStartDate}
+                      onChange={(e) => setFormStartDate(e.target.value)}
+                      className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2 text-sm text-ink-900 focus:outline-none focus:border-rose-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-ink-900 mb-1">
+                      Fecha de Fin (Opcional)
+                    </label>
+                    <input
+                      type="date"
+                      value={formEndDate}
+                      onChange={(e) => setFormEndDate(e.target.value)}
+                      className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2 text-sm text-ink-900 focus:outline-none focus:border-rose-500"
+                    />
+                  </div>
+
+                  {/* Selector Toggle Carrusel de Imágenes (1 a 3 fotos) */}
+                  <div className="sm:col-span-2 p-4 rounded-2xl bg-rose-50/60 border border-rose-200/80 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold text-ink-900 block">
+                          ¿Mostrar como Carrusel de Imágenes?
+                        </span>
+                        <span className="text-[11px] text-warm-500 block">
+                          {formIsCarousel
+                            ? 'Carrusel activo: añade entre 1 y 3 imágenes rotativas con transición fluida.'
+                            : 'Banner único: se mostrará una imagen fija de alta resolución.'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setFormIsCarousel(!formIsCarousel)}
+                        className={`w-11 h-6 flex items-center rounded-full p-1 transition duration-300 cursor-pointer ${
+                          formIsCarousel ? 'bg-rose-600 justify-end' : 'bg-warm-300 justify-start'
+                        }`}
+                        aria-label="Toggle carrusel"
+                      >
+                        <span className="bg-white w-4 h-4 rounded-full shadow-md transform transition" />
+                      </button>
+                    </div>
+
+                    {/* Modo 1: Carrusel de 1 a 3 Imágenes */}
+                    {formIsCarousel ? (
+                      <div className="space-y-3 pt-2 border-t border-rose-200/70">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-ink-900 flex items-center gap-1.5">
+                            <Sliders className="w-3.5 h-3.5 text-rose-600" />
+                            <span>Imágenes del Carrusel ({formBannerImages.length} de 3 máx.)</span>
+                          </label>
+                          {formBannerImages.length < 3 && (
+                            <button
+                              type="button"
+                              onClick={handleAddImageSlot}
+                              className="btn-tactile inline-flex items-center gap-1 text-xs font-semibold text-rose-700 bg-white px-2.5 py-1 rounded-lg border border-rose-200 shadow-2xs hover:bg-rose-100"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>+ Agregar Foto</span>
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="space-y-3">
+                          {formBannerImages.map((imgUrl, idx) => (
+                            <div
+                              key={idx}
+                              className="bg-white p-3 rounded-xl border border-warm-100 shadow-2xs space-y-2"
+                            >
+                              <div className="flex items-center justify-between text-[11px] font-semibold text-warm-500">
+                                <span>Foto #{idx + 1} del Carrusel</span>
+                                {formBannerImages.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveImageSlot(idx)}
+                                    className="text-rose-600 hover:text-rose-800 flex items-center gap-1"
+                                    title="Remover slot"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <span>Eliminar</span>
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                                {/* Thumbnail Preview */}
+                                <div className="w-24 h-16 rounded-lg overflow-hidden bg-rose-50 border border-warm-100 flex items-center justify-center shrink-0">
+                                  {imgUrl ? (
+                                    <img
+                                      src={imgUrl}
+                                      alt={`Slot ${idx + 1}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <ImageIcon className="w-5 h-5 text-warm-300" />
+                                  )}
+                                </div>
+
+                                <div className="flex-1 space-y-1.5 w-full">
+                                  <div className="flex gap-2">
+                                    <input
+                                      type="url"
+                                      value={imgUrl}
+                                      onChange={(e) => handleSlotUrlChange(idx, e.target.value)}
+                                      placeholder="https://... URL de imagen"
+                                      className="flex-1 bg-rose-50/40 border border-warm-100 rounded-lg px-3 py-1.5 text-xs text-ink-900 focus:outline-none focus:border-rose-500"
+                                    />
+
+                                    <label className="btn-tactile inline-flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold px-3 py-1.5 rounded-lg text-xs cursor-pointer border border-rose-200 shrink-0">
+                                      <Upload className="w-3 h-3 text-rose-600" />
+                                      <span>
+                                        {carouselUploadingIndex === idx ? 'Subiendo...' : 'Subir'}
+                                      </span>
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                          if (e.target.files?.[0]) {
+                                            handleUploadSlotImage(idx, e.target.files[0]);
+                                          }
+                                        }}
+                                        disabled={carouselUploadingIndex === idx}
+                                        className="hidden"
+                                      />
+                                    </label>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      /* Modo 2: Banner Único */
+                      <div className="space-y-2 pt-2 border-t border-rose-200/70">
+                        <label className="text-xs font-bold text-ink-900 flex items-center gap-1.5">
+                          <Layers className="w-3.5 h-3.5 text-rose-600" />
+                          <span>Foto del Banner Panorámico</span>
+                        </label>
+
+                        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                          <div className="w-28 h-20 rounded-xl overflow-hidden bg-rose-50 border border-warm-100 flex items-center justify-center shrink-0">
+                            {imagePreview ? (
+                              <img
+                                src={imagePreview}
+                                alt="Preview"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <ImageIcon className="w-6 h-6 text-warm-300" />
+                            )}
+                          </div>
+
+                          <div className="flex-1 space-y-2 w-full">
+                            <div className="flex gap-2">
+                              <label className="btn-tactile inline-flex items-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold px-3.5 py-2 rounded-xl text-xs cursor-pointer border border-rose-200 transition">
+                                <Upload className="w-3.5 h-3.5 text-rose-600" />
+                                <span>{uploadingImage ? 'Subiendo...' : 'Subir Foto'}</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleFileChange}
+                                  disabled={uploadingImage || formLoading}
+                                  className="hidden"
+                                />
+                              </label>
+                              {selectedFile && (
+                                <span className="text-xs text-emerald-700 self-center font-medium">
+                                  Archivo listo ({selectedFile.name.slice(0, 18)}...)
+                                </span>
+                              )}
+                            </div>
+
+                            <input
+                              type="url"
+                              value={formBannerUrl}
+                              onChange={(e) => {
+                                setFormBannerUrl(e.target.value);
+                                setImagePreview(e.target.value || null);
+                                setSelectedFile(null);
+                              }}
+                              placeholder="O pega una URL directa (https://...)"
+                              className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2 text-xs text-ink-900 focus:outline-none focus:border-rose-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Botón CTA y Enlace */}
+                  <div>
+                    <label className="block text-xs font-semibold text-ink-900 mb-1">
+                      Texto del Botón (CTA)
+                    </label>
+                    <input
+                      type="text"
+                      value={formCtaText}
+                      onChange={(e) => setFormCtaText(e.target.value)}
+                      placeholder="Ej: Explorar Colección, Ver Flores"
+                      className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2 text-sm text-ink-900 focus:outline-none focus:border-rose-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-ink-900 mb-1">
+                      Enlace o Slug de Categoría
+                    </label>
+                    <input
+                      type="text"
+                      value={formCtaLink}
+                      onChange={(e) => setFormCtaLink(e.target.value)}
+                      placeholder="Ej: girasoles, ramos o #catalogo"
+                      className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2 text-sm text-ink-900 focus:outline-none focus:border-rose-500"
+                    />
+                  </div>
+
+                  {/* Toggle Activar en la Tienda */}
+                  <div className="sm:col-span-2 pt-3 border-t border-rose-100 flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-ink-900 block">
+                        ¿Activar de inmediato en la tienda web?
+                      </span>
+                      <span className="text-[11px] text-warm-500 block">
+                        Si se activa, se mostrará en la landing page de PETALIA en tiempo real.
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormIsActive(!formIsActive)}
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition duration-300 cursor-pointer ${
+                        formIsActive ? 'bg-emerald-600 justify-end' : 'bg-warm-300 justify-start'
+                      }`}
+                      aria-label="Toggle activar campaña"
+                    >
+                      <span className="bg-white w-4 h-4 rounded-full shadow-md transform transition" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Botones de Acción Modal */}
-              <div className="pt-4 border-t border-neutral-800 flex items-center justify-end gap-2.5">
+              {/* Pie fijo */}
+              <div className="p-4 border-t border-rose-100 bg-white sticky bottom-0 z-10 flex justify-end gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
                   disabled={formLoading}
-                  className="px-4 py-2.5 rounded-xl bg-neutral-800 text-neutral-300 hover:bg-neutral-700 text-xs font-medium transition"
+                  className="px-4 py-2.5 rounded-xl border border-rose-200 text-warm-500 hover:text-ink-900 hover:bg-rose-50 font-semibold text-xs transition"
                 >
                   Cancelar
                 </button>
@@ -918,7 +1082,7 @@ export default function AdminCampaignsPage() {
                 <button
                   type="submit"
                   disabled={formLoading}
-                  className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-semibold px-5 py-2.5 rounded-xl text-xs shadow-lg shadow-rose-950/50 transition disabled:opacity-50"
+                  className="btn-tactile inline-flex items-center gap-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-semibold px-5 py-2.5 rounded-xl text-xs shadow-md transition disabled:opacity-50"
                 >
                   {formLoading ? (
                     <>

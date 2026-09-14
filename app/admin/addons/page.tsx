@@ -541,177 +541,181 @@ export default function AdminAddonsPage() {
 
       {/* MODAL CREAR / EDITAR COMPLEMENTO */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-950/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-warm-100 overflow-hidden animate-spring-modal">
-            {/* Header Modal */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100 bg-rose-50/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-ink-950/70 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[90vh] flex flex-col overflow-hidden border border-rose-100 animate-spring-modal text-ink-900">
+            {/* Header Modal Fijo */}
+            <div className="p-5 border-b border-rose-100 bg-white sticky top-0 z-10 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
-                <Gift className="w-4 h-4 text-rose-600" />
-                <h3 className="font-bold text-sm text-ink-900">
+                <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                  <Gift className="w-4 h-4" />
+                </div>
+                <h3 className="font-bold text-sm sm:text-base text-ink-900">
                   {modalMode === 'create' ? 'Nuevo Toque Especial' : 'Editar Toque Especial'}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="w-7 h-7 rounded-full flex items-center justify-center text-warm-500 hover:bg-rose-100"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-warm-500 hover:text-ink-900 hover:bg-rose-50 transition"
               >
-                <X className="w-4 h-4" />
+                ✕
               </button>
             </div>
 
-            {/* Formulario */}
-            <form onSubmit={handleSaveAddon} className="p-6 space-y-4 text-xs">
-              {formError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{formError}</span>
-                </div>
-              )}
+            {/* Formulario y Cuerpo con Scroll Fino */}
+            <form onSubmit={handleSaveAddon} className="flex flex-col flex-1 min-h-0">
+              <div className="overflow-y-auto p-6 space-y-4 flex-1 scrollbar-thin scrollbar-thumb-rose-200 scrollbar-track-transparent text-xs">
+                {formError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{formError}</span>
+                  </div>
+                )}
 
-              {/* Nombre */}
-              <div>
-                <label className="block font-semibold text-ink-900 mb-1">
-                  Nombre del Complemento *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej. Chocolates Ferrero Rocher x8"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  className="w-full px-3 py-2 bg-rose-50/40 border border-warm-100 rounded-lg outline-none focus:border-rose-500 font-medium text-ink-900"
-                />
-              </div>
-
-              {/* Categoría y Precio */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Nombre */}
                 <div>
                   <label className="block font-semibold text-ink-900 mb-1">
-                    Categoría *
-                  </label>
-                  <select
-                    value={formCategory}
-                    onChange={(e) => setFormCategory(e.target.value)}
-                    className="w-full px-3 py-2 bg-rose-50/40 border border-warm-100 rounded-lg outline-none focus:border-rose-500 font-medium text-ink-900"
-                  >
-                    {ADDON_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-ink-900 mb-1">
-                    Precio en Soles (S/) *
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-warm-500">
-                      S/
-                    </span>
-                    <input
-                      type="number"
-                      step="0.50"
-                      min="1"
-                      required
-                      placeholder="35.00"
-                      value={formPrice}
-                      onChange={(e) => setFormPrice(e.target.value)}
-                      className="w-full pl-8 pr-3 py-2 bg-rose-50/40 border border-warm-100 rounded-lg outline-none focus:border-rose-500 font-bold tabular-nums text-ink-900"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Imagen y Preview */}
-              <div>
-                <label className="block font-semibold text-ink-900 mb-1">
-                  Fotografía del Complemento
-                </label>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      placeholder="https://... o sube un archivo abajo"
-                      value={formImageUrl}
-                      onChange={(e) => {
-                        setFormImageUrl(e.target.value);
-                        setImagePreview(e.target.value);
-                      }}
-                      className="flex-1 px-3 py-2 bg-rose-50/40 border border-warm-100 rounded-lg outline-none focus:border-rose-500 font-medium text-ink-900"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-rose-100 hover:bg-rose-200/80 text-rose-700 rounded-lg font-semibold transition">
-                      <Camera className="w-3.5 h-3.5" />
-                      <span>Subir archivo</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                    </label>
-                    {selectedFile && (
-                      <span className="text-[11px] text-warm-500 truncate max-w-[200px]">
-                        {selectedFile.name}
-                      </span>
-                    )}
-                  </div>
-
-                  {imagePreview && (
-                    <div className="mt-2 p-2 bg-rose-50 rounded-xl border border-warm-100 flex items-center gap-3">
-                      <img
-                        src={imagePreview}
-                        alt="Previsualización"
-                        className="w-14 h-14 rounded-lg object-cover border border-warm-100 shrink-0"
-                      />
-                      <div className="text-[11px] text-warm-500">
-                        <span className="font-semibold text-ink-900 block">Vista previa</span>
-                        <span>Se mostrará en miniatura en el carrito de compras</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Orden y Estado Activo */}
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <div>
-                  <label className="block font-semibold text-ink-900 mb-1">
-                    Orden de Visualización
+                    Nombre del Complemento *
                   </label>
                   <input
-                    type="number"
-                    min="1"
-                    value={formSortOrder}
-                    onChange={(e) => setFormSortOrder(e.target.value)}
+                    type="text"
+                    required
+                    placeholder="Ej. Chocolates Ferrero Rocher x8"
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
                     className="w-full px-3 py-2 bg-rose-50/40 border border-warm-100 rounded-lg outline-none focus:border-rose-500 font-medium text-ink-900"
                   />
                 </div>
 
-                <div className="flex flex-col justify-end">
-                  <label className="flex items-center gap-2 p-2 bg-rose-50/60 rounded-lg border border-warm-100 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formIsActive}
-                      onChange={(e) => setFormIsActive(e.target.checked)}
-                      className="rounded-sm text-rose-600 focus:ring-rose-500 w-4 h-4"
-                    />
-                    <span className="font-semibold text-ink-900">Activo en la tienda</span>
+                {/* Categoría y Precio */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-ink-900 mb-1">
+                      Categoría *
+                    </label>
+                    <select
+                      value={formCategory}
+                      onChange={(e) => setFormCategory(e.target.value)}
+                      className="w-full px-3 py-2 bg-rose-50/40 border border-warm-100 rounded-lg outline-none focus:border-rose-500 font-medium text-ink-900"
+                    >
+                      {ADDON_CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-ink-900 mb-1">
+                      Precio en Soles (S/) *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-warm-500">
+                        S/
+                      </span>
+                      <input
+                        type="number"
+                        step="0.50"
+                        min="1"
+                        required
+                        placeholder="35.00"
+                        value={formPrice}
+                        onChange={(e) => setFormPrice(e.target.value)}
+                        className="w-full pl-8 pr-3 py-2 bg-rose-50/40 border border-warm-100 rounded-lg outline-none focus:border-rose-500 font-bold tabular-nums text-ink-900"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Imagen y Preview */}
+                <div>
+                  <label className="block font-semibold text-ink-900 mb-1">
+                    Fotografía del Complemento
                   </label>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="https://... o sube un archivo abajo"
+                        value={formImageUrl}
+                        onChange={(e) => {
+                          setFormImageUrl(e.target.value);
+                          setImagePreview(e.target.value);
+                        }}
+                        className="flex-1 px-3 py-2 bg-rose-50/40 border border-warm-100 rounded-lg outline-none focus:border-rose-500 font-medium text-ink-900"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-rose-100 hover:bg-rose-200/80 text-rose-700 rounded-lg font-semibold transition">
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>Subir archivo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                      </label>
+                      {selectedFile && (
+                        <span className="text-[11px] text-warm-500 truncate max-w-[200px]">
+                          {selectedFile.name}
+                        </span>
+                      )}
+                    </div>
+
+                    {imagePreview && (
+                      <div className="mt-2 p-2 bg-rose-50 rounded-xl border border-warm-100 flex items-center gap-3">
+                        <img
+                          src={imagePreview}
+                          alt="Previsualización"
+                          className="w-14 h-14 rounded-lg object-cover border border-warm-100 shrink-0"
+                        />
+                        <div className="text-[11px] text-warm-500">
+                          <span className="font-semibold text-ink-900 block">Vista previa</span>
+                          <span>Se mostrará en miniatura en el carrito de compras</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Orden y Estado Activo */}
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="block font-semibold text-ink-900 mb-1">
+                      Orden de Visualización
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={formSortOrder}
+                      onChange={(e) => setFormSortOrder(e.target.value)}
+                      className="w-full px-3 py-2 bg-rose-50/40 border border-warm-100 rounded-lg outline-none focus:border-rose-500 font-medium text-ink-900"
+                    />
+                  </div>
+
+                  <div className="flex flex-col justify-end">
+                    <label className="flex items-center gap-2 p-2 bg-rose-50/60 rounded-lg border border-warm-100 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formIsActive}
+                        onChange={(e) => setFormIsActive(e.target.checked)}
+                        className="rounded-sm text-rose-600 focus:ring-rose-500 w-4 h-4"
+                      />
+                      <span className="font-semibold text-ink-900">Activo en la tienda</span>
+                    </label>
+                  </div>
                 </div>
               </div>
 
-              {/* Botones de Acción */}
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-warm-100">
+              {/* Pie Fijo Modal */}
+              <div className="p-4 border-t border-rose-100 bg-white sticky bottom-0 z-10 flex justify-end gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="btn-tactile px-4 py-2 rounded-xl border border-warm-100 text-warm-500 hover:text-ink-900 font-semibold"
+                  className="btn-tactile px-4 py-2 rounded-xl border border-rose-200 text-warm-500 hover:text-ink-900 hover:bg-rose-50 font-semibold"
                 >
                   Cancelar
                 </button>

@@ -27,6 +27,7 @@ import {
   Loader2,
   RefreshCw,
   Camera,
+  Flower2,
 } from 'lucide-react';
 
 export default function AdminProductsPage() {
@@ -826,176 +827,185 @@ export default function AdminProductsPage() {
 
       {/* MODAL 1: Crear Nuevo Producto */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-neutral-900 border border-neutral-800 w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-              <div>
-                <h2 className="text-lg font-bold text-white">Nuevo Arreglo Floral</h2>
-                <p className="text-xs text-neutral-400">
-                  Sube la fotografía del arreglo y define su categoría y precios.
-                </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-ink-950/70 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[90vh] flex flex-col overflow-hidden border border-rose-100 animate-spring-modal text-ink-900">
+            {/* Cabecera Fija */}
+            <div className="p-5 border-b border-rose-100 bg-white sticky top-0 z-10 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                  <Flower2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-bold text-ink-900">Nuevo Arreglo Floral</h2>
+                  <p className="text-xs text-warm-500">
+                    Sube la fotografía del arreglo y define su categoría y precios.
+                  </p>
+                </div>
               </div>
               <button
+                type="button"
                 onClick={() => {
                   setIsCreateModalOpen(false);
                   setImagePreview(null);
                   setSelectedFile(null);
                 }}
-                className="p-1.5 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-warm-500 hover:text-ink-900 hover:bg-rose-50 transition"
               >
-                <X className="w-5 h-5" />
+                ✕
               </button>
             </div>
 
-            {createError && (
-              <div className="bg-rose-950/50 border border-rose-800/80 rounded-xl p-3 flex items-center gap-2.5 text-rose-300 text-xs">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                <span>{createError}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleCreateProduct} className="space-y-4">
-              {/* Selector de Foto con Preview */}
-              <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-                  Fotografía del Arreglo *
-                </label>
-                <div className="flex items-center gap-4">
-                  <div className="relative w-24 h-24 rounded-2xl bg-neutral-950 border-2 border-dashed border-neutral-700 flex items-center justify-center overflow-hidden flex-shrink-0">
-                    {imagePreview ? (
-                      <img
-                        src={imagePreview}
-                        alt="Vista previa"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <ImageIcon className="w-8 h-8 text-neutral-600" />
-                    )}
+            <form onSubmit={handleCreateProduct} className="flex flex-col flex-1 min-h-0">
+              <div className="overflow-y-auto p-6 space-y-4 flex-1 scrollbar-thin scrollbar-thumb-rose-200 scrollbar-track-transparent text-xs sm:text-sm">
+                {createError && (
+                  <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 flex items-center gap-2.5 text-rose-800 text-xs">
+                    <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                    <span>{createError}</span>
                   </div>
-                  <div className="flex-1">
-                    <label className="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium border border-neutral-700 transition">
-                      <Upload className="w-3.5 h-3.5 text-rose-400" />
-                      <span>{selectedFile ? 'Cambiar Foto' : 'Subir Fotografía'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleCreateFileChange}
-                        className="hidden"
-                      />
-                    </label>
-                    <p className="text-[11px] text-neutral-500 mt-1">
-                      {selectedFile
-                        ? selectedFile.name
-                        : 'Formatos JPG, PNG o WEBP. Se almacena en Supabase Storage.'}
-                    </p>
-                  </div>
-                </div>
-              </div>
+                )}
 
-              {/* Nombre */}
-              <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-                  Nombre del Arreglo *
-                </label>
-                <input
-                  type="text"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  placeholder="Ej: Box Corazón Rosas Rojas & Ferrero"
-                  required
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition"
-                />
-              </div>
-
-              {/* Descripción */}
-              <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-                  Descripción / Qué incluye
-                </label>
-                <textarea
-                  rows={2}
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  placeholder="Ej: Incluye 24 rosas importadas, tarjeta personalizada, lazo satinado y topper."
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition resize-none"
-                />
-              </div>
-
-              {/* Categoría Dinámica de Supabase */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold text-neutral-300">
-                    Categoría *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setIsCategoriesModalOpen(true)}
-                    className="text-[11px] text-rose-400 hover:underline flex items-center gap-1"
-                  >
-                    <Plus className="w-3 h-3" />
-                    <span>Nueva categoría</span>
-                  </button>
-                </div>
-                <select
-                  value={formCategory}
-                  onChange={(e) => setFormCategory(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500 transition"
-                >
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.slug}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Precios: Regular y Oferta */}
-              <div className="grid grid-cols-2 gap-3">
+                {/* Selector de Foto con Preview */}
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-                    Precio Regular (S/) *
+                  <label className="block text-xs font-semibold text-ink-900 mb-1.5">
+                    Fotografía del Arreglo *
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-24 h-24 rounded-2xl bg-rose-50 border-2 border-dashed border-rose-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {imagePreview ? (
+                        <img
+                          src={imagePreview}
+                          alt="Vista previa"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon className="w-8 h-8 text-warm-300" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <label className="btn-tactile cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold border border-rose-200 transition">
+                        <Upload className="w-3.5 h-3.5 text-rose-600" />
+                        <span>{selectedFile ? 'Cambiar Foto' : 'Subir Fotografía'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleCreateFileChange}
+                          className="hidden"
+                        />
+                      </label>
+                      <p className="text-[11px] text-warm-500 mt-1">
+                        {selectedFile
+                          ? selectedFile.name
+                          : 'Formatos JPG, PNG o WEBP. Se almacena en Supabase Storage.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Nombre */}
+                <div>
+                  <label className="block text-xs font-semibold text-ink-900 mb-1.5">
+                    Nombre del Arreglo *
                   </label>
                   <input
-                    type="number"
-                    step="0.10"
-                    min="0"
-                    value={formPrice}
-                    onChange={(e) => setFormPrice(e.target.value)}
-                    placeholder="90.00"
+                    type="text"
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    placeholder="Ej: Box Corazón Rosas Rojas & Ferrero"
                     required
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition font-mono"
+                    className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2.5 text-sm text-ink-900 placeholder-warm-300 focus:outline-none focus:border-rose-500 transition"
                   />
                 </div>
+
+                {/* Descripción */}
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-                    Precio Oferta (S/) (Opcional)
+                  <label className="block text-xs font-semibold text-ink-900 mb-1.5">
+                    Descripción / Qué incluye
                   </label>
-                  <input
-                    type="number"
-                    step="0.10"
-                    min="0"
-                    value={formPromoPrice}
-                    onChange={(e) => setFormPromoPrice(e.target.value)}
-                    placeholder="75.00"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition font-mono"
+                  <textarea
+                    rows={2}
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    placeholder="Ej: Incluye 24 rosas importadas, tarjeta personalizada, lazo satinado y topper."
+                    className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2.5 text-sm text-ink-900 placeholder-warm-300 focus:outline-none focus:border-rose-500 transition resize-none"
                   />
+                </div>
+
+                {/* Categoría Dinámica de Supabase */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-ink-900">
+                      Categoría *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsCategoriesModalOpen(true)}
+                      className="text-[11px] text-rose-600 hover:underline flex items-center gap-1 font-medium"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Nueva categoría</span>
+                    </button>
+                  </div>
+                  <select
+                    value={formCategory}
+                    onChange={(e) => setFormCategory(e.target.value)}
+                    className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2.5 text-sm text-ink-900 focus:outline-none focus:border-rose-500 transition"
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.slug}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Precios: Regular y Oferta */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-ink-900 mb-1.5">
+                      Precio Regular (S/) *
+                    </label>
+                    <input
+                      type="number"
+                      step="0.10"
+                      min="0"
+                      value={formPrice}
+                      onChange={(e) => setFormPrice(e.target.value)}
+                      placeholder="90.00"
+                      required
+                      className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2.5 text-sm text-ink-900 placeholder-warm-300 focus:outline-none focus:border-rose-500 transition font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-ink-900 mb-1.5">
+                      Precio Oferta (S/) (Opcional)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.10"
+                      min="0"
+                      value={formPromoPrice}
+                      onChange={(e) => setFormPromoPrice(e.target.value)}
+                      placeholder="75.00"
+                      className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2.5 text-sm text-ink-900 placeholder-warm-300 focus:outline-none focus:border-rose-500 transition font-mono"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Botones de acción */}
-              <div className="flex justify-end gap-2.5 pt-3 border-t border-neutral-800">
+              {/* Pie Fijo */}
+              <div className="p-4 border-t border-rose-100 bg-white sticky bottom-0 z-10 flex justify-end gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
                   disabled={createLoading}
-                  className="px-4 py-2.5 rounded-xl text-neutral-400 hover:text-white hover:bg-neutral-800 text-sm font-medium transition"
+                  className="px-4 py-2.5 rounded-xl border border-rose-200 text-warm-500 hover:text-ink-900 hover:bg-rose-50 text-xs sm:text-sm font-semibold transition"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={createLoading}
-                  className="flex items-center gap-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-medium px-5 py-2.5 rounded-xl shadow-lg shadow-rose-950 transition active:scale-98 text-sm disabled:opacity-50"
+                  className="btn-tactile flex items-center gap-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-semibold px-5 py-2.5 rounded-xl shadow-md transition text-xs sm:text-sm disabled:opacity-50"
                 >
                   {createLoading ? (
                     <>
@@ -1017,170 +1027,179 @@ export default function AdminProductsPage() {
 
       {/* MODAL 2: Editar Producto Completo (Incluyendo Edición de Foto) */}
       {editingProduct && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-neutral-900 border border-neutral-800 w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-              <div>
-                <h3 className="text-base font-bold text-white">Editar Arreglo & Fotografía</h3>
-                <p className="text-xs text-neutral-400">Modifica los detalles, categoría en Supabase o cambia la imagen.</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-ink-950/70 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[90vh] flex flex-col overflow-hidden border border-rose-100 animate-spring-modal text-ink-900">
+            {/* Cabecera Fija */}
+            <div className="p-5 border-b border-rose-100 bg-white sticky top-0 z-10 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                  <Edit2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-ink-900">Editar Arreglo & Fotografía</h3>
+                  <p className="text-xs text-warm-500">Modifica los detalles, categoría o cambia la imagen.</p>
+                </div>
               </div>
               <button
+                type="button"
                 onClick={() => setEditingProduct(null)}
-                className="p-1.5 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-warm-500 hover:text-ink-900 hover:bg-rose-50 transition"
               >
-                <X className="w-5 h-5" />
+                ✕
               </button>
             </div>
 
-            {editError && (
-              <div className="bg-rose-950/50 border border-rose-800/80 rounded-xl p-3 flex items-center gap-2.5 text-rose-300 text-xs">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                <span>{editError}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSaveEditProduct} className="space-y-4">
-              {/* Sección Edición de Fotografía */}
-              <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800 space-y-3">
-                <label className="block text-xs font-semibold text-neutral-300">
-                  Fotografía del Arreglo
-                </label>
-                <div className="flex items-center gap-4">
-                  <div className="relative w-24 h-24 rounded-2xl bg-neutral-900 border border-neutral-700 overflow-hidden flex-shrink-0">
-                    <img
-                      src={editImagePreview || editingProduct.image_url}
-                      alt="Foto arreglo"
-                      className="w-full h-full object-cover"
-                    />
-                    {editImagePreview && (
-                      <span className="absolute top-1 left-1 bg-rose-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">
-                        NUEVA
-                      </span>
-                    )}
+            <form onSubmit={handleSaveEditProduct} className="flex flex-col flex-1 min-h-0">
+              <div className="overflow-y-auto p-6 space-y-4 flex-1 scrollbar-thin scrollbar-thumb-rose-200 scrollbar-track-transparent text-xs sm:text-sm">
+                {editError && (
+                  <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 flex items-center gap-2.5 text-rose-800 text-xs">
+                    <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                    <span>{editError}</span>
                   </div>
-                  <div className="flex-1 space-y-2">
-                    <label className="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium border border-neutral-700 transition">
-                      <Camera className="w-3.5 h-3.5 text-rose-400" />
-                      <span>{editFile ? 'Cambiar por otra foto' : 'Subir Nueva Fotografía'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleEditFileChange}
-                        className="hidden"
+                )}
+
+                {/* Sección Edición de Fotografía */}
+                <div className="bg-rose-50/40 p-4 rounded-2xl border border-warm-100 space-y-3">
+                  <label className="block text-xs font-semibold text-ink-900">
+                    Fotografía del Arreglo
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-24 h-24 rounded-2xl bg-white border border-rose-200 overflow-hidden flex-shrink-0 shadow-2xs">
+                      <img
+                        src={editImagePreview || editingProduct.image_url}
+                        alt="Foto arreglo"
+                        className="w-full h-full object-cover"
                       />
+                      {editImagePreview && (
+                        <span className="absolute top-1 left-1 bg-rose-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md shadow-xs">
+                          NUEVA
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <label className="btn-tactile cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold border border-rose-200 transition">
+                        <Camera className="w-3.5 h-3.5 text-rose-600" />
+                        <span>{editFile ? 'Cambiar por otra foto' : 'Subir Nueva Fotografía'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleEditFileChange}
+                          className="hidden"
+                        />
+                      </label>
+                      <p className="text-[11px] text-warm-500">
+                        {editFile
+                          ? `Seleccionada: ${editFile.name}`
+                          : 'Si no seleccionas un archivo, se conservará la foto actual.'}
+                      </p>
+                      {editFile && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditFile(null);
+                            setEditImagePreview(null);
+                          }}
+                          className="text-[11px] text-rose-600 hover:underline block font-medium"
+                        >
+                          Deshacer y mantener foto actual
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Nombre */}
+                <div>
+                  <label className="block text-xs font-semibold text-ink-900 mb-1.5">
+                    Nombre del Arreglo *
+                  </label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    required
+                    className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2.5 text-sm text-ink-900 focus:outline-none focus:border-rose-500 transition"
+                  />
+                </div>
+
+                {/* Descripción */}
+                <div>
+                  <label className="block text-xs font-semibold text-ink-900 mb-1.5">
+                    Descripción / Qué incluye
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2.5 text-sm text-ink-900 focus:outline-none focus:border-rose-500 transition resize-none"
+                  />
+                </div>
+
+                {/* Categoría Dinámica */}
+                <div>
+                  <label className="block text-xs font-semibold text-ink-900 mb-1.5">
+                    Categoría
+                  </label>
+                  <select
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value)}
+                    className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2.5 text-sm text-ink-900 focus:outline-none focus:border-rose-500 transition"
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.slug}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Precios */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-ink-900 mb-1.5">
+                      Precio Regular (S/) *
                     </label>
-                    <p className="text-[11px] text-neutral-500">
-                      {editFile
-                        ? `Seleccionada: ${editFile.name}`
-                        : 'Si no seleccionas un archivo, se conservará la foto actual.'}
-                    </p>
-                    {editFile && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditFile(null);
-                          setEditImagePreview(null);
-                        }}
-                        className="text-[11px] text-rose-400 hover:underline block"
-                      >
-                        Deshacer y mantener foto actual
-                      </button>
-                    )}
+                    <input
+                      type="number"
+                      step="0.10"
+                      min="0"
+                      value={editPrice}
+                      onChange={(e) => setEditPrice(e.target.value)}
+                      required
+                      className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2.5 text-sm text-ink-900 focus:outline-none focus:border-rose-500 transition font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-ink-900 mb-1.5">
+                      Precio Oferta (S/)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.10"
+                      min="0"
+                      value={editPromoPrice}
+                      onChange={(e) => setEditPromoPrice(e.target.value)}
+                      placeholder="Opcional"
+                      className="w-full bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2.5 text-sm text-ink-900 focus:outline-none focus:border-rose-500 transition font-mono"
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* Nombre */}
-              <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-                  Nombre del Arreglo *
-                </label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  required
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500 transition"
-                />
-              </div>
-
-              {/* Descripción */}
-              <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-                  Descripción / Qué incluye
-                </label>
-                <textarea
-                  rows={2}
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500 transition resize-none"
-                />
-              </div>
-
-              {/* Categoría Dinámica */}
-              <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-                  Categoría
-                </label>
-                <select
-                  value={editCategory}
-                  onChange={(e) => setEditCategory(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500 transition"
-                >
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.slug}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Precios */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-                    Precio Regular (S/) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.10"
-                    min="0"
-                    value={editPrice}
-                    onChange={(e) => setEditPrice(e.target.value)}
-                    required
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500 transition font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-                    Precio Oferta (S/)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.10"
-                    min="0"
-                    value={editPromoPrice}
-                    onChange={(e) => setEditPromoPrice(e.target.value)}
-                    placeholder="Opcional"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500 transition font-mono"
-                  />
-                </div>
-              </div>
-
-              {/* Acciones */}
-              <div className="flex justify-end gap-2.5 pt-3 border-t border-neutral-800">
+              {/* Pie Fijo */}
+              <div className="p-4 border-t border-rose-100 bg-white sticky bottom-0 z-10 flex justify-end gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setEditingProduct(null)}
                   disabled={editLoading}
-                  className="px-4 py-2.5 rounded-xl text-neutral-400 hover:text-white hover:bg-neutral-800 text-sm font-medium transition"
+                  className="px-4 py-2.5 rounded-xl border border-rose-200 text-warm-500 hover:text-ink-900 hover:bg-rose-50 text-xs sm:text-sm font-semibold transition"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={editLoading}
-                  className="flex items-center gap-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-medium px-5 py-2.5 rounded-xl shadow-lg shadow-rose-950 transition active:scale-98 text-sm disabled:opacity-50"
+                  className="btn-tactile flex items-center gap-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-semibold px-5 py-2.5 rounded-xl shadow-md transition text-xs sm:text-sm disabled:opacity-50"
                 >
                   {editLoading ? (
                     <>
@@ -1202,168 +1221,174 @@ export default function AdminProductsPage() {
 
       {/* MODAL 3: GESTIÓN DE CATEGORÍAS (TABLA PUBLIC.CATEGORIES EN SUPABASE) */}
       {isCategoriesModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-neutral-900 border border-neutral-800 w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-ink-950/70 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[90vh] flex flex-col overflow-hidden border border-rose-100 animate-spring-modal text-ink-900">
+            {/* Cabecera Fija */}
+            <div className="p-5 border-b border-rose-100 bg-white sticky top-0 z-10 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
                   <Tags className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">Gestión de Categorías (Supabase)</h3>
-                  <p className="text-xs text-neutral-400">
+                  <h3 className="text-base font-bold text-ink-900">Gestión de Categorías (Supabase)</h3>
+                  <p className="text-xs text-warm-500">
                     Sincronizadas con la tabla public.categories y la tienda web.
                   </p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsCategoriesModalOpen(false)}
-                className="p-1.5 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-warm-500 hover:text-ink-900 hover:bg-rose-50 transition"
               >
-                <X className="w-5 h-5" />
+                ✕
               </button>
             </div>
 
-            {categoryModalError && (
-              <div className="bg-rose-950/50 border border-rose-800/80 rounded-xl p-3 flex items-center gap-2.5 text-rose-300 text-xs">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                <span>{categoryModalError}</span>
-              </div>
-            )}
+            {/* Cuerpo con Scroll Fino */}
+            <div className="overflow-y-auto p-6 space-y-4 flex-1 scrollbar-thin scrollbar-thumb-rose-200 scrollbar-track-transparent text-xs sm:text-sm">
+              {categoryModalError && (
+                <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 flex items-center gap-2.5 text-rose-800 text-xs">
+                  <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                  <span>{categoryModalError}</span>
+                </div>
+              )}
 
-            {/* Formulario Agregar Categoría */}
-            <form onSubmit={handleAddCategory} className="space-y-2">
-              <label className="block text-xs font-semibold text-neutral-300">
-                Agregar Nueva Categoría
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="Ej: Tulipanes, Girasoles, Peluches, Chocolates..."
-                  className="flex-1 bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition"
-                />
-                <button
-                  type="submit"
-                  disabled={categoryActionLoading || !newCategoryName.trim()}
-                  className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-500 text-white font-medium px-4 py-2 rounded-xl text-xs transition disabled:opacity-50"
-                >
-                  {categoryActionLoading ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Plus className="w-3.5 h-3.5" />
-                  )}
-                  <span>Guardar</span>
-                </button>
-              </div>
-            </form>
+              {/* Formulario Agregar Categoría */}
+              <form onSubmit={handleAddCategory} className="space-y-2">
+                <label className="block text-xs font-semibold text-ink-900">
+                  Agregar Nueva Categoría
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="Ej: Tulipanes, Girasoles, Peluches, Chocolates..."
+                    className="flex-1 bg-rose-50/40 border border-warm-100 rounded-xl px-3.5 py-2 text-sm text-ink-900 placeholder-warm-300 focus:outline-none focus:border-rose-500 transition"
+                  />
+                  <button
+                    type="submit"
+                    disabled={categoryActionLoading || !newCategoryName.trim()}
+                    className="btn-tactile flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold px-4 py-2 rounded-xl text-xs transition disabled:opacity-50"
+                  >
+                    {categoryActionLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Plus className="w-3.5 h-3.5" />
+                    )}
+                    <span>Guardar</span>
+                  </button>
+                </div>
+              </form>
 
-            {/* Lista de Categorías de Supabase */}
-            <div className="space-y-2 pt-2 border-t border-neutral-800">
-              <span className="block text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-                Categorías en Base de Datos ({categories.length})
-              </span>
-              <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
-                {categories.map((cat) => {
-                  const productCount = products.filter(
-                    (p) => (p.category || '').toLowerCase() === cat.slug.toLowerCase()
-                  ).length;
-                  const isEditingThis = editingCategoryId === cat.id;
+              {/* Lista de Categorías de Supabase */}
+              <div className="space-y-2 pt-2 border-t border-rose-100">
+                <span className="block text-xs font-semibold text-warm-500 uppercase tracking-wider">
+                  Categorías en Base de Datos ({categories.length})
+                </span>
+                <div className="space-y-2">
+                  {categories.map((cat) => {
+                    const productCount = products.filter(
+                      (p) => (p.category || '').toLowerCase() === cat.slug.toLowerCase()
+                    ).length;
+                    const isEditingThis = editingCategoryId === cat.id;
 
-                  return (
-                    <div
-                      key={cat.id}
-                      className="p-3 rounded-xl bg-neutral-950 border border-neutral-800/80 hover:border-neutral-700 transition"
-                    >
-                      {isEditingThis ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={editingCategoryName}
-                            onChange={(e) => setEditingCategoryName(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleSaveEditCategory(cat);
-                              } else if (e.key === 'Escape') {
-                                setEditingCategoryId(null);
-                              }
-                            }}
-                            autoFocus
-                            placeholder="Nombre de la categoría"
-                            className="flex-1 bg-neutral-900 border border-rose-500 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleSaveEditCategory(cat)}
-                            disabled={categoryActionLoading || !editingCategoryName.trim()}
-                            className="p-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition disabled:opacity-50"
-                            title="Guardar nombre"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setEditingCategoryId(null)}
-                            disabled={categoryActionLoading}
-                            className="p-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white rounded-lg transition"
-                            title="Cancelar"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <Tag className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" />
-                            <div className="truncate">
-                              <span className="text-sm font-medium text-white">{cat.name}</span>
-                              <span className="text-[11px] text-neutral-500 font-mono ml-2">
-                                ({cat.slug})
+                    return (
+                      <div
+                        key={cat.id}
+                        className="p-3 rounded-xl bg-rose-50/30 border border-warm-100 hover:border-rose-300 transition"
+                      >
+                        {isEditingThis ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={editingCategoryName}
+                              onChange={(e) => setEditingCategoryName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleSaveEditCategory(cat);
+                                } else if (e.key === 'Escape') {
+                                  setEditingCategoryId(null);
+                                }
+                              }}
+                              autoFocus
+                              placeholder="Nombre de la categoría"
+                              className="flex-1 bg-white border border-rose-500 rounded-xl px-3 py-1.5 text-xs text-ink-900 focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleSaveEditCategory(cat)}
+                              disabled={categoryActionLoading || !editingCategoryName.trim()}
+                              className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition disabled:opacity-50"
+                              title="Guardar nombre"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingCategoryId(null)}
+                              disabled={categoryActionLoading}
+                              className="p-1.5 bg-warm-100 hover:bg-warm-200 text-warm-500 hover:text-ink-900 rounded-lg transition"
+                              title="Cancelar"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <Tag className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
+                              <div className="truncate">
+                                <span className="text-sm font-semibold text-ink-900">{cat.name}</span>
+                                <span className="text-[11px] text-warm-500 font-mono ml-2">
+                                  ({cat.slug})
+                                </span>
+                              </div>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-semibold flex-shrink-0">
+                                {productCount} {productCount === 1 ? 'arreglo' : 'arreglos'}
                               </span>
                             </div>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 flex-shrink-0">
-                              {productCount} {productCount === 1 ? 'arreglo' : 'arreglos'}
-                            </span>
-                          </div>
 
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            {/* Botón Renombrar Categoría */}
-                            <button
-                              type="button"
-                              onClick={() => handleStartEditCategory(cat)}
-                              disabled={categoryActionLoading}
-                              className="p-1.5 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded-lg transition"
-                              title={`Renombrar categoría ${cat.name}`}
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {/* Botón Renombrar Categoría */}
+                              <button
+                                type="button"
+                                onClick={() => handleStartEditCategory(cat)}
+                                disabled={categoryActionLoading}
+                                className="p-1.5 text-warm-500 hover:text-ink-900 hover:bg-rose-100 rounded-lg transition"
+                                title={`Renombrar categoría ${cat.name}`}
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
 
-                            {/* Botón Eliminar Categoría */}
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteCategory(cat)}
-                              disabled={categoryActionLoading}
-                              className="p-1.5 text-neutral-500 hover:text-rose-400 hover:bg-neutral-800 rounded-lg transition disabled:opacity-50"
-                              title={`Eliminar categoría ${cat.name}`}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                              {/* Botón Eliminar Categoría */}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCategory(cat)}
+                                disabled={categoryActionLoading}
+                                className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-lg transition disabled:opacity-50"
+                                title={`Eliminar categoría ${cat.name}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            <div className="flex justify-end pt-2 border-t border-neutral-800">
+            {/* Pie Fijo */}
+            <div className="p-4 border-t border-rose-100 bg-white sticky bottom-0 z-10 flex justify-end gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setIsCategoriesModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-neutral-800 text-neutral-300 hover:text-white text-xs font-medium transition"
+                className="btn-tactile px-5 py-2.5 rounded-xl bg-ink-900 hover:bg-rose-600 text-white text-xs font-semibold transition shadow-xs"
               >
                 Listo / Cerrar
               </button>

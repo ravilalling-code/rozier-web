@@ -149,6 +149,8 @@ export interface Campaign {
   layout_type?: 'carousel' | 'banner';
   images?: string[];
   banner_url?: string | null;
+  banner_images?: string[];
+  is_carousel?: boolean;
   cta_text?: string;
   cta_link?: string;
   start_date?: string | null;

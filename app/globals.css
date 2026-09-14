@@ -231,4 +231,31 @@ body {
   scrollbar-width: none;
 }
 
+/* Scrollbar fino estandarizado para modales del CRM */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #ECD3D8 transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #ECD3D8;
+  border-radius: 9999px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #E8B4B8;
+}
+
+.scrollbar-thumb-rose-200::-webkit-scrollbar-thumb {
+  background: #ECD3D8;
+}
+.scrollbar-track-transparent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 
