@@ -46,11 +46,13 @@ interface Message {
 }
 
 const INITIAL_SUGGESTIONS = [
-  '🌸 Ver catálogo y elegir arreglo',
-  '💜 Pagar con Yape / Plin (QR)',
-  '🚚 Rastrear mi pedido',
-  '🌹 Opciones para aniversario',
-  '🎂 Arreglos para cumpleaños',
+  '🌸 Recomiéndame un arreglo floral',
+  '🌹 Arreglos para aniversario o amor',
+  '🎂 Opciones para cumpleaños',
+  '🍫 ¿Qué toques especiales o complementos tienen?',
+  '🚚 Cobertura y delivery en Lima',
+  '💜 Pagar con Yape / Plin',
+  '🔎 Rastrear mi pedido',
 ];
 
 export default function ChatBot() {
@@ -60,7 +62,7 @@ export default function ChatBot() {
       id: 'welcome',
       role: 'assistant',
       content:
-        '¡Hola! 🌸 Soy la asesora floral de **PETALIA**.\n\nEstoy aquí para acompañarte en cada detalle. ¿Qué deseas hacer hoy?\n\n1️⃣ **🌸 Ver catálogo y elegir arreglo**\n2️⃣ **🚚 Rastrear mi pedido**\n\nCuéntame qué buscas o escribe tu código de seguimiento (ejemplo: **PET-8492**).',
+        '¡Hola! 🌸 Soy tu Asesora Floral Concierge de **PETALIA**.\n\nEstoy aquí para acompañarte a seleccionar o diseñar el arreglo perfecto para esa persona especial. ¿En qué detalle puedo complacerte hoy?\n\n✨ **1. Recomendarte arreglos según la ocasión** (Aniversario, Amor, Cumpleaños, etc.)\n🍫 **2. Añadir un Toque Especial** (Chocolates Ferrero, Peluches, Vinos o Globos)\n🚚 **3. Rastrear tu pedido en tiempo real** (con tu código ej. **PET-8492**)\n💜 **4. Consultar métodos de pago y delivery** en Lima Metropolitana',
       timestamp: 'Ahora',
     },
   ]);

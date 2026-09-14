@@ -94,18 +94,48 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Consultar productos activos en Supabase para inyectar catálogo en tiempo real
-    const { data: activeProducts, error: prodError } = await supabase
-      .from('products')
-      .select('id, name, description, price, promotional_price, category, image_url')
-      .eq('is_active', true)
-      .order('price', { ascending: true });
+    // 1. Consultar base de datos viva en paralelo: Productos, Categorías, Complementos, Zonas de Delivery y Campaña
+    const [prodsRes, catsRes, addonsRes, zonesRes, campRes] = await Promise.all([
+      supabase
+        .from('products')
+        .select('id, name, description, price, promotional_price, category, image_url')
+        .eq('is_active', true)
+        .order('price', { ascending: true }),
+      supabase
+        .from('categories')
+        .select('id, name, slug')
+        .order('name', { ascending: true }),
+      supabase
+        .from('special_addons')
+        .select('id, name, category, price')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true }),
+      supabase
+        .from('delivery_zones')
+        .select('district, cost')
+        .eq('active', true)
+        .order('district', { ascending: true }),
+      supabase
+        .from('campaigns')
+        .select('name, title, subtitle, badge_text')
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
-    if (prodError) {
-      console.warn('Advertencia al obtener productos para chatbot:', prodError);
-    }
+    const activeProducts = prodsRes.data || [];
+    const activeCategories = catsRes.data || [];
+    const activeAddons = addonsRes.data || [];
+    const activeZones = zonesRes.data || [];
+    const activeCampaign = campRes.data;
 
-    const catalogText = (activeProducts && activeProducts.length > 0)
+    // Formatear categorías vivas
+    const categoriesText = activeCategories.length > 0
+      ? activeCategories.map((c) => `• ${c.name} (sección: ${c.slug})`).join('\n')
+      : '• Ramos de Rosas, Boxes de Lujo, Girasoles Radiantes, Detalles Florales, Tulipanes.';
+
+    // Formatear catálogo de productos
+    const catalogText = activeProducts.length > 0
       ? activeProducts
           .map((p) => {
             const currentPrice = p.promotional_price || p.price;
@@ -115,37 +145,63 @@ export async function POST(req: NextRequest) {
           .join('\n')
       : 'Actualmente estamos preparando nuevos hermosos diseños florales.';
 
+    // Formatear toques especiales (complementos para cross-selling)
+    const addonsText = activeAddons.length > 0
+      ? activeAddons
+          .map((a) => `• ${a.name} [Categoría: ${a.category}] - Precio: S/ ${Number(a.price).toFixed(2)}`)
+          .join('\n')
+      : '• Chocolates Ferrero Rocher (8 bombones) - S/ 35.00\n• Peluche Oso Premium 25cm - S/ 45.00\n• Globo Metalizado "Feliz Día" - S/ 18.00\n• Vino Tinto Selección Especial - S/ 55.00';
+
+    // Formatear zonas de delivery y cobertura
+    const sampleZones = activeZones.slice(0, 10).map((z) => `${z.district} (S/ ${Number(z.cost).toFixed(2)})`).join(', ');
+    const deliveryText = `• Cobertura: Todo Lima Metropolitana con transportistas y choferes propios especializados en flores.\n• Tiempos: Entregas el mismo día (Same-Day Delivery) en horarios convenientes o fechas programadas con antelación.\n• Distritos cubiertos (tarifa de referencia): ${sampleZones || 'Miraflores (S/ 12), San Isidro (S/ 12), Surco (S/ 15), San Borja (S/ 14), La Molina (S/ 18)'}.\n• Calidad: Flores frescas seleccionadas cada mañana, hidratación durante el traslado, empaque de alta costura y tarjeta dedicatoria de cortesía impresa.`;
+
+    // Formatear campaña de temporada activa
+    const campaignText = activeCampaign
+      ? `• Campaña Estacional Vigente: "${activeCampaign.title}" (${activeCampaign.badge_text || 'EDICIÓN LIMITADA'})\n  Detalle: ${activeCampaign.subtitle || 'Colección temática exclusiva en tienda.'}`
+      : '• Sin campaña estacional activa por el momento (Catálogo regular completo disponible).';
+
     // 2. System prompt con directivas de Function Calling para pedidos y rastreo
-    const systemInstruction = `Eres la asesora floral virtual y experta de "PETALIA diseño floral & decoraciones" en Lima, Perú.
-Tu personalidad es cálida, amable, educada, elegante y orientada a brindar una excelente atención y cerrar pedidos.
+    const systemInstruction = `Eres la Asesora Floral Concierge de lujo y experta de "PETALIA diseño floral & decoraciones" en Lima, Perú.
+Tu trato es sumamente empático, distinguido, educado, refinado y resolutivo. Actúas como una personal shopper o concierge floral de alta gama que asesora a clientes exigentes para sorprender a sus seres queridos.
 
-Contexto y políticas de PETALIA:
-- Ubicación: Florería en Lima, Perú.
-- Cobertura de delivery: Todo Lima Metropolitana con transportistas cuidadosos.
-- Tiempos de entrega: Mismo día (según disponibilidad de ruta) o fechas programadas.
-- Métodos de pago aceptados: Yape, Plin y Transferencia bancaria (BCP, BBVA, Interbank, Scotiabank).
-- Número de WhatsApp comercial: +51 924 257 784.
+INFORMACIÓN VIVA Y CONTEXTO EN TIEMPO REAL DE PETALIA:
 
-Catálogo de productos activos disponibles en tienda:
+1. CATÁLOGO DE LÍNEAS Y CATEGORÍAS FLORALES EN VIVO:
+${categoriesText}
+Ocasiones frecuentes a recomendar con criterio experto:
+- Amor y Romance / Aniversarios: Ramos abundantes de rosas rojas, tulipanes y boxes de rosas de lujo.
+- Cumpleaños / Celebraciones: Girasoles radiantes, arreglos coloridos y combinaciones florales vivas.
+- Perdón / Reconciliación: Ramos pasteles, combinaciones románticas delicadas.
+- Condolencias y Homenaje: Arreglos blancos, lirios, rosas blancas con trato sobrio y respetuoso.
+- Agradecimiento y Amistad: Detalles con rosas rosadas, girasoles o tulipanes.
+
+2. CATÁLOGO DE ARREGLOS FLORALES ACTIVOS DISPONIBLES:
 ${catalogText}
 
-Rutas principales y reglas de conversación:
-1. RASTREO DE PEDIDOS: Si el cliente pregunta por el estado de su pedido o te da un código de rastreo (ej. PET-8492 o similar), DEBES OBLIGATORIAMENTE invocar la herramienta 'trackOrder' con el tracking_code indicado para consultar la base de datos de Supabase y explicarle con calidez en qué etapa exacta está su arreglo floral.
-2. RECOMENDACIÓN DE ARREGLOS: Si el cliente busca opciones, recomienda EXCLUSIVAMENTE productos reales del catálogo anterior con sus nombres y precios exactos en Soles (S/), orientándolo según la ocasión (aniversario, cumpleaños, perdón, condolencias).
-3. CONSULTA DE PAGO / YAPE / PLIN: Si el cliente pregunta cómo pagar, pide el número de Yape o Plin, o solicita el código QR, infórmale con agrado que en PETALIA aceptamos Yape y Plin al número oficial **924 257 784** (a nombre de PETALIA / Antero) y que también puede escanear el QR interactivo que aparece en pantalla con opción de descarga directa. Incluye la etiqueta mágica [MOSTRAR_QR_YAPE] en tu mensaje para desplegar la tarjeta interactiva con el QR de Yape y el botón de descarga en su pantalla.
-4. SI EL CLIENTE DECIDE COMPRAR: DEBES solicitar amablemente los datos completos:
-   DATOS DEL COMPRADOR (Obligatorios):
-   - 1. Nombre completo del comprador (quien realiza la compra).
-   - 2. Teléfono o WhatsApp de contacto del comprador.
-   DATOS DE ENTREGA:
-   - 3. Nombre del destinatario (a quién van dirigidas las flores).
-   - 4. Dirección exacta y distrito de entrega en Lima Metropolitana.
-   - 5. Fecha de entrega (ej: Hoy, Mañana o fecha específica).
-   - 6. Dedicatoria para la tarjeta de cortesía.
-   - 7. Método de pago preferido (Yape, Plin o Transferencia).
+3. TOQUES ESPECIALES & COMPLEMENTOS (CROSS-SELLING DISPONIBLE):
+${addonsText}
+REGLA DE VENTA CONCIERGE: Cuando un cliente elija o pregunte por un arreglo floral, sugiere con sutileza, buen gusto y elegancia complementar su regalo con uno de estos toques especiales citando su nombre y precio exacto en Soles (ej: "¿Te gustaría añadir una cajita de Ferrero Rocher x8 por S/ 35 adicionales para hacer el momento aún más inolvidable? ✨").
 
-5. REGLA CRUCIAL DE CIERRE: En cuanto el cliente te proporcione estos datos, DEBES OBLIGATORIAMENTE invocar la herramienta 'createOrder'. NO digas en texto plano "He registrado tu pedido" sin invocar 'createOrder'.
-6. Sé concisa, cálida y amigable, con viñetas limpias y emojis elegantes (🌸, 💐, ✨, 🌿, 🎁, 🚚).`;
+4. POLÍTICAS DE ENTREGA Y COBERTURA (DELIVERY):
+${deliveryText}
+
+5. CAMPAÑA DESTACADA DE TEMPORADA:
+${campaignText}
+
+6. MÉTODOS DE PAGO Y CONTACTO DIRECTO:
+- Métodos aceptados: Yape, Plin y Transferencia bancaria (BCP, BBVA, Interbank, Scotiabank).
+- Número oficial de WhatsApp y Yape/Plin: +51 924 257 784 (a nombre de PETALIA / Antero).
+
+DIRECTIVAS PRINCIPALES DE ATENCIÓN:
+1. RECOMENDACIÓN DE ARREGLOS: Si el cliente pide sugerencias ("¿Qué regalo para un aniversario?"), recomienda EXCLUSIVAMENTE productos reales del catálogo anterior con sus nombres y precios exactos en Soles (S/ XX.00). Explica por qué ese arreglo es ideal para su ocasión y sugiere un complemento afín.
+2. RASTREO DE PEDIDOS: Si el cliente pregunta por el estado de su pedido o proporciona un código (ej. PET-8492 o similar), DEBES OBLIGATORIAMENTE invocar la herramienta 'trackOrder' con el tracking_code indicado para consultar la base de datos de Supabase y explicarle con calidez en qué etapa exacta está su arreglo floral.
+3. CONSULTA DE PAGO / YAPE / PLIN: Si el cliente pregunta cómo pagar, pide el número de Yape o Plin, o solicita el código QR, infórmale con agrado que en PETALIA aceptamos Yape y Plin al número oficial **924 257 784** y que puede escanear el QR interactivo. Incluye la etiqueta mágica [MOSTRAR_QR_YAPE] en tu mensaje para desplegar la tarjeta interactiva con el QR de Yape y el botón de descarga en su pantalla.
+4. CIERRE Y REGISTRO DE COMPRA: En cuanto el cliente decida comprar, solicita amablemente:
+   - Datos del comprador: Nombre completo y Celular / WhatsApp de contacto.
+   - Datos de entrega: Nombre del destinatario, dirección exacta y distrito en Lima, fecha de entrega (ej: Hoy, Mañana, o fecha específica), dedicatoria para la tarjeta y método de pago (Yape, Plin o Transferencia).
+5. INVOCACIÓN OBLIGATORIA DE 'createOrder': En cuanto tengas estos datos, invoca de inmediato 'createOrder'. Si eligió algún complemento, inclúyelo en 'extra_items' y suma el monto al 'amount'. NO digas en texto plano "He registrado tu pedido" sin invocar la herramienta.
+6. ESTILO CONCIERGE: Respuestas pulidas, tono empático, viñetas limpias y emojis elegantes (🌸, 💐, ✨, 🌿, 🎁, 🚚). Nunca inventes arreglos ni precios inexistentes.`;
 
     // 3. Declaraciones formales de herramientas
     const createOrderDeclaration = {
@@ -194,6 +250,18 @@ Rutas principales y reglas de conversación:
           payment_method: {
             type: Type.STRING,
             description: 'Método de pago preferido: yape, plin o transferencia',
+          },
+          extra_items: {
+            type: Type.ARRAY,
+            description: 'Lista de toques especiales o complementos elegidos (ej. Chocolates, Peluches, Vino, Globos)',
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                name: { type: Type.STRING, description: 'Nombre del complemento' },
+                price: { type: Type.NUMBER, description: 'Precio unitario en Soles' },
+                quantity: { type: Type.NUMBER, description: 'Cantidad' },
+              },
+            },
           },
         },
         required: [
@@ -354,6 +422,7 @@ Rutas principales y reglas de conversación:
           product_name: string;
           amount: number;
           payment_method?: string;
+          extra_items?: Array<{ name: string; price: number; quantity?: number }>;
         };
 
         console.log('🤖 Chatbot Gemini invocó createOrder con args:', args);
@@ -445,7 +514,7 @@ Rutas principales y reglas de conversación:
         }
 
         // Insertar formalmente en public.orders con estado 'pendiente' y tracking_code
-        const directPayload = {
+        const directPayload: any = {
           customer_id: customerId,
           customer_name: buyerName,
           customer_phone: cleanPhone,
@@ -459,10 +528,15 @@ Rutas principales y reglas de conversación:
           tracking_code: trackingCode,
         };
 
+        if (args.extra_items && args.extra_items.length > 0) {
+          directPayload.extra_items = args.extra_items;
+        }
+
         console.log('📦 Intentando registrar pedido con tracking en Supabase...', {
           tracking: trackingCode,
           comprador: buyerName,
           total: finalAmount,
+          extra_items: args.extra_items,
         });
 
         let newOrder: any = null;
@@ -475,7 +549,7 @@ Rutas principales y reglas de conversación:
         // Si la tabla orders no tiene las columnas customer_name/customer_phone (código PGRST204)
         if (orderError && orderError.code === 'PGRST204') {
           console.warn('ℹ️ La tabla orders no tiene customer_name/customer_phone nativas, insertando con campos base...');
-          const fallbackPayload = {
+          const fallbackPayload: any = {
             customer_id: customerId,
             total_amount: finalAmount,
             payment_method: sqlPaymentMethod,
@@ -486,6 +560,10 @@ Rutas principales y reglas de conversación:
             status: 'pendiente' as const,
             tracking_code: trackingCode,
           };
+
+          if (args.extra_items && args.extra_items.length > 0) {
+            fallbackPayload.extra_items = args.extra_items;
+          }
 
           const retryRes = await supabase
             .from('orders')
@@ -514,6 +592,16 @@ Rutas principales y reglas de conversación:
           `🔖 *Código de rastreo:* ${trackingCode}`,
           `👤 *Comprador:* ${buyerName}${cleanPhone ? ` (${cleanPhone})` : ''}`,
           `📦 *Arreglo:* ${args.product_name}`,
+        ];
+
+        if (args.extra_items && args.extra_items.length > 0) {
+          const addonsListText = args.extra_items
+            .map((item) => `${item.name} (${item.quantity || 1}x S/ ${Number(item.price).toFixed(2)})`)
+            .join(', ');
+          waLines.push(`✨ *Toques Especiales:* ${addonsListText}`);
+        }
+
+        waLines.push(
           `💰 *Monto a pagar:* S/ ${finalAmount.toFixed(2)}`,
           `🎁 *Destinatario:* ${recipient}`,
           `📍 *Dirección de entrega:* ${args.delivery_address}`,
@@ -525,8 +613,8 @@ Rutas principales y reglas de conversación:
           `💳 *Método de pago:* ${sqlPaymentMethod.toUpperCase()}`,
           `🔍 *Rastreo en vivo:* ${trackingLink}`,
           ``,
-          `Adjunto por este medio mi comprobante de pago para que inicien la preparación. ¡Muchas gracias! ✨`,
-        ];
+          `Adjunto por este medio mi comprobante de pago para que inicien la preparación. ¡Muchas gracias! ✨`
+        );
 
         const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
           waLines.join('\n')

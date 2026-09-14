@@ -390,6 +390,38 @@ export default function HomePage() {
       )
       .subscribe();
 
+    // Canal dedicado para sincronización en tiempo real de Categorías (categories_realtime)
+    const categoriesChannel = supabase
+      .channel('categories_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'categories' },
+        async (payload: any) => {
+          console.log('⚡ Categorías en tiempo real (categories_realtime):', payload);
+          if (payload.eventType === 'INSERT' && payload.new) {
+            const newCat = payload.new as Category;
+            setCategories((prev) => {
+              if (prev.some((c) => c.id === newCat.id)) return prev;
+              return [...prev, newCat].sort((a, b) => a.name.localeCompare(b.name));
+            });
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            const updatedCat = payload.new as Category;
+            setCategories((prev) =>
+              prev
+                .map((c) => (c.id === updatedCat.id ? updatedCat : c))
+                .sort((a, b) => a.name.localeCompare(b.name))
+            );
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            const deletedId = payload.old.id;
+            setCategories((prev) => prev.filter((c) => c.id !== deletedId));
+          } else {
+            const fresh = await getCategories();
+            if (fresh) setCategories(fresh);
+          }
+        }
+      )
+      .subscribe();
+
     // Soportar lectura directa por URL (?track=CODIGO)
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -407,6 +439,7 @@ export default function HomePage() {
       supabase.removeChannel(heroSlidesChannel);
       supabase.removeChannel(specialAddonsChannel);
       supabase.removeChannel(campaignsChannel);
+      supabase.removeChannel(categoriesChannel);
     };
   }, []);
 
@@ -545,16 +578,11 @@ export default function HomePage() {
           (p) => (p.category || '').toLowerCase().trim() === category.toLowerCase().trim()
         );
 
-  // Agrupación de productos por categoría para carruseles de 1 sola fila en "Todos"
+  // Agrupación de productos por categoría desde public.categories para carruseles de 1 sola fila en "Todos"
   const categoryGroups = (
     activeCategories.length > 0
       ? activeCategories
-      : [
-          { id: 'ramos', name: 'Ramos de Autor', slug: 'ramos' },
-          { id: 'boxes', name: 'Boxes de Rosas', slug: 'boxes' },
-          { id: 'girasoles', name: 'Girasoles & Exóticos', slug: 'girasoles' },
-          { id: 'detalles', name: 'Detalles Especiales', slug: 'detalles' },
-        ]
+      : categories
   )
     .map((cat) => ({
       ...cat,
@@ -1080,7 +1108,7 @@ export default function HomePage() {
               <button
                 key={tab.id}
                 onClick={() => setCategory(tab.slug)}
-                className={`btn-tactile px-4 py-1.5 rounded-full whitespace-nowrap ${
+                className={`btn-tactile px-4 py-1.5 rounded-full whitespace-nowrap transition-all duration-300 ease-out ${
                   isActive
                     ? 'bg-rose-500 text-ink-900 font-semibold shadow-xs border border-rose-600'
                     : 'bg-rose-100 text-warm-500 border border-warm-100 hover:bg-rose-50 hover:text-ink-900 font-medium'

@@ -26,7 +26,7 @@ export async function getCategories(): Promise<Category[]> {
     const { data, error } = await supabase
       .from('categories')
       .select('*')
-      .order('created_at', { ascending: true });
+      .order('name', { ascending: true });
 
     if (error) {
       console.error('Error al consultar categories en Supabase:', error);
