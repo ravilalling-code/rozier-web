@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* Marca */
+  --rose-300: #F0C4C8;   /* acento pill / dots */
   --rose-500: #E8B4B8;   /* palo rosa principal */
   --rose-600: #D49A9E;   /* palo rosa oscuro (hover, bordes activos) */
   --rose-50:  #F8E9EC;   /* fondo general palo rosa empolvado cálido y refinado */
@@ -53,6 +53,7 @@
 @theme {
   --color-rose-50: var(--rose-50);
   --color-rose-100: var(--rose-100);
+  --color-rose-300: var(--rose-300);
   --color-rose-500: var(--rose-500);
   --color-rose-600: var(--rose-600);
 

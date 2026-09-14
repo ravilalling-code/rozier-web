@@ -8,6 +8,11 @@ import { getCategories } from '@/lib/categories';
 import { getStoreSettings } from '@/lib/settings';
 import { getCategoryBanners, DEFAULT_CATEGORY_BANNERS } from '@/lib/banners';
 import { getActiveCampaign, DEFAULT_CAMPAIGN } from '@/lib/campaigns';
+import StoreHeader from '@/components/StoreHeader';
+import HeroSlider from '@/components/HeroSlider';
+import TrustBar from '@/components/TrustBar';
+import TopOccasions from '@/components/TopOccasions';
+import PinnedScrollUnfold from '@/components/PinnedScrollUnfold';
 import {
   MessageCircle,
   Heart,
@@ -175,6 +180,38 @@ export default function HomePage() {
 
   // Ajustes de la tienda (Redes sociales y WhatsApp)
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
+
+  // Estado dinámico del Header (Top transparente vs Scrolled glassmorphism)
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const sentinel = document.getElementById('hero-sentinel');
+    let observer: IntersectionObserver | null = null;
+
+    if (sentinel) {
+      observer = new IntersectionObserver(
+        ([entry]) => {
+          setIsScrolled(!entry.isIntersecting && entry.boundingClientRect.top < 0);
+        },
+        { threshold: 0 }
+      );
+      observer.observe(sentinel);
+    }
+
+    const handleScroll = () => {
+      if (window.scrollY > 50) {
+        setIsScrolled(true);
+      } else if (window.scrollY <= 15) {
+        setIsScrolled(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      if (observer) observer.disconnect();
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   // 1. Cargar catálogo, zonas de delivery y recuperar carrito de LocalStorage al montar
   useEffect(() => {
@@ -790,164 +827,36 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-rose-50 text-ink-900 font-sans pb-28 selection:bg-rose-500 selection:text-ink-900">
-      {/* Top Banner de Confianza - Alta Gama */}
-      <div className="bg-ink-950 text-rose-100 text-[11px] py-2 px-4 text-center tracking-wide font-medium flex items-center justify-center gap-2 border-b border-ink-900">
-        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-rose-pulse" />
-        <span>Diseño Floral de Alta Gama • Envíos a Domicilio Exclusivos en Lima y Callao</span>
-      </div>
+      {/* 1. Header con Transparencia Dinámica y Transición Suave */}
+      <StoreHeader
+        isScrolled={isScrolled}
+        cartCount={totalCartItems}
+        onOpenCart={() => setIsCartOpen(true)}
+        onOpenTracking={() => {
+          setTrackingError(null);
+          setIsTrackingModalOpen(true);
+        }}
+        onSelectCategory={(slug) => setCategory(slug)}
+        categories={categories}
+        logoUrl={storeSettings?.logo_url}
+      />
 
-      {/* Header Fijo con Identidad PETALIA & Palo Rosa */}
-      <header className="sticky top-0 z-30 bg-rose-50/95 backdrop-blur-md border-b border-warm-100 shadow-xs">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <img
-              src={storeSettings?.logo_url || '/images/logo.jpg'}
-              alt="PETALIA Diseño Floral"
-              className="h-11 sm:h-12 w-auto object-contain rounded-xl transition transform group-hover:scale-102 shadow-2xs border border-warm-100"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/images/logo.jpg';
-              }}
-            />
-          </Link>
+      {/* 2. Hero Principal — Slider Full-Bleed con Transición "Wipe Horizontal" */}
+      <HeroSlider
+        onCtaClick={(target) => {
+          const el = document.getElementById(target.replace('#', ''));
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+      />
 
-          <div className="flex items-center gap-2">
-            {/* Botón de Rastreo de Pedido */}
-            <button
-              onClick={() => {
-                setTrackingError(null);
-                setIsTrackingModalOpen(true);
-              }}
-              className="btn-tactile flex items-center gap-1.5 bg-rose-100 hover:bg-rose-50 text-warm-500 hover:text-ink-900 px-3.5 py-1.5 rounded-full text-xs font-semibold border border-warm-100"
-              title="Rastrear estado de pedido en vivo"
-            >
-              <Truck className="w-3.5 h-3.5 text-rose-600" />
-              <span className="hidden sm:inline">Rastrea tu pedido</span>
-              <span className="sm:hidden">Rastrear</span>
-            </button>
+      {/* Centinela para el IntersectionObserver del Header */}
+      <div id="hero-sentinel" className="h-1 w-full -mt-1 pointer-events-none" />
 
-            {/* BOTÓN DEL CARRITO DE COMPRAS CON BADGE DINÁMICO */}
-            <button
-              onClick={() => setIsCartOpen(true)}
-              className="btn-tactile relative flex items-center gap-1.5 bg-rose-100 hover:bg-rose-50 text-ink-900 px-3.5 py-1.5 rounded-full text-xs font-semibold border border-rose-500/60 shadow-2xs"
-              title="Ver carrito de compras"
-            >
-              <ShoppingCart className="w-3.5 h-3.5 text-rose-600" />
-              <span className="hidden sm:inline">Carrito</span>
-              {totalCartItems > 0 && (
-                <span className="tabular-nums bg-accent-carmine text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
-                  {totalCartItems}
-                </span>
-              )}
-            </button>
+      {/* 3. Trust Bar Concéntrica */}
+      <TrustBar />
 
-            {/* Botón WhatsApp de Atención Directa */}
-            <a
-              href={`https://wa.me/${storeSettings?.whatsapp_number || WHATSAPP_NUMBER}?text=${encodeURIComponent(
-                '¡Hola PETALIA! Deseo realizar una consulta sobre flores y pedidos 🌸'
-              )}`}
-              target="_blank"
-              rel="noreferrer"
-              className="btn-tactile flex items-center gap-1.5 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 px-4 py-1.5 rounded-full text-xs font-semibold shadow-xs border border-ink-900 hover:border-rose-600"
-            >
-              <MessageCircle className="w-3.5 h-3.5 fill-current opacity-80" />
-              <span>WhatsApp</span>
-            </a>
-
-            {/* Acceso Administrativo Elegante */}
-            <Link
-              href="/admin/login"
-              className="btn-tactile p-2 text-warm-500 hover:text-ink-900 hover:bg-rose-100 rounded-full transition"
-              title="Panel Administrativo"
-              aria-label="Acceso al Panel Administrativo"
-            >
-              <Lock className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      {/* Hero Section Editorial de Alta Gama (Taste Skill) */}
-      <section className="py-16 md:py-24 px-4 text-center max-w-4xl mx-auto">
-        <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl font-normal tracking-tight text-ink-900 leading-[1.12] text-balance">
-          Artesanía floral que trasciende momentos inolvidables
-        </h1>
-        <p className="mt-4 text-sm sm:text-base text-warm-500 max-w-xl mx-auto font-normal leading-relaxed text-pretty">
-          Ramos de autor, boxes de rosas selectas y detalles de alta gama elaborados a mano en Lima con flores frescas de corte prémium.
-        </p>
-      </section>
-
-      {/* 1. Barra de Confianza (Trust Badges Horizontales) */}
-      <section className="w-full bg-rose-50 border-y border-warm-100 py-6 md:py-8">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="flex lg:grid lg:grid-cols-6 gap-4 overflow-x-auto no-scrollbar snap-x">
-            {/* 1. Entrega Hoy Mismo */}
-            <div className="snap-start shrink-0 w-[220px] sm:w-[240px] lg:w-auto flex items-center lg:flex-col lg:items-center lg:text-center gap-3 p-2 rounded-xl">
-              <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center shrink-0 text-rose-600 shadow-2xs border border-warm-100">
-                <Truck className="w-5 h-5 stroke-[1.75]" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-ink-900 tracking-tight">Entrega Hoy Mismo</h4>
-                <p className="text-[11px] text-warm-500 leading-tight mt-0.5">Envíos rápidos en Lima y Callao.</p>
-              </div>
-            </div>
-
-            {/* 2. Horario en Rangos */}
-            <div className="snap-start shrink-0 w-[220px] sm:w-[240px] lg:w-auto flex items-center lg:flex-col lg:items-center lg:text-center gap-3 p-2 rounded-xl">
-              <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center shrink-0 text-rose-600 shadow-2xs border border-warm-100">
-                <Clock className="w-5 h-5 stroke-[1.75]" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-ink-900 tracking-tight">Horario en Rangos</h4>
-                <p className="text-[11px] text-warm-500 leading-tight mt-0.5">Mañana, tarde o noche garantizada.</p>
-              </div>
-            </div>
-
-            {/* 3. Flores Frescas */}
-            <div className="snap-start shrink-0 w-[220px] sm:w-[240px] lg:w-auto flex items-center lg:flex-col lg:items-center lg:text-center gap-3 p-2 rounded-xl">
-              <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center shrink-0 text-rose-600 shadow-2xs border border-warm-100">
-                <Flower2 className="w-5 h-5 stroke-[1.75]" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-ink-900 tracking-tight">Flores Frescas</h4>
-                <p className="text-[11px] text-warm-500 leading-tight mt-0.5">Selección premium de exportación.</p>
-              </div>
-            </div>
-
-            {/* 4. Wow Garantizado */}
-            <div className="snap-start shrink-0 w-[220px] sm:w-[240px] lg:w-auto flex items-center lg:flex-col lg:items-center lg:text-center gap-3 p-2 rounded-xl">
-              <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center shrink-0 text-rose-600 shadow-2xs border border-warm-100">
-                <Heart className="w-5 h-5 stroke-[1.75]" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-ink-900 tracking-tight">Wow Garantizado</h4>
-                <p className="text-[11px] text-warm-500 leading-tight mt-0.5">Tu regalo generará un recuerdo inolvidable.</p>
-              </div>
-            </div>
-
-            {/* 5. Compra Segura */}
-            <div className="snap-start shrink-0 w-[220px] sm:w-[240px] lg:w-auto flex items-center lg:flex-col lg:items-center lg:text-center gap-3 p-2 rounded-xl">
-              <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center shrink-0 text-rose-600 shadow-2xs border border-warm-100">
-                <ShieldCheck className="w-5 h-5 stroke-[1.75]" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-ink-900 tracking-tight">Compra Segura</h4>
-                <p className="text-[11px] text-warm-500 leading-tight mt-0.5">Yape, Plin y transferencias directas.</p>
-              </div>
-            </div>
-
-            {/* 6. Atención Dedicada */}
-            <div className="snap-start shrink-0 w-[220px] sm:w-[240px] lg:w-auto flex items-center lg:flex-col lg:items-center lg:text-center gap-3 p-2 rounded-xl">
-              <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center shrink-0 text-rose-600 shadow-2xs border border-warm-100">
-                <Headphones className="w-5 h-5 stroke-[1.75]" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-ink-900 tracking-tight">Atención Dedicada</h4>
-                <p className="text-[11px] text-warm-500 leading-tight mt-0.5">Seguimiento continuo de tu detalle.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* 4. Sección "Ocasiones Más Solicitadas" (Cards con Overlay) */}
+      <TopOccasions onSelectOccasion={(slug) => setCategory(slug)} />
 
       {/* 2. Sección "¿Qué quieres celebrar?" (Carrusel Editorial con Flechas de Navegación) */}
       <section className="py-12 md:py-16 max-w-6xl mx-auto px-4">
@@ -1450,6 +1359,14 @@ export default function HomePage() {
           </div>
         )}
       </main>
+
+      {/* 5. Hero Secundario — Efecto "Pinned Scroll Unfold" */}
+      <PinnedScrollUnfold
+        onExploreClick={() => {
+          const el = document.getElementById('catalogo');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+      />
 
       {/* MODAL: Vista Previa y Personalización de Producto */}
       {selectedProduct && (
