@@ -27,6 +27,12 @@ const navigationItems = [
     description: 'Precios, stock y fotos',
   },
   {
+    name: 'Campañas & Promo',
+    href: '/admin/campaigns',
+    icon: Sparkles,
+    description: 'Flores amarillas y banners',
+  },
+  {
     name: 'Ventas & CRM',
     href: '/admin/orders',
     icon: ShoppingBag,

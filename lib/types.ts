@@ -123,3 +123,16 @@ export interface CategoryBanner {
   category_slug: string;
   order_index?: number;
 }
+
+export interface Campaign {
+  id: string;
+  title: string;
+  subtitle: string;
+  badge_text: string;
+  layout_type: 'carousel' | 'banner';
+  images: string[];
+  cta_text: string;
+  cta_link?: string;
+  is_active: boolean;
+  updated_at?: string;
+}

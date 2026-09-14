@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Product, Category, Order, OrderStatus, StoreSettings, CartItem, DeliveryZone, AddOnItem, CategoryBanner } from '@/lib/types';
+import { Product, Category, Order, OrderStatus, StoreSettings, CartItem, DeliveryZone, AddOnItem, CategoryBanner, Campaign } from '@/lib/types';
 import { getCategories } from '@/lib/categories';
 import { getStoreSettings } from '@/lib/settings';
 import { getCategoryBanners, DEFAULT_CATEGORY_BANNERS } from '@/lib/banners';
+import { getActiveCampaign, DEFAULT_CAMPAIGN } from '@/lib/campaigns';
 import {
   MessageCircle,
   Heart,
@@ -16,6 +17,7 @@ import {
   X,
   Store,
   ChevronRight,
+  ChevronLeft,
   ShieldCheck,
   Truck,
   Flower2,
@@ -141,6 +143,25 @@ export default function HomePage() {
 
   // Banners editoriales de "¿Qué quieres celebrar?"
   const [celebrationBanners, setCelebrationBanners] = useState<CategoryBanner[]>(DEFAULT_CATEGORY_BANNERS);
+  const celebrationCarouselRef = useRef<HTMLDivElement>(null);
+
+  const scrollCelebration = (direction: 'left' | 'right') => {
+    if (celebrationCarouselRef.current) {
+      const amount = direction === 'left' ? -320 : 320;
+      celebrationCarouselRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+  };
+
+  // Campaña promocional activa (Día de las Flores Amarillas)
+  const [activeCampaign, setActiveCampaign] = useState<Campaign>(DEFAULT_CAMPAIGN);
+  const campaignCarouselRef = useRef<HTMLDivElement>(null);
+
+  const scrollCampaign = (direction: 'left' | 'right') => {
+    if (campaignCarouselRef.current) {
+      const amount = direction === 'left' ? -340 : 340;
+      campaignCarouselRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+  };
 
   // Expansión de categorías en vista compacta (Todos)
   const [expandedCategories, setExpandedCategories] = useState<{ [slug: string]: boolean }>({});
@@ -160,7 +181,7 @@ export default function HomePage() {
     const fetchCatalogAndCategories = async () => {
       setLoading(true);
       try {
-        const [prodsRes, catsData, settingsData, zonesRes, bannersData] = await Promise.all([
+        const [prodsRes, catsData, settingsData, zonesRes, bannersData, campaignData] = await Promise.all([
           supabase
             .from('products')
             .select('*')
@@ -173,6 +194,7 @@ export default function HomePage() {
             .select('*')
             .order('district', { ascending: true }),
           getCategoryBanners(),
+          getActiveCampaign(),
         ]);
 
         if (!prodsRes.error && prodsRes.data) {
@@ -184,6 +206,9 @@ export default function HomePage() {
         }
         if (bannersData && bannersData.length > 0) {
           setCelebrationBanners(bannersData);
+        }
+        if (campaignData) {
+          setActiveCampaign(campaignData);
         }
         if (!zonesRes.error && zonesRes.data && zonesRes.data.length > 0) {
           setDeliveryZones(zonesRes.data as DeliveryZone[]);
@@ -861,11 +886,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 2. Sección "¿Qué quieres celebrar?" (Carrusel Editorial) */}
+      {/* 2. Sección "¿Qué quieres celebrar?" (Carrusel Editorial con Flechas de Navegación) */}
       <section className="py-12 md:py-16 max-w-6xl mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           {/* Columna izquierda (~28% en desktop) */}
-          <div className="lg:col-span-4 space-y-3 md:pr-4">
+          <div className="lg:col-span-4 space-y-4 md:pr-4">
             <span className="text-[11px] uppercase tracking-widest font-semibold text-rose-600">
               Colecciones Exclusivas
             </span>
@@ -875,11 +900,58 @@ export default function HomePage() {
             <p className="text-sm sm:text-base text-[#686161] leading-relaxed">
               El detalle floral exclusivo con el sello de lujo de PETALIA.
             </p>
+
+            {/* Flechas de navegación integradas */}
+            <div className="pt-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => scrollCelebration('left')}
+                className="w-10 h-10 rounded-full bg-white/95 shadow-md border border-warm-100 text-ink-900 hover:bg-rose-100 hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
+                title="Categoría anterior"
+                aria-label="Desplazar a la izquierda"
+              >
+                <ChevronLeft className="w-5 h-5 stroke-[2]" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollCelebration('right')}
+                className="w-10 h-10 rounded-full bg-white/95 shadow-md border border-warm-100 text-ink-900 hover:bg-rose-100 hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
+                title="Siguiente categoría"
+                aria-label="Desplazar a la derecha"
+              >
+                <ChevronRight className="w-5 h-5 stroke-[2]" />
+              </button>
+            </div>
           </div>
 
-          {/* Columna derecha (~72% en desktop, carrusel horizontal fluido con snap) */}
-          <div className="lg:col-span-8 overflow-hidden">
-            <div className="flex gap-5 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-3 pt-1">
+          {/* Columna derecha (~72% en desktop, carrusel horizontal fluido con snap y flechas flotantes) */}
+          <div className="lg:col-span-8 relative group/celebration">
+            {/* Botón flotante izquierdo en desktop */}
+            <button
+              type="button"
+              onClick={() => scrollCelebration('left')}
+              className="hidden lg:flex absolute -left-5 top-[38%] -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/95 shadow-md border border-warm-100 text-ink-900 hover:bg-rose-100 hover:scale-105 active:scale-95 transition-all items-center justify-center cursor-pointer"
+              title="Anterior"
+              aria-label="Desplazar carrusel a la izquierda"
+            >
+              <ChevronLeft className="w-5 h-5 stroke-[2]" />
+            </button>
+
+            {/* Botón flotante derecho en desktop */}
+            <button
+              type="button"
+              onClick={() => scrollCelebration('right')}
+              className="hidden lg:flex absolute -right-5 top-[38%] -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/95 shadow-md border border-warm-100 text-ink-900 hover:bg-rose-100 hover:scale-105 active:scale-95 transition-all items-center justify-center cursor-pointer"
+              title="Siguiente"
+              aria-label="Desplazar carrusel a la derecha"
+            >
+              <ChevronRight className="w-5 h-5 stroke-[2]" />
+            </button>
+
+            <div
+              ref={celebrationCarouselRef}
+              className="flex gap-5 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-3 pt-1"
+            >
               {celebrationBanners.map((banner) => (
                 <div
                   key={banner.id}
@@ -990,7 +1062,7 @@ export default function HomePage() {
             ))}
           </div>
         ) : category === 'todos' ? (
-          /* Vista "Todos": Carruseles de 1 sola fila por categoría con expansión suave a grilla */
+          /* Vista "Todos": Fila 1 (Categorías representativas) + Fila 2 (Campaña Activa) + Diseños */
           categoryGroups.length === 0 ? (
             <div className="text-center py-24 bg-white rounded-2xl border border-warm-100 card-editorial p-8 space-y-3 shadow-xs">
               <Flower2 className="w-12 h-12 text-rose-600 mx-auto stroke-1" />
@@ -1003,55 +1075,250 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="space-y-12">
-              {categoryGroups.map((group) => {
-                const isExpanded = !!expandedCategories[group.slug];
-                return (
-                  <section key={group.id || group.slug} className="space-y-4">
-                    {/* Encabezado elegante de categoría con descripción sutil */}
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-warm-100 pb-2">
-                      <div>
-                        <h3 className="font-serif text-2xl sm:text-3xl text-ink-900 font-normal tracking-tight">
-                          {group.name}
-                        </h3>
-                        <p className="text-xs text-warm-500 mt-0.5">
-                          Selección floral artesanal de alta gama con flores de corte fresco.
-                        </p>
+              {/* FILA 1: Colección por Categorías (Exactamente una foto representativa por categoría) */}
+              <section className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-warm-100 pb-2">
+                  <div>
+                    <span className="text-[11px] uppercase tracking-widest font-semibold text-rose-600">
+                      Exploración Rápida
+                    </span>
+                    <h3 className="font-serif text-2xl sm:text-3xl text-ink-900 font-normal tracking-tight">
+                      Colección por Categorías
+                    </h3>
+                    <p className="text-xs text-warm-500 mt-0.5">
+                      Explora cada una de nuestras líneas florales exclusivas. Haz clic para ver toda la colección.
+                    </p>
+                  </div>
+                  <span className="text-xs text-warm-500 font-mono mt-1 sm:mt-0">
+                    {categoryGroups.length} {categoryGroups.length === 1 ? 'colección' : 'colecciones'}
+                  </span>
+                </div>
+
+                <div className="flex gap-4 sm:gap-5 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-3 pt-1">
+                  {categoryGroups.map((group) => {
+                    const repProduct = group.products[0];
+                    const repImage = repProduct?.image_url || '/images/logo.jpg';
+
+                    return (
+                      <div
+                        key={group.id || group.slug}
+                        onClick={() => {
+                          setCategory(group.slug);
+                          const catNav = document.getElementById('catalogo');
+                          if (catNav) catNav.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className="snap-start shrink-0 min-w-[220px] sm:min-w-[260px] md:min-w-[280px] w-[220px] sm:w-[260px] md:w-[280px] group cursor-pointer"
+                      >
+                        <div className="aspect-[4/5] rounded-2xl overflow-hidden relative border border-warm-100 card-editorial shadow-xs">
+                          <img
+                            src={repImage}
+                            alt={group.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-ink-950/85 via-ink-950/25 to-transparent pointer-events-none" />
+
+                          {/* Badge de cantidad */}
+                          <div className="absolute top-3.5 right-3.5">
+                            <span className="bg-white/95 backdrop-blur-md text-ink-900 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-2xs">
+                              {group.products.length} {group.products.length === 1 ? 'diseño' : 'diseños'}
+                            </span>
+                          </div>
+
+                          {/* Info en base de tarjeta */}
+                          <div className="absolute bottom-4 left-4 right-4 text-white space-y-0.5">
+                            <span className="text-[10px] uppercase font-semibold text-rose-300 tracking-wider">
+                              Línea Floral
+                            </span>
+                            <h4 className="font-bold text-xl text-white tracking-tight leading-snug drop-shadow-xs group-hover:text-rose-200 transition">
+                              {group.name}
+                            </h4>
+                            <p className="text-[11px] text-neutral-200 line-clamp-1">
+                              {repProduct?.description || 'Flores frescas de corte de exportación'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Botón inferior Ver Colección */}
+                        <div className="pt-2.5 flex items-center justify-between text-xs font-semibold text-ink-900 group-hover:text-rose-600 transition">
+                          <span>Ver todos los diseños</span>
+                          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                        </div>
                       </div>
-                      <span className="text-xs text-warm-500 font-mono mt-1 sm:mt-0">
-                        {group.products.length} {group.products.length === 1 ? 'diseño' : 'diseños'}
-                      </span>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {/* FILA 2: Campaña Activa (Promocional / Flores Amarillas) */}
+              {activeCampaign && activeCampaign.is_active && (
+                <section className="bg-gradient-to-br from-amber-500/10 via-rose-500/10 to-transparent rounded-3xl p-6 sm:p-8 border border-amber-200/70 shadow-xs space-y-6">
+                  {/* Header de la Campaña */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="inline-flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                        <span>{activeCampaign.badge_text || 'Campaña Especial'}</span>
+                      </div>
+                      <h3 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-normal text-ink-900 tracking-tight">
+                        {activeCampaign.title}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-warm-500 max-w-xl">
+                        {activeCampaign.subtitle}
+                      </p>
                     </div>
 
-                    {/* Fila Horizontal Continua o Grilla Expandida */}
-                    {isExpanded ? (
-                      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6 animate-in fade-in duration-300">
-                        {group.products.map((product) => renderProductCard(product, false))}
-                      </div>
-                    ) : (
-                      <div className="flex gap-5 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-4 pt-1">
-                        {group.products.map((product) => renderProductCard(product, true))}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-3">
+                      {/* Botones de navegación si es carrusel */}
+                      {activeCampaign.layout_type === 'carousel' && activeCampaign.images.length > 1 && (
+                        <div className="hidden sm:flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => scrollCampaign('left')}
+                            className="w-9 h-9 rounded-full bg-white shadow-xs border border-warm-100 text-ink-900 hover:bg-rose-100 flex items-center justify-center transition active:scale-95"
+                            aria-label="Anterior foto de campaña"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => scrollCampaign('right')}
+                            className="w-9 h-9 rounded-full bg-white shadow-xs border border-warm-100 text-ink-900 hover:bg-rose-100 flex items-center justify-center transition active:scale-95"
+                            aria-label="Siguiente foto de campaña"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
 
-                    {/* Botón Editorial para Alternar Vista (Ver todos los diseños ↓ / Mostrar menos ↑) */}
-                    {group.products.length > 2 && (
-                      <div className="text-center pt-2 pb-4">
-                        <button
-                          type="button"
-                          onClick={() => toggleCategoryExpand(group.slug)}
-                          className="btn-tactile inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-ink-900 text-ink-900 hover:bg-rose-100 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
-                        >
-                          <span>
-                            {isExpanded
-                              ? 'Mostrar menos ↑'
-                              : `Ver todos los diseños de ${group.name} ↓`}
+                      {/* Botón CTA */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const link = activeCampaign.cta_link?.toLowerCase().trim();
+                          if (link && activeCategories.some((c) => c.slug.toLowerCase() === link)) {
+                            setCategory(link);
+                          } else {
+                            const el = document.getElementById('catalogo');
+                            if (el) el.scrollIntoView({ behavior: 'smooth' });
+                          }
+                        }}
+                        className="btn-tactile inline-flex items-center gap-2 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 px-5 py-2.5 rounded-full text-xs font-semibold shadow-xs transition"
+                      >
+                        <span>{activeCampaign.cta_text || 'Explorar Flores Amarillas'}</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Contenido Visual según layout_type */}
+                  {activeCampaign.layout_type === 'banner' ? (
+                    /* Modo Banner Grande Panorámico */
+                    <div className="relative rounded-2xl overflow-hidden aspect-[21/9] min-h-[220px] sm:min-h-[280px] border border-warm-100 card-editorial shadow-xs">
+                      <img
+                        src={activeCampaign.images[0] || '/images/logo.jpg'}
+                        alt={activeCampaign.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-r from-ink-950/85 via-ink-950/45 to-transparent flex items-center p-6 sm:p-10">
+                        <div className="max-w-md text-white space-y-2">
+                          <span className="text-[11px] font-semibold text-amber-300 uppercase tracking-wider">
+                            {activeCampaign.badge_text}
                           </span>
-                        </button>
+                          <h4 className="font-serif text-2xl sm:text-3xl md:text-4xl font-normal leading-tight">
+                            {activeCampaign.title}
+                          </h4>
+                          <p className="text-xs sm:text-sm text-neutral-200 line-clamp-2">
+                            {activeCampaign.subtitle}
+                          </p>
+                        </div>
                       </div>
-                    )}
-                  </section>
-                );
-              })}
+                    </div>
+                  ) : (
+                    /* Modo Carrusel de Fotos con snap */
+                    <div
+                      ref={campaignCarouselRef}
+                      className="flex gap-4 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-2"
+                    >
+                      {activeCampaign.images.map((imgUrl, i) => (
+                        <div
+                          key={i}
+                          className="snap-start shrink-0 aspect-[4/3] sm:aspect-[16/10] min-w-[260px] sm:min-w-[320px] md:min-w-[360px] rounded-2xl overflow-hidden relative border border-warm-100 card-editorial shadow-xs group"
+                        >
+                          <img
+                            src={imgUrl}
+                            alt={`${activeCampaign.title} ${i + 1}`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                            loading="lazy"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {/* SECCIONES DE PRODUCTOS POR CATEGORÍA */}
+              <div className="space-y-12 pt-4">
+                <div className="border-b border-warm-100 pb-2">
+                  <span className="text-[11px] uppercase tracking-widest font-semibold text-rose-600">
+                    Catálogo Completo
+                  </span>
+                  <h3 className="font-serif text-2xl sm:text-3xl text-ink-900 font-normal tracking-tight">
+                    Todos los Diseños Florales
+                  </h3>
+                </div>
+
+                {categoryGroups.map((group) => {
+                  const isExpanded = !!expandedCategories[group.slug];
+                  return (
+                    <section key={group.id || group.slug} className="space-y-4">
+                      {/* Encabezado elegante de categoría con descripción sutil */}
+                      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-warm-100 pb-2">
+                        <div>
+                          <h3 className="font-serif text-2xl sm:text-3xl text-ink-900 font-normal tracking-tight">
+                            {group.name}
+                          </h3>
+                          <p className="text-xs text-warm-500 mt-0.5">
+                            Selección floral artesanal de alta gama con flores de corte fresco.
+                          </p>
+                        </div>
+                        <span className="text-xs text-warm-500 font-mono mt-1 sm:mt-0">
+                          {group.products.length} {group.products.length === 1 ? 'diseño' : 'diseños'}
+                        </span>
+                      </div>
+
+                      {/* Fila Horizontal Continua o Grilla Expandida */}
+                      {isExpanded ? (
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6 animate-in fade-in duration-300">
+                          {group.products.map((product) => renderProductCard(product, false))}
+                        </div>
+                      ) : (
+                        <div className="flex gap-5 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-4 pt-1">
+                          {group.products.map((product) => renderProductCard(product, true))}
+                        </div>
+                      )}
+
+                      {/* Botón Editorial para Alternar Vista (Ver todos los diseños ↓ / Mostrar menos ↑) */}
+                      {group.products.length > 2 && (
+                        <div className="text-center pt-2 pb-4">
+                          <button
+                            type="button"
+                            onClick={() => toggleCategoryExpand(group.slug)}
+                            className="btn-tactile inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-ink-900 text-ink-900 hover:bg-rose-100 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
+                          >
+                            <span>
+                              {isExpanded
+                                ? 'Mostrar menos ↑'
+                                : `Ver todos los diseños de ${group.name} ↓`}
+                            </span>
+                          </button>
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
+              </div>
             </div>
           )
         ) : (
