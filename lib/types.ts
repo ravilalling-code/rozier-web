@@ -120,8 +120,10 @@ export interface CategoryBanner {
   title: string;
   badge_text: string;
   image_url: string;
-  category_slug: string;
+  category_slug?: string;
+  link_category?: string;
   order_index?: number;
+  sort_order?: number;
 }
 
 export interface Campaign {
