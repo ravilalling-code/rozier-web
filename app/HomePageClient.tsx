@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Product, Category, Order, OrderStatus, StoreSettings, CartItem, DeliveryZone, AddOnItem, CategoryBanner, Campaign } from '@/lib/types';
+import { Product, Category, Order, OrderStatus, StoreSettings, CartItem, DeliveryZone, AddOnItem, CategoryBanner, Campaign, HeroSlide } from '@/lib/types';
 import { getCategories } from '@/lib/categories';
 import { getStoreSettings } from '@/lib/settings';
 import { getCategoryBanners, DEFAULT_CATEGORY_BANNERS } from '@/lib/banners';
 import { getActiveCampaign, DEFAULT_CAMPAIGN } from '@/lib/campaigns';
+import { getHeroSlides, DEFAULT_HERO_SLIDES } from '@/lib/heroSlides';
 import StoreHeader from '@/components/StoreHeader';
 import HeroSlider from '@/components/HeroSlider';
 import TrustBar from '@/components/TrustBar';
@@ -178,6 +179,9 @@ export default function HomePage() {
     }));
   };
 
+  // Slides dinámicos del Hero Principal
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(DEFAULT_HERO_SLIDES);
+
   // Ajustes de la tienda (Redes sociales y WhatsApp)
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
 
@@ -218,7 +222,7 @@ export default function HomePage() {
     const fetchCatalogAndCategories = async () => {
       setLoading(true);
       try {
-        const [prodsRes, catsData, settingsData, zonesRes, bannersData, campaignData] = await Promise.all([
+        const [prodsRes, catsData, settingsData, zonesRes, bannersData, campaignData, slidesData] = await Promise.all([
           supabase
             .from('products')
             .select('*')
@@ -232,6 +236,7 @@ export default function HomePage() {
             .order('district', { ascending: true }),
           getCategoryBanners(),
           getActiveCampaign(),
+          getHeroSlides(),
         ]);
 
         if (!prodsRes.error && prodsRes.data) {
@@ -246,6 +251,9 @@ export default function HomePage() {
         }
         if (campaignData) {
           setActiveCampaign(campaignData);
+        }
+        if (slidesData && slidesData.length > 0) {
+          setHeroSlides(slidesData);
         }
         if (!zonesRes.error && zonesRes.data && zonesRes.data.length > 0) {
           setDeliveryZones(zonesRes.data as DeliveryZone[]);
@@ -336,6 +344,21 @@ export default function HomePage() {
       )
       .subscribe();
 
+    // Canal dedicado para sincronización en tiempo real de Hero Slides
+    const heroSlidesChannel = supabase
+      .channel('hero_slides_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'hero_slides' },
+        async () => {
+          const freshSlides = await getHeroSlides();
+          if (freshSlides && freshSlides.length > 0) {
+            setHeroSlides(freshSlides);
+          }
+        }
+      )
+      .subscribe();
+
     // Soportar lectura directa por URL (?track=CODIGO)
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -350,6 +373,7 @@ export default function HomePage() {
 
     return () => {
       supabase.removeChannel(realtimeChannel);
+      supabase.removeChannel(heroSlidesChannel);
     };
   }, []);
 
@@ -843,6 +867,7 @@ export default function HomePage() {
 
       {/* 2. Hero Principal — Slider Full-Bleed con Transición "Wipe Horizontal" */}
       <HeroSlider
+        slides={heroSlides}
         onCtaClick={(target) => {
           const el = document.getElementById(target.replace('#', ''));
           if (el) el.scrollIntoView({ behavior: 'smooth' });

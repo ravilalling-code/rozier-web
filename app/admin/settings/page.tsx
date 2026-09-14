@@ -5,6 +5,7 @@ import { getStoreSettings, updateStoreSettings, DEFAULT_SETTINGS } from '@/lib/s
 import { getCategoryBanners, updateCategoryBanners, uploadBannerImage, DEFAULT_CATEGORY_BANNERS } from '@/lib/banners';
 import { StoreSettings, CategoryBanner, Category } from '@/lib/types';
 import { getCategories } from '@/lib/categories';
+import Link from 'next/link';
 import {
   Share2,
   MessageCircle,
@@ -18,6 +19,8 @@ import {
   Sparkles,
   Upload,
   Image as ImageIcon,
+  Layers,
+  ArrowRight,
 } from 'lucide-react';
 
 export default function AdminSettingsPage() {
@@ -160,6 +163,34 @@ export default function AdminSettingsPage() {
         </div>
       ) : (
         <>
+          {/* SECCIÓN HERO SLIDER (FOTOS DE PORTADA) */}
+          <div className="bg-gradient-to-r from-neutral-900 via-neutral-900 to-rose-950/40 border border-rose-900/40 rounded-3xl p-6 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/30">
+                <Layers className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-white">Hero Slider (Fotos de Portada)</h2>
+                  <span className="text-[10px] bg-rose-500/20 text-rose-300 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Landing Page
+                  </span>
+                </div>
+                <p className="text-xs text-neutral-400 mt-0.5">
+                  Administra las 1 a 5 fotos de gran formato con efecto Wipe Horizontal, textos coreografiados y dots dinámicos.
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href="/admin/hero"
+              className="btn-tactile inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-md transition shrink-0 self-start sm:self-auto"
+            >
+              <span>Gestionar Slides del Hero</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
           {/* SECCIÓN 1: BANNERS EDITORIALES "¿QUÉ QUIERES CELEBRAR?" */}
           <div className="bg-neutral-900/90 border border-neutral-800 rounded-3xl p-6 shadow-xl space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-800">

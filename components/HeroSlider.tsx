@@ -2,66 +2,18 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { ArrowUpRight } from 'lucide-react';
-
-interface HeroSlide {
-  id: string;
-  title: string;
-  subtitle: string;
-  badge: string;
-  ctaText: string;
-  ctaTarget: string;
-  imageUrl: string;
-  watermark?: string;
-}
-
-const HERO_SLIDES: HeroSlide[] = [
-  {
-    id: 'slide-1',
-    title: 'ARTE FLORAL DISEÑADO PARA EMOCIONAR',
-    subtitle: 'Ramos de autor y colecciones exclusivas confeccionadas con flores frescas de exportación.',
-    badge: 'Colección de Temporada',
-    ctaText: 'Explorar Colección',
-    ctaTarget: '#catalogo',
-    imageUrl: 'https://qnrwguxaxcwqzodngztg.supabase.co/storage/v1/object/public/products/ramos/IMG-20260912-WA0043.jpg',
-    watermark: 'Petalia',
-  },
-  {
-    id: 'slide-2',
-    title: 'BOXES DE ROSAS & DISTINCIÓN ETERNA',
-    subtitle: 'Arreglos en cajas de lujo con acabados de alta costura floral y dedicatoria personalizada.',
-    badge: 'Alta Gama',
-    ctaText: 'Ver Boxes Exclusivos',
-    ctaTarget: '#catalogo',
-    imageUrl: 'https://qnrwguxaxcwqzodngztg.supabase.co/storage/v1/object/public/products/boxes/IMG-20260912-WA0044.jpg',
-    watermark: 'Romance',
-  },
-  {
-    id: 'slide-3',
-    title: 'ENERGÍA RADIANTE EN GIRASOLES SELECTOS',
-    subtitle: 'La luz y sofisticación de los tonos dorados seleccionados flor por flor.',
-    badge: 'Edición Especial',
-    ctaText: 'Descubrir Girasoles',
-    ctaTarget: '#catalogo',
-    imageUrl: 'https://qnrwguxaxcwqzodngztg.supabase.co/storage/v1/object/public/products/girasoles/IMG-20260912-WA0040.jpg',
-    watermark: 'Golden',
-  },
-  {
-    id: 'slide-4',
-    title: 'DETALLES QUE PERDURAN EN EL RECUERDO',
-    subtitle: 'Complementos finos, orquídeas y diseños especiales para celebrar los momentos que importan.',
-    badge: 'Momentos Únicos',
-    ctaText: 'Ver Detalles',
-    ctaTarget: '#catalogo',
-    imageUrl: 'https://qnrwguxaxcwqzodngztg.supabase.co/storage/v1/object/public/products/items/1789322993190.jpg',
-    watermark: 'Elegance',
-  },
-];
+import { HeroSlide } from '@/lib/types';
+import { DEFAULT_HERO_SLIDES } from '@/lib/heroSlides';
 
 interface HeroSliderProps {
+  slides?: HeroSlide[];
   onCtaClick?: (target: string) => void;
 }
 
-export default function HeroSlider({ onCtaClick }: HeroSliderProps) {
+export default function HeroSlider({ slides, onCtaClick }: HeroSliderProps) {
+  const activeSlides = slides && slides.length > 0 ? slides : DEFAULT_HERO_SLIDES;
+  const totalSlides = activeSlides.length;
+
   const [currentIdx, setCurrentIdx] = useState(0);
   const [incomingIdx, setIncomingIdx] = useState<number | null>(null);
   const [isWiping, setIsWiping] = useState(false);
@@ -72,11 +24,16 @@ export default function HeroSlider({ onCtaClick }: HeroSliderProps) {
   const wipeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const textTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const totalSlides = HERO_SLIDES.length;
+  // Asegurar que currentIdx esté dentro del rango si la cantidad de slides cambia dinámicamente
+  useEffect(() => {
+    if (currentIdx >= totalSlides) {
+      setCurrentIdx(Math.max(0, totalSlides - 1));
+    }
+  }, [totalSlides, currentIdx]);
 
   const goToSlide = useCallback(
     (targetIndex: number) => {
-      if (isWiping || targetIndex === currentIdx) return;
+      if (isWiping || targetIndex === currentIdx || totalSlides <= 1) return;
 
       // 1. Coreografía: Fade-out rápido del texto saliente (150ms)
       setTextVisible(false);
@@ -99,28 +56,30 @@ export default function HeroSlider({ onCtaClick }: HeroSliderProps) {
         }, 100);
       }, 800);
     },
-    [isWiping, currentIdx]
+    [isWiping, currentIdx, totalSlides]
   );
 
   const nextSlide = useCallback(() => {
+    if (totalSlides <= 1) return;
     const next = (currentIdx + 1) % totalSlides;
     goToSlide(next);
   }, [currentIdx, totalSlides, goToSlide]);
 
   const prevSlide = useCallback(() => {
+    if (totalSlides <= 1) return;
     const prev = (currentIdx - 1 + totalSlides) % totalSlides;
     goToSlide(prev);
   }, [currentIdx, totalSlides, goToSlide]);
 
   // Autoplay de 5.5s con pausa on-hover
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || totalSlides <= 1) return;
     const interval = setInterval(() => {
       nextSlide();
     }, 5500);
 
     return () => clearInterval(interval);
-  }, [isPaused, nextSlide]);
+  }, [isPaused, nextSlide, totalSlides]);
 
   // Limpieza de timeouts
   useEffect(() => {
@@ -136,7 +95,7 @@ export default function HeroSlider({ onCtaClick }: HeroSliderProps) {
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
+    if (touchStartX.current === null || totalSlides <= 1) return;
     const touchEndX = e.changedTouches[0].clientX;
     const diff = touchStartX.current - touchEndX;
 
@@ -150,13 +109,15 @@ export default function HeroSlider({ onCtaClick }: HeroSliderProps) {
     touchStartX.current = null;
   };
 
-  const activeSlide = HERO_SLIDES[currentIdx];
+  const safeIdx = Math.min(currentIdx, totalSlides - 1);
+  const activeSlide = activeSlides[safeIdx] || activeSlides[0];
 
-  const handleCta = (target: string) => {
+  const handleCta = (target?: string) => {
+    const cleanTarget = target || '#catalogo';
     if (onCtaClick) {
-      onCtaClick(target);
+      onCtaClick(cleanTarget);
     } else {
-      const el = document.getElementById(target.replace('#', ''));
+      const el = document.getElementById(cleanTarget.replace('#', ''));
       if (el) el.scrollIntoView({ behavior: 'smooth' });
     }
   };
@@ -172,7 +133,7 @@ export default function HeroSlider({ onCtaClick }: HeroSliderProps) {
       {/* 1. SLIDE ACTUAL (Estático detrás durante el wipe) */}
       <div className="absolute inset-0 z-0">
         <img
-          src={activeSlide.imageUrl}
+          src={activeSlide.image_url}
           alt={activeSlide.title}
           className="w-full h-full object-cover"
         />
@@ -182,7 +143,7 @@ export default function HeroSlider({ onCtaClick }: HeroSliderProps) {
       </div>
 
       {/* 2. SLIDE ENTRANTE CON WIPE HORIZONTAL */}
-      {incomingIdx !== null && (
+      {incomingIdx !== null && activeSlides[incomingIdx] && (
         <div
           className="absolute inset-0 z-10 overflow-hidden"
           style={{
@@ -192,8 +153,8 @@ export default function HeroSlider({ onCtaClick }: HeroSliderProps) {
           }}
         >
           <img
-            src={HERO_SLIDES[incomingIdx].imageUrl}
-            alt={HERO_SLIDES[incomingIdx].title}
+            src={activeSlides[incomingIdx].image_url}
+            alt={activeSlides[incomingIdx].title}
             className="w-full h-full object-cover"
           />
           {/* Overlay del slide entrante */}
@@ -203,14 +164,14 @@ export default function HeroSlider({ onCtaClick }: HeroSliderProps) {
       )}
 
       {/* 3. MARCA DE AGUA DECORATIVA (Watermark Script) */}
-      {activeSlide.watermark && (
+      {activeSlide.watermark_text && (
         <div
           className="pointer-events-none select-none font-serif italic text-8xl md:text-[13rem] text-white/10 absolute -bottom-4 md:-bottom-8 right-6 md:right-16 z-10 leading-none tracking-tight transition-opacity duration-700"
           style={{
             opacity: textVisible ? 0.15 : 0,
           }}
         >
-          {activeSlide.watermark}
+          {activeSlide.watermark_text}
         </div>
       )}
 
@@ -230,7 +191,7 @@ export default function HeroSlider({ onCtaClick }: HeroSliderProps) {
           {/* Insignia / Badge de Slide */}
           <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md text-white text-xs font-semibold uppercase tracking-[0.2em] px-3.5 py-1.5 rounded-full border border-white/30 shadow-xs">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--rose-300)]" />
-            <span>{activeSlide.badge}</span>
+            <span>{activeSlide.badge_text}</span>
           </div>
 
           {/* Título Editorial Imponente en Serif Display */}
@@ -247,15 +208,15 @@ export default function HeroSlider({ onCtaClick }: HeroSliderProps) {
           <div className="pt-2 sm:pt-4 flex items-center gap-3.5">
             <button
               type="button"
-              onClick={() => handleCta(activeSlide.ctaTarget)}
+              onClick={() => handleCta(activeSlide.cta_link)}
               className="btn-tactile bg-[var(--rose-300)] text-[var(--ink-900)] rounded-full px-7 py-3.5 font-bold text-xs sm:text-sm tracking-wider uppercase hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/30 flex items-center gap-2 cursor-pointer"
             >
-              <span>{activeSlide.ctaText}</span>
+              <span>{activeSlide.cta_text || 'Explorar Colección'}</span>
             </button>
 
             <button
               type="button"
-              onClick={() => handleCta(activeSlide.ctaTarget)}
+              onClick={() => handleCta(activeSlide.cta_link)}
               aria-label="Ir a la colección"
               className="btn-tactile w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/40 text-white flex items-center justify-center hover:bg-white hover:text-ink-900 transition-all cursor-pointer shadow-lg"
             >
@@ -265,25 +226,27 @@ export default function HeroSlider({ onCtaClick }: HeroSliderProps) {
         </div>
       </div>
 
-      {/* 5. NAVEGACIÓN VERTICAL POR DOTS (Columna Derecha) */}
-      <div className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-20">
-        {HERO_SLIDES.map((slide, idx) => {
-          const isActive = idx === currentIdx;
-          return (
-            <button
-              key={slide.id}
-              type="button"
-              onClick={() => goToSlide(idx)}
-              aria-label={`Ir al slide ${idx + 1}`}
-              className={`transition-all duration-300 rounded-full cursor-pointer ${
-                isActive
-                  ? 'h-8 w-2 bg-[var(--rose-300)] shadow-md'
-                  : 'h-2 w-2 bg-white/50 hover:bg-white/80'
-              }`}
-            />
-          );
-        })}
-      </div>
+      {/* 5. NAVEGACIÓN VERTICAL POR DOTS DINÁMICOS (Columna Derecha, 1 a 5 dots según cantidad) */}
+      {totalSlides > 1 && (
+        <div className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-20">
+          {activeSlides.map((slide, idx) => {
+            const isActive = idx === safeIdx;
+            return (
+              <button
+                key={slide.id || idx}
+                type="button"
+                onClick={() => goToSlide(idx)}
+                aria-label={`Ir al slide ${idx + 1}`}
+                className={`transition-all duration-300 rounded-full cursor-pointer ${
+                  isActive
+                    ? 'h-8 w-2 bg-[var(--rose-300)] shadow-md'
+                    : 'h-2 w-2 bg-white/50 hover:bg-white/80'
+                }`}
+              />
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }

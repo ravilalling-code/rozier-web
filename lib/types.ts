@@ -138,3 +138,17 @@ export interface Campaign {
   is_active: boolean;
   updated_at?: string;
 }
+
+export interface HeroSlide {
+  id: string;
+  badge_text: string;
+  title: string;
+  subtitle: string;
+  image_url: string;
+  cta_text?: string;
+  cta_link?: string;
+  watermark_text?: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at?: string;
+}

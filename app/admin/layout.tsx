@@ -17,6 +17,7 @@ import {
   LogOut,
   Share2,
   Heart,
+  Layers,
 } from 'lucide-react';
 
 const navigationItems = [
@@ -25,6 +26,12 @@ const navigationItems = [
     href: '/admin/products',
     icon: Package,
     description: 'Precios, stock y fotos',
+  },
+  {
+    name: 'Hero Slider (Portada)',
+    href: '/admin/hero',
+    icon: Layers,
+    description: 'Fotos y textos de portada',
   },
   {
     name: 'Campañas & Promo',
