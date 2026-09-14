@@ -69,6 +69,7 @@
   --color-focus-ring: var(--focus-ring);
 
   --shadow-rose: var(--shadow-rose);
+  --font-serif: var(--font-serif), Georgia, Cambria, "Times New Roman", serif;
 }
 
 body {
@@ -128,7 +129,7 @@ body {
 @keyframes springScaleIn {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.96);
   }
   to {
     opacity: 1;
@@ -138,23 +139,85 @@ body {
 
 @keyframes springSlideRight {
   from {
+    opacity: 0.7;
     transform: translateX(100%);
   }
   to {
+    opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }
 
 .animate-spring-modal {
   animation: springScaleIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
 }
 
 .animate-spring-drawer {
-  animation: springSlideRight 0.36s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: springSlideRight 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-popover {
+  animation: popoverFadeIn 0.20s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
 }
 
 .ease-spring {
   transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Botón táctil rápido (100ms ease-out) para feedback inmediato sin delay de spring */
+.btn-tactile {
+  transition: transform 100ms ease-out, background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+  will-change: transform;
+}
+.btn-tactile:active {
+  transform: scale(0.97);
+}
+
+/* Skeleton Shimmer de Marca (stops: --rose-50 -> --rose-100 -> --rose-50) */
+@keyframes brandShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-brand {
+  background: linear-gradient(
+    90deg,
+    var(--rose-50) 0%,
+    var(--rose-100) 50%,
+    var(--rose-50) 100%
+  );
+  background-size: 200% 100%;
+  animation: brandShimmer 1.5s ease-in-out infinite;
+}
+
+/* Borde de Luz Superior y Sombra de Marca (Relieve Pulido Editorial) */
+.card-editorial {
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.7), var(--shadow-rose);
+}
+
+.card-editorial-hover {
+  transition: box-shadow 300ms ease, transform 300ms ease;
+}
+.card-editorial-hover:hover {
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.9), 0 14px 30px -5px rgba(232, 180, 184, 0.38);
 }
 
 /* Utilidad para scroll horizontal táctil limpio sin scrollbar visible */
@@ -165,4 +228,5 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
 

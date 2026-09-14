@@ -543,7 +543,7 @@ export default function HomePage() {
                 setTrackingError(null);
                 setIsTrackingModalOpen(true);
               }}
-              className="flex items-center gap-1.5 bg-rose-100 hover:bg-rose-50 text-warm-500 hover:text-ink-900 px-3.5 py-1.5 rounded-full text-xs font-semibold transition active:scale-[0.98] border border-warm-100"
+              className="btn-tactile flex items-center gap-1.5 bg-rose-100 hover:bg-rose-50 text-warm-500 hover:text-ink-900 px-3.5 py-1.5 rounded-full text-xs font-semibold border border-warm-100"
               title="Rastrear estado de pedido en vivo"
             >
               <Truck className="w-3.5 h-3.5 text-rose-600" />
@@ -554,13 +554,13 @@ export default function HomePage() {
             {/* BOTÓN DEL CARRITO DE COMPRAS CON BADGE DINÁMICO */}
             <button
               onClick={() => setIsCartOpen(true)}
-              className="relative flex items-center gap-1.5 bg-rose-100 hover:bg-rose-50 text-ink-900 px-3.5 py-1.5 rounded-full text-xs font-semibold transition active:scale-[0.98] border border-rose-500/60 shadow-2xs"
+              className="btn-tactile relative flex items-center gap-1.5 bg-rose-100 hover:bg-rose-50 text-ink-900 px-3.5 py-1.5 rounded-full text-xs font-semibold border border-rose-500/60 shadow-2xs"
               title="Ver carrito de compras"
             >
               <ShoppingCart className="w-3.5 h-3.5 text-rose-600" />
               <span className="hidden sm:inline">Carrito</span>
               {totalCartItems > 0 && (
-                <span className="bg-accent-carmine text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
+                <span className="tabular-nums bg-accent-carmine text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
                   {totalCartItems}
                 </span>
               )}
@@ -573,7 +573,7 @@ export default function HomePage() {
               )}`}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-1.5 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 px-4 py-1.5 rounded-full text-xs font-semibold shadow-xs border border-ink-900 hover:border-rose-600 transition active:scale-[0.98]"
+              className="btn-tactile flex items-center gap-1.5 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 px-4 py-1.5 rounded-full text-xs font-semibold shadow-xs border border-ink-900 hover:border-rose-600"
             >
               <MessageCircle className="w-3.5 h-3.5 fill-current opacity-80" />
               <span>WhatsApp</span>
@@ -582,7 +582,7 @@ export default function HomePage() {
             {/* Acceso Administrativo Elegante */}
             <Link
               href="/admin/login"
-              className="p-2 text-warm-500 hover:text-ink-900 hover:bg-rose-100 rounded-full transition"
+              className="btn-tactile p-2 text-warm-500 hover:text-ink-900 hover:bg-rose-100 rounded-full transition"
               title="Panel Administrativo"
               aria-label="Acceso al Panel Administrativo"
             >
@@ -590,52 +590,78 @@ export default function HomePage() {
             </Link>
           </div>
         </div>
-
-        {/* Pestañas de Categoría (Pills de Navegación Palo Rosa) */}
-        <div className="border-t border-warm-100">
-          <div className="max-w-6xl mx-auto px-4 py-2.5 flex gap-2 overflow-x-auto no-scrollbar text-xs">
-            {/* Pestaña "Todos" */}
-            <button
-              onClick={() => setCategory('todos')}
-              className={`px-4 py-1.5 rounded-full whitespace-nowrap transition-all ${
-                category === 'todos'
-                  ? 'bg-rose-500 text-ink-900 font-semibold shadow-xs border border-rose-600'
-                  : 'bg-rose-100 text-warm-500 border border-warm-100 hover:bg-rose-50 hover:text-ink-900 font-medium'
-              }`}
-            >
-              Todos los Diseños
-            </button>
-
-            {/* Pestañas Dinámicas conectadas a public.categories */}
-            {activeCategories.map((tab) => {
-              const isActive = category.toLowerCase() === tab.slug.toLowerCase();
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setCategory(tab.slug)}
-                  className={`px-4 py-1.5 rounded-full whitespace-nowrap transition-all ${
-                    isActive
-                      ? 'bg-rose-500 text-ink-900 font-semibold shadow-xs border border-rose-600'
-                      : 'bg-rose-100 text-warm-500 border border-warm-100 hover:bg-rose-50 hover:text-ink-900 font-medium'
-                  }`}
-                >
-                  {tab.name}
-                </button>
-              );
-            })}
-          </div>
-        </div>
       </header>
+
+      {/* Hero Section Editorial de Alta Gama (Taste Skill) */}
+      <section className="py-16 md:py-24 px-4 text-center max-w-4xl mx-auto">
+        <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl font-normal tracking-tight text-ink-900 leading-[1.12] text-balance">
+          Artesanía floral que trasciende momentos inolvidables
+        </h1>
+        <p className="mt-4 text-sm sm:text-base text-warm-500 max-w-xl mx-auto font-normal leading-relaxed text-pretty">
+          Ramos de autor, boxes de rosas selectas y detalles de alta gama elaborados a mano en Lima con flores frescas de corte prémium.
+        </p>
+      </section>
+
+      {/* Pestañas de Categoría (Pills de Navegación Palo Rosa) */}
+      <nav id="catalogo" aria-label="Categorías" className="sticky top-[57px] sm:top-[61px] z-20 bg-rose-50/95 backdrop-blur-md border-y border-warm-100 py-2.5">
+        <div className="max-w-6xl mx-auto px-4 flex gap-2 overflow-x-auto no-scrollbar text-xs">
+          {/* Pestaña "Todos" */}
+          <button
+            onClick={() => setCategory('todos')}
+            className={`btn-tactile px-4 py-1.5 rounded-full whitespace-nowrap ${
+              category === 'todos'
+                ? 'bg-rose-500 text-ink-900 font-semibold shadow-xs border border-rose-600'
+                : 'bg-rose-100 text-warm-500 border border-warm-100 hover:bg-rose-50 hover:text-ink-900 font-medium'
+            }`}
+          >
+            Todos los Diseños
+          </button>
+
+          {/* Pestañas Dinámicas conectadas a public.categories */}
+          {activeCategories.map((tab) => {
+            const isActive = category.toLowerCase() === tab.slug.toLowerCase();
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setCategory(tab.slug)}
+                className={`btn-tactile px-4 py-1.5 rounded-full whitespace-nowrap ${
+                  isActive
+                    ? 'bg-rose-500 text-ink-900 font-semibold shadow-xs border border-rose-600'
+                    : 'bg-rose-100 text-warm-500 border border-warm-100 hover:bg-rose-50 hover:text-ink-900 font-medium'
+                }`}
+              >
+                {tab.name}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
 
       {/* Catálogo de Productos - Grilla 2 Cols Móvil & 4 Cols Desktop */}
       <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-24 text-warm-500 space-y-3">
-            <Loader2 className="w-8 h-8 animate-spin text-rose-600" />
-            <p className="text-xs font-medium">Cargando la colección floral exclusiva de PETALIA...</p>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6">
+            {Array.from({ length: 8 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="bg-white rounded-2xl border border-warm-100 card-editorial p-2.5 sm:p-3 flex flex-col space-y-3 overflow-hidden"
+              >
+                {/* Contenedor de Imagen Hijo Directo (máximo rounded-lg, aspect 4/5) */}
+                <div className="aspect-[4/5] w-full rounded-lg skeleton-brand shrink-0" />
+                {/* Placeholders Nietos (máximo rounded-md) */}
+                <div className="space-y-2 flex-1 pt-1">
+                  <div className="h-4 w-3/4 rounded-md skeleton-brand" />
+                  <div className="h-3 w-1/2 rounded-md skeleton-brand" />
+                </div>
+                <div className="pt-2 flex items-center justify-between border-t border-warm-100">
+                  <div className="h-5 w-16 rounded-md skeleton-brand" />
+                  <div className="h-8 w-24 rounded-md skeleton-brand" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div className="text-center py-24 bg-white rounded-3xl border border-warm-100 p-8 space-y-3 shadow-xs">
+          <div className="text-center py-24 bg-white rounded-2xl border border-warm-100 card-editorial p-8 space-y-3 shadow-xs">
             <Flower2 className="w-12 h-12 text-rose-600 mx-auto stroke-1" />
             <p className="text-sm font-bold text-ink-900">
               No hay arreglos disponibles en esta categoría.
@@ -645,7 +671,7 @@ export default function HomePage() {
             </p>
             <button
               onClick={() => setCategory('todos')}
-              className="text-xs text-rose-600 font-semibold hover:underline pt-1 inline-block"
+              className="btn-tactile text-xs text-rose-600 font-semibold hover:underline pt-1 inline-block"
             >
               Ver todos los arreglos
             </button>
@@ -669,9 +695,9 @@ export default function HomePage() {
               return (
                 <div
                   key={product.id}
-                  className="group bg-white rounded-2xl border border-warm-100 shadow-xs hover:shadow-rose overflow-hidden flex flex-col transition hover:border-rose-600/60"
+                  className="group bg-white rounded-2xl border border-warm-100 card-editorial card-editorial-hover p-2.5 sm:p-3 flex flex-col overflow-hidden transition-all duration-300 hover:border-rose-600/60"
                 >
-                  {/* Foto Cuadrada en Alta Definición con Zoom Suave */}
+                  {/* Contenedor de Imagen Hijo Directo: aspect-[4/5], rounded-lg */}
                   <div
                     onClick={() => {
                       setSelectedProduct(product);
@@ -679,30 +705,30 @@ export default function HomePage() {
                       setDeliveryDate('');
                       setDedication('');
                     }}
-                    className="relative aspect-square w-full bg-rose-100 overflow-hidden cursor-pointer rounded-t-2xl"
+                    className="relative aspect-[4/5] w-full bg-rose-100 overflow-hidden cursor-pointer rounded-lg shrink-0"
                   >
                     <img
                       src={product.image_url}
                       alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                      className="w-full h-full object-cover [@media(hover:hover)]:group-hover:scale-[1.03] transition-transform duration-500 ease-out"
                       loading="lazy"
                     />
 
-                    {/* Insignia Oferta */}
+                    {/* Insignia Oferta (Nieto: rounded-md) */}
                     {hasPromo && (
-                      <span className="absolute top-2.5 left-2.5 bg-rose-100 text-accent-carmine border border-accent-carmine/30 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs">
+                      <span className="absolute top-2 left-2 bg-rose-100 text-accent-carmine border border-accent-carmine/30 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md shadow-xs">
                         OFERTA
                       </span>
                     )}
 
-                    {/* Insignia Categoría */}
-                    <span className="absolute bottom-2.5 right-2.5 bg-ink-900/80 backdrop-blur-md text-rose-50 text-[10px] font-semibold tracking-wider px-2.5 py-0.5 rounded-full uppercase">
+                    {/* Insignia Categoría (Nieto: rounded-md) */}
+                    <span className="absolute bottom-2 right-2 bg-ink-900/80 backdrop-blur-md text-rose-50 text-[10px] font-semibold tracking-wider px-2 py-0.5 rounded-md uppercase">
                       {catBadgeName}
                     </span>
                   </div>
 
                   {/* Detalle del Arreglo Floral */}
-                  <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between space-y-2.5">
+                  <div className="pt-2.5 sm:pt-3 flex-1 flex flex-col justify-between space-y-2">
                     <div
                       onClick={() => {
                         setSelectedProduct(product);
@@ -720,36 +746,36 @@ export default function HomePage() {
                       </p>
                     </div>
 
-                    {/* Jerarquía de Precios */}
+                    {/* Jerarquía de Precios (tabular-nums & WCAG AA) */}
                     <div className="flex items-baseline justify-between pt-0.5">
                       <div className="flex items-baseline gap-1.5">
-                        <span className="text-sm sm:text-base font-bold text-ink-900 font-mono">
+                        <span className="text-sm sm:text-base font-bold text-ink-900 tabular-nums">
                           S/ {finalPrice.toFixed(2)}
                         </span>
                         {hasPromo && (
-                          <span className="text-xs text-warm-300 line-through font-mono">
+                          <span className="text-xs text-warm-500 line-through tabular-nums">
                             S/ {product.price.toFixed(2)}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* BOTÓN PRINCIPAL Y SELECTOR DE CANTIDAD */}
-                    <div className="pt-1 border-t border-warm-100">
+                    {/* BOTÓN PRINCIPAL Y SELECTOR DE CANTIDAD (Feedback táctil inmediato 100ms) */}
+                    <div className="pt-1.5 border-t border-warm-100">
                       {cartItem ? (
-                        <div className="flex items-center justify-between bg-rose-100 border border-rose-500 rounded-xl p-1">
+                        <div className="flex items-center justify-between bg-rose-100 border border-rose-500/60 rounded-lg p-1">
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               updateCartQuantity(product.id, -1);
                             }}
-                            className="w-7 h-7 rounded-lg bg-white text-ink-900 hover:bg-rose-50 flex items-center justify-center transition shadow-2xs border border-warm-100"
+                            className="btn-tactile w-7 h-7 rounded-md bg-white text-ink-900 hover:bg-rose-50 flex items-center justify-center shadow-2xs border border-warm-100"
                             title="Disminuir"
                           >
                             <Minus className="w-3.5 h-3.5" />
                           </button>
-                          <span className="text-xs font-bold text-ink-900 font-mono px-2">
+                          <span className="text-xs font-bold text-ink-900 tabular-nums px-2">
                             {cartItem.quantity} en carrito
                           </span>
                           <button
@@ -758,7 +784,7 @@ export default function HomePage() {
                               e.stopPropagation();
                               updateCartQuantity(product.id, 1);
                             }}
-                            className="w-7 h-7 rounded-lg bg-ink-900 text-white hover:bg-rose-600 flex items-center justify-center transition shadow-2xs"
+                            className="btn-tactile w-7 h-7 rounded-md bg-ink-900 text-white hover:bg-rose-600 flex items-center justify-center shadow-2xs"
                             title="Aumentar"
                           >
                             <Plus className="w-3.5 h-3.5" />
@@ -771,10 +797,10 @@ export default function HomePage() {
                             e.stopPropagation();
                             addToCart(product, 1);
                           }}
-                          className="w-full flex items-center justify-center gap-1.5 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 py-2 px-3 rounded-xl text-xs font-semibold shadow-xs border border-ink-900 hover:border-rose-600 transition active:scale-[0.98]"
+                          className="btn-tactile w-full flex items-center justify-center gap-1.5 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 py-2 px-3 rounded-lg text-xs font-semibold shadow-xs border border-ink-900 hover:border-rose-600"
                         >
                           <ShoppingCart className="w-3.5 h-3.5" />
-                          <span>Agregar al carrito</span>
+                          <span>+ Añadir</span>
                         </button>
                       )}
                     </div>
@@ -788,8 +814,8 @@ export default function HomePage() {
 
       {/* MODAL: Vista Previa y Personalización de Producto */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto border border-warm-100">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden animate-in fade-in duration-200">
+          <div className="bg-white w-full sm:max-w-md rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto border border-warm-100 card-editorial animate-spring-modal">
             <div className="flex justify-between items-center border-b border-warm-100 pb-3">
               <div>
                 <h3 className="font-bold text-base text-ink-900 tracking-tight">{selectedProduct.name}</h3>
@@ -799,30 +825,30 @@ export default function HomePage() {
               </div>
               <button
                 onClick={() => setSelectedProduct(null)}
-                className="p-1.5 rounded-full text-warm-500 hover:text-ink-900 hover:bg-rose-100 transition"
+                className="btn-tactile p-1.5 rounded-lg text-warm-500 hover:text-ink-900 hover:bg-rose-100"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Arreglo Preview */}
-            <div className="flex gap-3.5 items-center bg-rose-50 p-3 rounded-2xl border border-warm-100">
+            {/* Arreglo Preview (Hijo directo: rounded-lg, Nietos: rounded-md) */}
+            <div className="flex gap-3.5 items-center bg-rose-50 p-3 rounded-lg border border-warm-100">
               <img
                 src={selectedProduct.image_url}
                 alt={selectedProduct.name}
-                className="w-20 h-20 rounded-2xl object-cover border border-warm-100 shadow-2xs"
+                className="w-20 h-20 rounded-md object-cover border border-warm-100 shadow-2xs shrink-0"
               />
               <div className="flex-1">
                 <p className="text-xs text-warm-500">
                   {selectedProduct.description || 'Diseño floral artesanal con flores frescas de primera calidad'}
                 </p>
                 <div className="flex items-baseline gap-1.5 mt-2">
-                  <span className="text-ink-900 font-bold text-lg font-mono">
+                  <span className="text-ink-900 font-bold text-lg tabular-nums">
                     S/{' '}
                     {(selectedProduct.promotional_price || selectedProduct.price).toFixed(2)}
                   </span>
                   {selectedProduct.promotional_price && (
-                    <span className="text-xs text-warm-300 line-through font-mono">
+                    <span className="text-xs text-warm-500 line-through tabular-nums">
                       S/ {selectedProduct.price.toFixed(2)}
                     </span>
                   )}
@@ -830,24 +856,24 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Selector de Cantidad */}
-            <div className="bg-rose-100 p-3.5 rounded-2xl border border-warm-100 flex items-center justify-between">
+            {/* Selector de Cantidad (Hijo: rounded-lg, Botones: rounded-md) */}
+            <div className="bg-rose-100 p-3.5 rounded-lg border border-warm-100 flex items-center justify-between">
               <span className="text-xs font-semibold text-ink-900">Cantidad deseada:</span>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setModalQuantity((prev) => Math.max(1, prev - 1))}
-                  className="w-8 h-8 rounded-xl bg-white border border-warm-100 text-ink-900 hover:bg-rose-50 flex items-center justify-center font-bold"
+                  className="btn-tactile w-8 h-8 rounded-md bg-white border border-warm-100 text-ink-900 hover:bg-rose-50 flex items-center justify-center font-bold"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
-                <span className="text-sm font-bold font-mono text-ink-900 w-6 text-center">
+                <span className="text-sm font-bold tabular-nums text-ink-900 w-6 text-center">
                   {modalQuantity}
                 </span>
                 <button
                   type="button"
                   onClick={() => setModalQuantity((prev) => prev + 1)}
-                  className="w-8 h-8 rounded-xl bg-ink-900 text-white hover:bg-rose-600 flex items-center justify-center font-bold"
+                  className="btn-tactile w-8 h-8 rounded-md bg-ink-900 text-white hover:bg-rose-600 flex items-center justify-center font-bold"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
@@ -863,14 +889,16 @@ export default function HomePage() {
                   setSelectedProduct(null);
                   setIsCartOpen(true);
                 }}
-                className="w-full bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 font-semibold py-3.5 rounded-xl shadow-md transition active:scale-[0.98] flex items-center justify-center gap-2 text-xs border border-ink-900 hover:border-rose-600"
+                className="btn-tactile w-full bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 font-semibold py-3.5 rounded-lg shadow-md flex items-center justify-center gap-2 text-xs border border-ink-900 hover:border-rose-600"
               >
                 <ShoppingCart className="w-4 h-4" />
                 <span>
                   Agregar al Carrito • S/{' '}
-                  {(
-                    (selectedProduct.promotional_price || selectedProduct.price) * modalQuantity
-                  ).toFixed(2)}
+                  <span className="tabular-nums">
+                    {(
+                      (selectedProduct.promotional_price || selectedProduct.price) * modalQuantity
+                    ).toFixed(2)}
+                  </span>
                 </span>
               </button>
 
@@ -881,7 +909,7 @@ export default function HomePage() {
                   setSelectedProduct(null);
                   setIsCheckoutModalOpen(true);
                 }}
-                className="w-full bg-rose-500 hover:bg-rose-600 text-ink-900 font-bold py-3.5 rounded-xl shadow-xs transition active:scale-[0.98] flex items-center justify-center gap-2 text-xs border border-rose-600"
+                className="btn-tactile w-full bg-rose-500 hover:bg-rose-600 text-ink-900 font-bold py-3.5 rounded-lg shadow-xs flex items-center justify-center gap-2 text-xs border border-rose-600"
               >
                 <ArrowRight className="w-4 h-4 text-ink-900" />
                 <span>Comprar Ahora</span>
@@ -893,24 +921,24 @@ export default function HomePage() {
 
       {/* DRAWER LATERAL: Carrito de Compras */}
       {isCartOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-spring-drawer border-l border-warm-100">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex justify-end overflow-hidden animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-spring-drawer border-l border-warm-100 overflow-hidden">
             {/* Header del Carrito */}
             <div className="p-4 sm:p-5 border-b border-warm-100 flex items-center justify-between bg-rose-50">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center border border-warm-100">
+                <div className="w-9 h-9 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center border border-warm-100">
                   <ShoppingBag className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="font-bold text-sm sm:text-base text-ink-900 tracking-tight">Tu Carrito Floral</h3>
                   <p className="text-[11px] text-warm-500">
-                    {totalCartItems} {totalCartItems === 1 ? 'arreglo seleccionado' : 'arreglos seleccionados'}
+                    <span className="tabular-nums">{totalCartItems}</span> {totalCartItems === 1 ? 'arreglo seleccionado' : 'arreglos seleccionados'}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsCartOpen(false)}
-                className="p-2 text-warm-500 hover:text-ink-900 hover:bg-rose-100 rounded-xl transition"
+                className="btn-tactile p-2 text-warm-500 hover:text-ink-900 hover:bg-rose-100 rounded-lg transition"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -931,7 +959,7 @@ export default function HomePage() {
                   </div>
                   <button
                     onClick={() => setIsCartOpen(false)}
-                    className="px-5 py-2.5 rounded-xl bg-ink-900 hover:bg-rose-600 text-white text-xs font-semibold shadow hover:text-ink-900 transition active:scale-[0.98]"
+                    className="btn-tactile px-5 py-2.5 rounded-lg bg-ink-900 hover:bg-rose-600 text-white text-xs font-semibold shadow hover:text-ink-900"
                   >
                     Ver Colección Floral
                   </button>
@@ -943,37 +971,37 @@ export default function HomePage() {
                   return (
                     <div
                       key={item.product.id}
-                      className="bg-rose-50 border border-warm-100 rounded-2xl p-3 flex gap-3 items-center hover:border-rose-500/60 transition"
+                      className="bg-rose-50 border border-warm-100 rounded-xl p-3 flex gap-3 items-center hover:border-rose-500/60 transition card-editorial"
                     >
                       <img
                         src={item.product.image_url}
                         alt={item.product.name}
-                        className="w-16 h-16 rounded-xl object-cover border border-warm-100 shadow-2xs shrink-0"
+                        className="w-16 h-16 rounded-lg object-cover border border-warm-100 shadow-2xs shrink-0"
                       />
                       <div className="flex-1 min-w-0">
                         <h4 className="font-bold text-xs text-ink-900 truncate tracking-tight">
                           {item.product.name}
                         </h4>
-                        <p className="text-[11px] text-warm-500 font-mono mt-0.5">
+                        <p className="text-[11px] text-warm-500 tabular-nums mt-0.5">
                           S/ {finalPrice.toFixed(2)} c/u
                         </p>
                         <div className="flex items-center gap-2 mt-2">
-                          <div className="flex items-center border border-warm-100 bg-white rounded-lg">
+                          <div className="flex items-center border border-warm-100 bg-white rounded-md">
                             <button
                               type="button"
                               onClick={() => updateCartQuantity(item.product.id, -1)}
-                              className="p-1 hover:bg-rose-100 text-ink-900 rounded-l-lg"
+                              className="btn-tactile p-1 hover:bg-rose-100 text-ink-900 rounded-l-md"
                               title="Disminuir"
                             >
                               <Minus className="w-3 h-3" />
                             </button>
-                            <span className="text-xs font-bold font-mono px-2 text-ink-900">
+                            <span className="text-xs font-bold tabular-nums px-2 text-ink-900">
                               {item.quantity}
                             </span>
                             <button
                               type="button"
                               onClick={() => updateCartQuantity(item.product.id, 1)}
-                              className="p-1 hover:bg-rose-100 text-ink-900 rounded-r-lg"
+                              className="btn-tactile p-1 hover:bg-rose-100 text-ink-900 rounded-r-md"
                               title="Aumentar"
                             >
                               <Plus className="w-3 h-3" />
@@ -982,7 +1010,7 @@ export default function HomePage() {
                           <button
                             type="button"
                             onClick={() => removeFromCart(item.product.id)}
-                            className="text-warm-500 hover:text-accent-carmine p-1 transition"
+                            className="btn-tactile text-warm-500 hover:text-accent-carmine p-1"
                             title="Eliminar del carrito"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -990,7 +1018,7 @@ export default function HomePage() {
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="font-bold font-mono text-sm text-ink-900 block">
+                        <span className="font-bold tabular-nums text-sm text-ink-900 block">
                           S/ {itemTotal.toFixed(2)}
                         </span>
                       </div>
@@ -1000,7 +1028,7 @@ export default function HomePage() {
               )}
             </div>
 
-            {/* Cross-Selling en el Carrito (Add-ons rápidos) */}
+            {/* Cross-Selling en el Carrito (Add-ons rápidos: feedback táctil inmediato, tabular-nums) */}
             {cart.length > 0 && (
               <div className="px-4 sm:px-5 py-3 border-t border-warm-100 bg-white">
                 <div className="flex items-center justify-between mb-2">
@@ -1017,7 +1045,7 @@ export default function HomePage() {
                     return (
                       <div
                         key={addon.id}
-                        className={`shrink-0 w-36 sm:w-40 p-2.5 rounded-2xl border transition-all duration-200 ease-spring flex flex-col justify-between ${
+                        className={`shrink-0 w-36 sm:w-40 p-2.5 rounded-xl border card-editorial transition-all duration-200 flex flex-col justify-between ${
                           isSelected
                             ? 'bg-rose-100 border-rose-500 shadow-xs ring-1 ring-rose-500/40'
                             : 'bg-rose-50 border-warm-100 hover:border-rose-400'
@@ -1027,7 +1055,7 @@ export default function HomePage() {
                           <div className="flex items-center justify-between">
                             <span className="text-xl">{addon.icon}</span>
                             {isSelected && (
-                              <span className="text-[10px] font-bold font-mono bg-ink-900 text-white px-1.5 py-0.2 rounded-full">
+                              <span className="text-[10px] font-bold tabular-nums bg-ink-900 text-white px-1.5 py-0.2 rounded-md">
                                 x{qty}
                               </span>
                             )}
@@ -1041,7 +1069,7 @@ export default function HomePage() {
                         </div>
 
                         <div className="flex items-center justify-between mt-2 pt-1 border-t border-warm-100/60">
-                          <span className="font-mono font-bold text-xs text-ink-900">
+                          <span className="tabular-nums font-bold text-xs text-ink-900">
                             S/ {addon.price.toFixed(2)}
                           </span>
                           <div className="flex items-center gap-1">
@@ -1050,7 +1078,7 @@ export default function HomePage() {
                                 <button
                                   type="button"
                                   onClick={() => updateAddOnQty(addon.id, -1)}
-                                  className="w-5 h-5 rounded-md bg-white border border-warm-100 text-ink-900 flex items-center justify-center hover:bg-rose-100 active:scale-90 transition text-xs font-bold shadow-2xs"
+                                  className="btn-tactile w-5 h-5 rounded-md bg-white border border-warm-100 text-ink-900 flex items-center justify-center hover:bg-rose-100 text-xs font-bold shadow-2xs"
                                   title="Reducir"
                                 >
                                   -
@@ -1058,7 +1086,7 @@ export default function HomePage() {
                                 <button
                                   type="button"
                                   onClick={() => updateAddOnQty(addon.id, 1)}
-                                  className="w-5 h-5 rounded-md bg-ink-900 text-white flex items-center justify-center hover:bg-rose-600 active:scale-90 transition text-xs font-bold shadow-2xs"
+                                  className="btn-tactile w-5 h-5 rounded-md bg-ink-900 text-white flex items-center justify-center hover:bg-rose-600 text-xs font-bold shadow-2xs"
                                   title="Añadir más"
                                 >
                                   +
@@ -1068,7 +1096,7 @@ export default function HomePage() {
                               <button
                                 type="button"
                                 onClick={() => toggleAddOn(addon.id)}
-                                className="w-6 h-6 rounded-lg bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 flex items-center justify-center active:scale-90 transition shadow-xs"
+                                className="btn-tactile w-6 h-6 rounded-md bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 flex items-center justify-center shadow-xs"
                                 title="Añadir al pedido"
                               >
                                 <Plus className="w-3.5 h-3.5" />
@@ -1089,25 +1117,25 @@ export default function HomePage() {
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center text-xs text-warm-500">
                     <span>Subtotal arreglos:</span>
-                    <span className="font-mono font-semibold text-ink-900">
+                    <span className="tabular-nums font-semibold text-ink-900">
                       S/ {cartSubtotal.toFixed(2)}
                     </span>
                   </div>
                   {totalAddonsCount > 0 && (
                     <div className="flex justify-between items-center text-xs text-rose-600 font-medium">
                       <span>Complementos ({totalAddonsCount}):</span>
-                      <span className="font-mono font-semibold">
+                      <span className="tabular-nums font-semibold">
                         + S/ {addOnsSubtotal.toFixed(2)}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between items-center text-xs text-warm-500">
                     <span>Flete de envío:</span>
-                    <span className="text-ink-900 font-semibold">S/ {deliveryFee.toFixed(2)} ({selectedDistrict})</span>
+                    <span className="text-ink-900 font-semibold tabular-nums">S/ {deliveryFee.toFixed(2)} ({selectedDistrict})</span>
                   </div>
                   <div className="flex justify-between items-baseline pt-2 border-t border-warm-100 text-sm">
                     <span className="font-bold text-ink-900">Total a pagar:</span>
-                    <span className="font-bold font-mono text-lg text-ink-900">
+                    <span className="font-bold tabular-nums text-lg text-ink-900">
                       S/ {grandTotal.toFixed(2)}
                     </span>
                   </div>
@@ -1119,7 +1147,7 @@ export default function HomePage() {
                       setIsCartOpen(false);
                       setIsCheckoutModalOpen(true);
                     }}
-                    className="w-full bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 font-semibold py-3.5 rounded-xl shadow-md transition active:scale-[0.98] flex items-center justify-center gap-2 text-xs sm:text-sm border border-ink-900 hover:border-rose-600"
+                    className="btn-tactile w-full bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 font-semibold py-3.5 rounded-lg shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm border border-ink-900 hover:border-rose-600"
                   >
                     <span>Continuar compra</span>
                     <ArrowRight className="w-4 h-4 text-rose-500" />
@@ -1127,7 +1155,7 @@ export default function HomePage() {
 
                   <button
                     onClick={clearCart}
-                    className="w-full text-center text-[11px] text-warm-500 hover:text-ink-900 py-1 transition"
+                    className="btn-tactile w-full text-center text-[11px] text-warm-500 hover:text-ink-900 py-1 transition"
                   >
                     Vaciar carrito
                   </button>
@@ -1140,8 +1168,8 @@ export default function HomePage() {
 
       {/* MODAL: Checkout Unificado Multi-producto */}
       {isCheckoutModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-white border border-warm-100 max-w-xl w-full rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[94vh] overflow-y-auto animate-spring-modal">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden animate-in fade-in duration-200">
+          <div className="bg-white border border-warm-100 max-w-xl w-full rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[94vh] overflow-y-auto animate-spring-modal card-editorial">
             {orderSuccessData ? (
               /* PANTALLA DE ÉXITO DE COMPRA */
               <div className="text-center space-y-4 py-4 animate-in zoom-in-95 duration-200">
@@ -1158,12 +1186,12 @@ export default function HomePage() {
                 </div>
 
                 {/* Tarjeta de Código de Rastreo */}
-                <div className="bg-rose-50 border border-warm-100 rounded-2xl p-4 max-w-sm mx-auto space-y-2">
+                <div className="bg-rose-50 border border-warm-100 rounded-lg p-4 max-w-sm mx-auto space-y-2">
                   <span className="text-[11px] font-semibold text-warm-500 uppercase tracking-wider block">
                     Tu Código de Rastreo en Vivo
                   </span>
                   <div className="flex items-center justify-center gap-2">
-                    <span className="text-xl font-bold font-mono text-ink-900">
+                    <span className="text-xl font-bold tabular-nums text-ink-900">
                       {orderSuccessData.trackingCode}
                     </span>
                     <button
@@ -1171,14 +1199,14 @@ export default function HomePage() {
                         navigator.clipboard.writeText(orderSuccessData.trackingCode);
                         alert('¡Código de rastreo copiado!');
                       }}
-                      className="p-1.5 rounded-lg bg-white border border-warm-100 hover:bg-rose-100 text-warm-500 transition"
+                      className="btn-tactile p-1.5 rounded-md bg-white border border-warm-100 hover:bg-rose-100 text-warm-500"
                       title="Copiar código"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
                   </div>
                   <p className="text-[11px] text-warm-500">
-                    Total del pedido: S/ {orderSuccessData.total.toFixed(2)}
+                    Total del pedido: <span className="tabular-nums font-semibold">S/ {orderSuccessData.total.toFixed(2)}</span>
                   </p>
                 </div>
 
@@ -1188,7 +1216,7 @@ export default function HomePage() {
                     href={orderSuccessData.whatsappUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="w-full bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 font-semibold py-3.5 rounded-xl shadow-lg transition active:scale-[0.98] flex items-center justify-center gap-2 text-xs sm:text-sm border border-ink-900 hover:border-rose-600"
+                    className="btn-tactile w-full bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 font-semibold py-3.5 rounded-lg shadow-lg flex items-center justify-center gap-2 text-xs sm:text-sm border border-ink-900 hover:border-rose-600"
                   >
                     <MessageCircle className="w-5 h-5 fill-current opacity-80" />
                     <span>Enviar Detalles y Comprobante por WhatsApp</span>
@@ -1204,7 +1232,7 @@ export default function HomePage() {
                       setIsTrackingModalOpen(true);
                       lookupTrackingOrder(code);
                     }}
-                    className="w-full py-2.5 rounded-xl border border-warm-100 bg-rose-100 hover:bg-rose-50 text-ink-900 text-xs font-semibold transition"
+                    className="btn-tactile w-full py-2.5 rounded-lg border border-warm-100 bg-rose-100 hover:bg-rose-50 text-ink-900 text-xs font-semibold"
                   >
                     Ver Rastreo en Vivo
                   </button>
@@ -1216,7 +1244,7 @@ export default function HomePage() {
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-warm-100 pb-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-ink-900 text-white flex items-center justify-center shadow-xs">
+                    <div className="w-9 h-9 rounded-lg bg-ink-900 text-white flex items-center justify-center shadow-xs">
                       <CreditCard className="w-4 h-4 text-rose-500" />
                     </div>
                     <div>
@@ -1230,17 +1258,17 @@ export default function HomePage() {
                   <button
                     type="button"
                     onClick={() => setIsCheckoutModalOpen(false)}
-                    className="p-1.5 text-warm-500 hover:text-ink-900 rounded-xl hover:bg-rose-100 transition"
+                    className="btn-tactile p-1.5 text-warm-500 hover:text-ink-900 rounded-lg hover:bg-rose-100"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                {/* Resumen Compacto y Desglose Económico */}
-                <div className="bg-rose-50 rounded-2xl p-3.5 border border-warm-100 space-y-2.5">
+                {/* Resumen Compacto y Desglose Económico (Hijo: rounded-lg) */}
+                <div className="bg-rose-50 rounded-lg p-3.5 border border-warm-100 space-y-2.5">
                   <div className="flex justify-between items-center text-xs">
                     <span className="font-bold text-ink-900">Desglose del Pedido:</span>
-                    <span className="font-mono font-bold text-ink-900 text-sm">
+                    <span className="tabular-nums font-bold text-ink-900 text-sm">
                       Total: S/ {grandTotal.toFixed(2)}
                     </span>
                   </div>
@@ -1251,7 +1279,7 @@ export default function HomePage() {
                         <span className="truncate max-w-[240px]">
                           • {item.product.name} (x{item.quantity})
                         </span>
-                        <span className="font-mono font-medium text-ink-900">
+                        <span className="tabular-nums font-medium text-ink-900">
                           S/{' '}
                           {(
                             (item.product.promotional_price || item.product.price) * item.quantity
@@ -1267,7 +1295,7 @@ export default function HomePage() {
                           <span className="truncate max-w-[240px]">
                             • {item.icon} {item.name} (x{qty})
                           </span>
-                          <span className="font-mono">
+                          <span className="tabular-nums">
                             S/ {(item.price * qty).toFixed(2)}
                           </span>
                         </div>
@@ -1279,19 +1307,19 @@ export default function HomePage() {
                   <div className="pt-2 border-t border-warm-100 text-xs space-y-1">
                     <div className="flex justify-between text-warm-500">
                       <span>Subtotal Arreglos & Extras:</span>
-                      <span className="font-mono text-ink-900 font-medium">
+                      <span className="tabular-nums text-ink-900 font-medium">
                         S/ {cartTotalWithAddons.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between text-warm-500">
                       <span>Envío ({selectedDistrict}):</span>
-                      <span className="font-mono text-ink-900 font-medium">
+                      <span className="tabular-nums text-ink-900 font-medium">
                         + S/ {deliveryFee.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between items-baseline pt-1 font-bold text-sm text-ink-900">
                       <span>Total con Delivery:</span>
-                      <span className="font-mono text-base text-ink-900">
+                      <span className="tabular-nums text-base text-ink-900">
                         S/ {grandTotal.toFixed(2)}
                       </span>
                     </div>
@@ -1314,7 +1342,7 @@ export default function HomePage() {
                         value={buyerName}
                         onChange={(e) => setBuyerName(e.target.value)}
                         placeholder="Ej. Carlos Mendoza"
-                        className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900"
+                        className="w-full border border-warm-100 rounded-lg px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900 placeholder:text-warm-500/60"
                       />
                     </div>
                     <div>
@@ -1327,7 +1355,7 @@ export default function HomePage() {
                         value={buyerPhone}
                         onChange={(e) => setBuyerPhone(e.target.value)}
                         placeholder="Ej. 987654321"
-                        className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900 font-mono"
+                        className="w-full border border-warm-100 rounded-lg px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900 tabular-nums placeholder:text-warm-500/60"
                       />
                     </div>
                   </div>
@@ -1349,7 +1377,7 @@ export default function HomePage() {
                         value={recipientName}
                         onChange={(e) => setRecipientName(e.target.value)}
                         placeholder="Ej. María López"
-                        className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900"
+                        className="w-full border border-warm-100 rounded-lg px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900 placeholder:text-warm-500/60"
                       />
                     </div>
                     <div>
@@ -1361,7 +1389,7 @@ export default function HomePage() {
                         required
                         value={checkoutDeliveryDate}
                         onChange={(e) => setCheckoutDeliveryDate(e.target.value)}
-                        className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900"
+                        className="w-full border border-warm-100 rounded-lg px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900"
                       />
                       <div className="flex gap-1.5 mt-1">
                         <button
@@ -1370,7 +1398,7 @@ export default function HomePage() {
                             const today = new Date().toISOString().split('T')[0];
                             setCheckoutDeliveryDate(today);
                           }}
-                          className="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 hover:bg-rose-50 text-ink-900 font-medium border border-warm-100 transition"
+                          className="btn-tactile text-[10px] px-2 py-0.5 rounded-full bg-rose-100 hover:bg-rose-50 text-ink-900 font-medium border border-warm-100"
                         >
                           Hoy mismo
                         </button>
@@ -1381,7 +1409,7 @@ export default function HomePage() {
                             tom.setDate(tom.getDate() + 1);
                             setCheckoutDeliveryDate(tom.toISOString().split('T')[0]);
                           }}
-                          className="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 hover:bg-rose-50 text-ink-900 font-medium border border-warm-100 transition"
+                          className="btn-tactile text-[10px] px-2 py-0.5 rounded-full bg-rose-100 hover:bg-rose-50 text-ink-900 font-medium border border-warm-100"
                         >
                           Mañana
                         </button>
@@ -1403,7 +1431,7 @@ export default function HomePage() {
                         const zone = deliveryZones.find((z) => z.district === dist);
                         if (zone) setDeliveryFee(zone.cost);
                       }}
-                      className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900 font-medium"
+                      className="w-full border border-warm-100 rounded-lg px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900 font-medium"
                     >
                       {deliveryZones.map((z) => (
                         <option key={z.id} value={z.district}>
@@ -1424,7 +1452,7 @@ export default function HomePage() {
                       value={deliveryAddress}
                       onChange={(e) => setDeliveryAddress(e.target.value)}
                       placeholder="Ej. Av. Larco 450, Dpto 402 (Ref: a media cuadra del parque)"
-                      className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900"
+                      className="w-full border border-warm-100 rounded-lg px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900 placeholder:text-warm-500/60"
                     />
                   </div>
 
@@ -1443,7 +1471,7 @@ export default function HomePage() {
                           type="button"
                           key={slot.id}
                           onClick={() => setSelectedTimeSlot(slot.id)}
-                          className={`p-2 rounded-xl border text-left transition flex items-center gap-2 ${
+                          className={`btn-tactile p-2 rounded-lg border text-left flex items-center gap-2 ${
                             selectedTimeSlot === slot.id
                               ? 'border-rose-600 bg-rose-100 ring-2 ring-rose-500/30 shadow-xs'
                               : 'border-warm-100 hover:bg-rose-50 bg-white'
@@ -1469,7 +1497,7 @@ export default function HomePage() {
                       value={checkoutDedication}
                       onChange={(e) => setCheckoutDedication(e.target.value)}
                       placeholder="Mensaje de amor, felicitación o cariño para adjuntar en la tarjeta de cortesía..."
-                      className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 resize-none bg-white text-ink-900 placeholder-warm-300"
+                      className="w-full border border-warm-100 rounded-lg px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 resize-none bg-white text-ink-900 placeholder:text-warm-500/60"
                     />
                     <p className="text-[10px] text-warm-500">
                       Incluye tarjeta de dedicatoria impresa de alta calidad de cortesía.
@@ -1490,7 +1518,7 @@ export default function HomePage() {
                       <select
                         value={celebrationReason}
                         onChange={(e) => setCelebrationReason(e.target.value)}
-                        className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900"
+                        className="w-full border border-warm-100 rounded-lg px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900"
                       >
                         <option value="">Selecciona motivo...</option>
                         <option value="Cumpleaños">🎂 Cumpleaños</option>
@@ -1508,7 +1536,7 @@ export default function HomePage() {
                         type="date"
                         value={specialDateToRemember}
                         onChange={(e) => setSpecialDateToRemember(e.target.value)}
-                        className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900"
+                        className="w-full border border-warm-100 rounded-lg px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900"
                       />
                       <p className="text-[9px] text-warm-500 mt-0.5">
                         Te recordaremos cada año con días de anticipación.
@@ -1532,7 +1560,7 @@ export default function HomePage() {
                         type="button"
                         key={m.id}
                         onClick={() => setPaymentMethod(m.id)}
-                        className={`p-2.5 rounded-2xl border text-left transition ${
+                        className={`btn-tactile p-2.5 rounded-lg border text-left ${
                           paymentMethod === m.id
                             ? 'border-rose-600 bg-rose-100 ring-2 ring-rose-500/40'
                             : 'border-warm-100 hover:bg-rose-50'
@@ -1546,27 +1574,27 @@ export default function HomePage() {
 
                   {/* QR de Yape interactivo si el cliente selecciona Yape / Plin */}
                   {(paymentMethod === 'yape' || paymentMethod === 'plin') && (
-                    <div className="bg-rose-100 border border-rose-500 rounded-2xl p-3.5 space-y-2.5 animate-in fade-in duration-200">
+                    <div className="bg-rose-100 border border-rose-500 rounded-lg p-3.5 space-y-2.5 animate-in fade-in duration-200">
                       <div className="flex items-center gap-3">
                         <img
                           src={storeSettings?.yape_qr_url || '/images/qr-yape.png'}
                           alt="QR Yape Petalia"
-                          className="w-20 h-20 rounded-xl object-contain bg-white p-1 border border-warm-100 shadow-2xs shrink-0"
+                          className="w-20 h-20 rounded-md object-contain bg-white p-1 border border-warm-100 shadow-2xs shrink-0"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = '/images/qr-yape.png';
                           }}
                         />
                         <div className="space-y-1">
                           <p className="text-xs font-bold text-ink-900">
-                            Paga S/ {grandTotal.toFixed(2)} escaneando el QR
+                            Paga <span className="tabular-nums">S/ {grandTotal.toFixed(2)}</span> escaneando el QR
                           </p>
                           <p className="text-[11px] text-warm-500">
-                            Número: <span className="font-mono font-bold text-ink-900">924 257 784</span> (PETALIA)
+                            Número: <span className="tabular-nums font-bold text-ink-900">924 257 784</span> (PETALIA)
                           </p>
                           <button
                             type="button"
                             onClick={handleCopyYapePhone}
-                            className="inline-flex items-center gap-1 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition active:scale-[0.98]"
+                            className="btn-tactile inline-flex items-center gap-1 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 px-2.5 py-1 rounded-md text-[10px] font-semibold"
                           >
                             {copiedYapePhone ? (
                               <>
@@ -1589,7 +1617,7 @@ export default function HomePage() {
                   )}
 
                   {paymentMethod === 'transferencia' && (
-                    <div className="bg-rose-100 border border-warm-100 rounded-2xl p-3 text-xs text-ink-900 space-y-1">
+                    <div className="bg-rose-100 border border-warm-100 rounded-lg p-3 text-xs text-ink-900 space-y-1">
                       <p className="font-bold">Cuentas bancarias oficiales de PETALIA:</p>
                       <p className="text-[11px] text-warm-500">
                         • BCP / BBVA / Interbank (coordinación inmediata de cuenta al confirmar por WhatsApp).
@@ -1598,7 +1626,7 @@ export default function HomePage() {
                   )}
 
                   {paymentMethod === 'efectivo' && (
-                    <div className="bg-rose-100 border border-warm-100 rounded-2xl p-3 text-xs text-ink-900 space-y-1">
+                    <div className="bg-rose-100 border border-warm-100 rounded-lg p-3 text-xs text-ink-900 space-y-1">
                       <p className="font-bold">Pago en Efectivo:</p>
                       <p className="text-[11px] text-warm-500">
                         Se abona al momento de la entrega previa confirmación telefónica con nuestro chofer.
@@ -1612,7 +1640,7 @@ export default function HomePage() {
                   <button
                     type="submit"
                     disabled={isSubmittingOrder}
-                    className="w-full bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 font-semibold py-3.5 rounded-xl shadow-lg border border-ink-900 hover:border-rose-600 transition active:scale-[0.98] flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50"
+                    className="btn-tactile w-full bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 font-semibold py-3.5 rounded-lg shadow-lg border border-ink-900 hover:border-rose-600 flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50"
                   >
                     {isSubmittingOrder ? (
                       <>
@@ -1622,7 +1650,7 @@ export default function HomePage() {
                     ) : (
                       <>
                         <CheckCircle2 className="w-4 h-4 text-rose-500" />
-                        <span>Confirmar Pedido (S/ {grandTotal.toFixed(2)})</span>
+                        <span>Confirmar Pedido (<span className="tabular-nums">S/ {grandTotal.toFixed(2)}</span>)</span>
                       </>
                     )}
                   </button>
@@ -1653,17 +1681,17 @@ export default function HomePage() {
       {totalCartItems > 0 && (
         <button
           onClick={() => setIsCartOpen(true)}
-          className="fixed bottom-6 left-5 z-40 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 px-4 py-3 rounded-full shadow-2xl flex items-center gap-2.5 transition transform hover:scale-105 active:scale-95 border border-rose-600/60"
+          className="btn-tactile fixed bottom-6 left-5 z-40 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 px-4 py-3 rounded-full shadow-2xl flex items-center gap-2.5 border border-rose-600/60"
           title="Abrir Carrito de Compras"
         >
           <div className="relative">
             <ShoppingCart className="w-4 h-4 text-rose-500" />
-            <span className="absolute -top-2 -right-2 bg-accent-carmine text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full">
+            <span className="tabular-nums absolute -top-2 -right-2 bg-accent-carmine text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full">
               {totalCartItems}
             </span>
           </div>
           <span className="text-xs font-semibold">
-            Ver Carrito • S/ {cartSubtotal.toFixed(2)}
+            Ver Carrito • S/ <span className="tabular-nums">{cartSubtotal.toFixed(2)}</span>
           </span>
         </button>
       )}
@@ -1673,12 +1701,12 @@ export default function HomePage() {
 
       {/* MODAL: Rastreo de Pedido en Tiempo Real */}
       {isTrackingModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-white border border-warm-100 max-w-lg w-full rounded-3xl p-5 sm:p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto animate-spring-modal">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden animate-in fade-in duration-200">
+          <div className="bg-white border border-warm-100 max-w-lg w-full rounded-2xl p-5 sm:p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto animate-spring-modal card-editorial">
             {/* Header del Modal */}
             <div className="flex items-center justify-between border-b border-warm-100 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center shadow-2xs border border-warm-100">
+                <div className="w-10 h-10 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shadow-2xs border border-warm-100">
                   <Truck className="w-5 h-5" />
                 </div>
                 <div>
@@ -1690,7 +1718,7 @@ export default function HomePage() {
               </div>
               <button
                 onClick={() => setIsTrackingModalOpen(false)}
-                className="p-1.5 text-warm-500 hover:text-ink-900 rounded-xl hover:bg-rose-100 transition"
+                className="btn-tactile p-1.5 text-warm-500 hover:text-ink-900 rounded-lg hover:bg-rose-100"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1711,13 +1739,13 @@ export default function HomePage() {
                   value={trackingInput}
                   onChange={(e) => setTrackingInput(e.target.value.toUpperCase())}
                   placeholder="Ingresa tu código (ej: PET-8492)"
-                  className="w-full bg-rose-50 border border-warm-100 rounded-xl pl-10 pr-4 py-2.5 text-xs text-ink-900 font-mono uppercase placeholder:font-sans focus:outline-none focus:border-rose-600 focus:bg-white transition"
+                  className="w-full bg-rose-50 border border-warm-100 rounded-lg pl-10 pr-4 py-2.5 text-xs text-ink-900 font-mono uppercase placeholder:font-sans placeholder:text-warm-500/60 focus:outline-none focus:border-rose-600 focus:bg-white transition"
                 />
               </div>
               <button
                 type="submit"
                 disabled={trackingLoading || !trackingInput.trim()}
-                className="px-4 py-2.5 rounded-xl bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 text-xs font-semibold shadow transition disabled:opacity-50 flex items-center gap-1.5 active:scale-[0.98]"
+                className="btn-tactile px-4 py-2.5 rounded-lg bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 text-xs font-semibold shadow disabled:opacity-50 flex items-center gap-1.5"
               >
                 {trackingLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -1729,7 +1757,7 @@ export default function HomePage() {
 
             {/* Mensaje de Error */}
             {trackingError && (
-              <div className="bg-rose-100 border border-accent-carmine/30 rounded-2xl p-4 text-xs text-accent-carmine space-y-1">
+              <div className="bg-rose-100 border border-accent-carmine/30 rounded-lg p-4 text-xs text-accent-carmine space-y-1">
                 <p className="font-bold">No se encontró el pedido</p>
                 <p className="text-[11px] text-warm-500">{trackingError}</p>
                 <div className="pt-2">
@@ -1752,12 +1780,12 @@ export default function HomePage() {
             {trackingOrder && (
               <div className="space-y-5 animate-in fade-in duration-200">
                 {/* Código y Estado Destacado */}
-                <div className="bg-rose-50 border border-warm-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="bg-rose-50 border border-warm-100 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <span className="text-[10px] uppercase font-bold tracking-wider text-warm-500">
                       Código de Seguimiento
                     </span>
-                    <p className="text-lg font-bold font-mono text-ink-900">
+                    <p className="text-lg font-bold tabular-nums text-ink-900">
                       {trackingOrder.tracking_code || 'PET-ORDEN'}
                     </p>
                     <p className="text-xs text-warm-500 mt-0.5">
@@ -1774,7 +1802,7 @@ export default function HomePage() {
                 </div>
 
                 {/* LÍNEA DE TIEMPO VISUAL ESTRICTAMENTE HORIZONTAL (5 ETAPAS) */}
-                <div className="bg-white border border-warm-100 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs overflow-hidden">
+                <div className="bg-white border border-warm-100 rounded-lg p-4 sm:p-5 space-y-4 shadow-xs overflow-hidden">
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold text-ink-900 uppercase tracking-wider flex items-center gap-1.5">
                       <Truck className="w-3.5 h-3.5 text-rose-600" />
@@ -1854,7 +1882,7 @@ export default function HomePage() {
                                       ? 'text-rose-600 font-bold'
                                       : isCompleted
                                       ? 'text-ink-900'
-                                      : 'text-warm-300'
+                                      : 'text-warm-500'
                                   }`}
                                 >
                                   {st.label}
@@ -1872,7 +1900,7 @@ export default function HomePage() {
                 </div>
 
                 {/* Resumen del Arreglo y Destinatario */}
-                <div className="bg-rose-50 rounded-2xl p-4 border border-warm-100 space-y-2 text-xs">
+                <div className="bg-rose-50 rounded-lg p-4 border border-warm-100 space-y-2 text-xs">
                   <div className="flex justify-between items-baseline">
                     <span className="text-warm-500">Destinatario:</span>
                     <span className="font-semibold text-ink-900">
@@ -1891,7 +1919,7 @@ export default function HomePage() {
 
                   <div className="flex justify-between items-baseline pt-1 border-t border-warm-100">
                     <span className="text-warm-500">Total del pedido:</span>
-                    <span className="font-bold text-ink-900 font-mono text-sm">
+                    <span className="font-bold text-ink-900 tabular-nums text-sm">
                       S/ {Number(trackingOrder.total_amount).toFixed(2)}
                     </span>
                   </div>
@@ -1904,7 +1932,7 @@ export default function HomePage() {
                   )}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="w-full bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 font-semibold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-xs active:scale-[0.98] border border-ink-900 hover:border-rose-600"
+                  className="btn-tactile w-full bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 font-semibold py-3 rounded-lg shadow-md flex items-center justify-center gap-2 text-xs border border-ink-900 hover:border-rose-600"
                 >
                   <MessageCircle className="w-4 h-4 fill-current opacity-80" />
                   <span>Consultar por WhatsApp</span>

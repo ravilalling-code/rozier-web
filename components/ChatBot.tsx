@@ -218,31 +218,31 @@ export default function ChatBot() {
 
       {/* Ventana Desplegable del Chatbot */}
       {isOpen && (
-        <div className="fixed bottom-0 right-0 sm:bottom-5 sm:right-5 z-50 w-full sm:w-[420px] h-[92vh] sm:h-[620px] max-h-[100vh] bg-white sm:rounded-3xl shadow-2xl border border-[#EFEAE9] flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
+        <div className="fixed bottom-0 right-0 sm:bottom-5 sm:right-5 z-50 w-full sm:w-[420px] h-[92vh] sm:h-[620px] max-h-[100vh] bg-white sm:rounded-2xl shadow-2xl border border-[#EFEAE9] card-editorial flex flex-col overflow-hidden animate-spring-modal">
           {/* Header Elegante Alta Gama */}
           <div className="bg-[#111111] text-white p-4 flex items-center justify-between shadow-md border-b border-[#1A1A1A]">
             <div className="flex items-center gap-3">
-              <div className="relative w-10 h-10 rounded-2xl bg-[#F9ECEE] text-[#D49A9E] border border-[#E8B4B8] flex items-center justify-center shadow-xs">
+              <div className="relative w-10 h-10 rounded-lg bg-[#F9ECEE] text-[#D49A9E] border border-[#E8B4B8] flex items-center justify-center shadow-xs">
                 <Flower2 className="w-5 h-5" />
                 <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#D49A9E] border-2 border-[#111111] rounded-full" />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
                   <h3 className="font-bold text-sm text-white tracking-tight">Asesora PETALIA</h3>
-                  <span className="text-[10px] uppercase font-semibold bg-[#F9ECEE] text-[#C94A58] border border-[#E8B4B8]/40 px-1.5 py-0.2 rounded-full">
+                  <span className="text-[10px] uppercase font-semibold bg-[#F9ECEE] text-[#C94A58] border border-[#E8B4B8]/40 px-1.5 py-0.2 rounded-md">
                     IA
                   </span>
                 </div>
-                <p className="text-[11px] text-[#A09898] flex items-center gap-1">
+                <p className="text-[11px] text-[#686161] flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#E8B4B8] animate-pulse" />
-                  <span>En línea • Florería PETALIA Lima</span>
+                  <span className="text-stone-300">En línea • Florería PETALIA Lima</span>
                 </p>
               </div>
             </div>
 
             <button
               onClick={() => setIsOpen(false)}
-              className="p-1.5 text-[#A09898] hover:text-white rounded-xl hover:bg-[#1A1A1A] transition"
+              className="btn-tactile p-1.5 text-stone-300 hover:text-white rounded-lg hover:bg-[#1A1A1A]"
               title="Cerrar chat"
             >
               <X className="w-5 h-5" />
@@ -481,7 +481,7 @@ export default function ChatBot() {
                   key={sug}
                   onClick={() => handleSendMessage(sug)}
                   disabled={isLoading}
-                  className="px-3 py-1 rounded-full bg-[#F9ECEE] hover:bg-[#F3E0E3] text-[#766E6E] hover:text-[#1A1A1A] text-[11px] whitespace-nowrap transition border border-[#EFEAE9]"
+                  className="btn-tactile px-3 py-1 rounded-full bg-[#F9ECEE] hover:bg-[#F3E0E3] text-[#686161] hover:text-[#1A1A1A] text-[11px] whitespace-nowrap border border-[#EFEAE9]"
                 >
                   {sug}
                 </button>
@@ -499,12 +499,12 @@ export default function ChatBot() {
               onKeyDown={handleKeyDown}
               placeholder="Escribe tu consulta o pide un arreglo..."
               disabled={isLoading}
-              className="flex-1 bg-[#FDF7F7] border border-[#EFEAE9] rounded-2xl px-4 py-2.5 text-xs text-[#1A1A1A] placeholder-[#A09898] focus:outline-none focus:border-[#D49A9E] focus:bg-white transition"
+              className="flex-1 bg-[#FDF7F7] border border-[#EFEAE9] rounded-lg px-4 py-2.5 text-xs text-[#1A1A1A] placeholder:text-[#686161] focus:outline-none focus:border-[#D49A9E] focus:bg-white transition"
             />
             <button
               onClick={() => handleSendMessage()}
               disabled={isLoading || !inputValue.trim()}
-              className="p-2.5 rounded-2xl bg-[#1A1A1A] hover:bg-[#D49A9E] text-white hover:text-[#1A1A1A] shadow-md border border-[#1A1A1A] hover:border-[#D49A9E] transition active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="btn-tactile p-2.5 rounded-lg bg-[#1A1A1A] hover:bg-[#D49A9E] text-white hover:text-[#1A1A1A] shadow-md border border-[#1A1A1A] hover:border-[#D49A9E] disabled:opacity-40 disabled:cursor-not-allowed"
               title="Enviar mensaje"
             >
               <Send className="w-4 h-4" />
