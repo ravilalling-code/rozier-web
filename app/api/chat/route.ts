@@ -113,20 +113,20 @@ export async function POST(req: NextRequest) {
             return `• Arreglo: "${p.name}" | Categoría: ${p.category} | Precio: S/ ${currentPrice.toFixed(2)}${promoTag} | Qué incluye: ${p.description || 'Detalle floral exclusivo'} | Foto: ${p.image_url}`;
           })
           .join('\n')
-      : 'Actualmente estamos preparando nuevos diseños florales en taller.';
+      : 'Actualmente estamos preparando nuevos hermosos diseños florales.';
 
     // 2. System prompt con directivas de Function Calling para pedidos y rastreo
     const systemInstruction = `Eres la asesora floral virtual y experta de "PETALIA diseño floral & decoraciones" en Lima, Perú.
 Tu personalidad es cálida, amable, educada, elegante y orientada a brindar una excelente atención y cerrar pedidos.
 
 Contexto y políticas de PETALIA:
-- Ubicación: Taller floral en Lima, Perú.
+- Ubicación: Florería en Lima, Perú.
 - Cobertura de delivery: Todo Lima Metropolitana y Callao con transportistas cuidadosos.
 - Tiempos de entrega: Mismo día (según disponibilidad de ruta) o fechas programadas.
 - Métodos de pago aceptados: Yape, Plin y Transferencia bancaria (BCP, BBVA, Interbank, Scotiabank).
 - Número de WhatsApp comercial: +51 924 257 784.
 
-Catálogo de productos activos disponibles en taller:
+Catálogo de productos activos disponibles en tienda:
 ${catalogText}
 
 Rutas principales y reglas de conversación:
@@ -300,19 +300,19 @@ Rutas principales y reglas de conversación:
           },
           confirmado: {
             stage: '✅ Confirmado',
-            desc: 'Tu pago ha sido validado con éxito. Tu pedido ya está programado para ingresar a nuestro taller floral.',
+            desc: 'Tu pago ha sido validado con éxito. Tu pedido ya está programado para ingresar a preparación.',
           },
           en_preparacion: {
-            stage: '🌸 En Preparación (Taller Floral)',
+            stage: '🌸 En Preparación',
             desc: '¡Nuestros floristas expertos están elaborando tu hermoso arreglo con las flores más frescas del día!',
           },
           en_taller: {
-            stage: '🌸 En Preparación (Taller Floral)',
+            stage: '🌸 En Preparación',
             desc: '¡Nuestros floristas expertos están elaborando tu hermoso arreglo con las flores más frescas del día!',
           },
           en_despacho: {
             stage: '🚗 En Despacho (En camino)',
-            desc: 'Tu arreglo ya salió de nuestro taller y nuestro chofer se encuentra en ruta para realizar la entrega.',
+            desc: 'Tu arreglo ya está en camino y nuestro chofer se encuentra en ruta para realizar la entrega.',
           },
           entregado: {
             stage: '✨ Entregado con Éxito',
@@ -525,7 +525,7 @@ Rutas principales y reglas de conversación:
           `💳 *Método de pago:* ${sqlPaymentMethod.toUpperCase()}`,
           `🔍 *Rastreo en vivo:* ${trackingLink}`,
           ``,
-          `Adjunto por este medio mi comprobante de pago para que inicien la preparación en taller. ¡Muchas gracias! ✨`,
+          `Adjunto por este medio mi comprobante de pago para que inicien la preparación. ¡Muchas gracias! ✨`,
         ];
 
         const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
@@ -533,7 +533,7 @@ Rutas principales y reglas de conversación:
         )}`;
 
         return NextResponse.json({
-          text: `¡Qué gran elección, **${buyerName}**! He registrado tu pedido de **${args.product_name}** en nuestro sistema con código de rastreo **${trackingCode}** 🌸.\n\nPara que nuestro taller comience con la preparación de tus flores frescas y confirme la ruta de entrega, por favor envía la constancia de tu ${sqlPaymentMethod.toUpperCase()} haciendo clic en el botón de WhatsApp a continuación:`,
+          text: `¡Qué gran elección, **${buyerName}**! He registrado tu pedido de **${args.product_name}** en nuestro sistema con código de rastreo **${trackingCode}** 🌸.\n\nPara que nuestro equipo comience con la preparación de tus flores frescas y confirme la ruta de entrega, por favor envía la constancia de tu ${sqlPaymentMethod.toUpperCase()} haciendo clic en el botón de WhatsApp a continuación:`,
           orderCreated: {
             id: newOrder?.id,
             tracking_code: trackingCode,

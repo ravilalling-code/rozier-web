@@ -236,7 +236,7 @@ export default function AdminLayout({
         <header className="hidden lg:flex items-center justify-between px-8 py-3.5 border-b border-neutral-800/70 bg-neutral-900/40 backdrop-blur-md">
           <div className="flex items-center gap-2 text-xs text-neutral-400">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-medium text-neutral-300">Taller PETALIA</span>
+            <span className="font-medium text-neutral-300">Florería PETALIA</span>
             <span className="text-neutral-600">•</span>
             <span>Panel de Control Operativo</span>
           </div>

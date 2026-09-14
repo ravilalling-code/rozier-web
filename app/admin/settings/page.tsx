@@ -69,7 +69,7 @@ export default function AdminSettingsPage() {
             </span>
           </div>
           <p className="text-sm text-neutral-400 mt-1">
-            Configura los enlaces oficiales de Instagram, Facebook, TikTok y el WhatsApp del taller.
+            Configura los enlaces oficiales de Instagram, Facebook, TikTok y el WhatsApp de atención.
           </p>
         </div>
 

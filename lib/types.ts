@@ -30,10 +30,14 @@ export type OrderStatus =
   | 'pendiente'
   | 'confirmado'
   | 'en_preparacion'
-  | 'en_taller'
   | 'en_despacho'
   | 'entregado'
   | 'cancelado';
+
+export interface CartItem {
+  product: Product;
+  quantity: number;
+}
 
 export interface Order {
   id: string;

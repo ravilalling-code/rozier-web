@@ -52,7 +52,7 @@ const CATEGORY_LABELS: Record<
     icon: Truck,
   },
   fijos: {
-    label: 'Costos Fijos & Taller',
+    label: 'Costos Fijos & Operaciones',
     bg: 'bg-neutral-800 border-neutral-700',
     text: 'text-neutral-300',
     icon: Building2,
@@ -108,7 +108,7 @@ export default function AdminExpensesPage() {
       if (expensesError) throw expensesError;
       if (expensesData) setExpenses(expensesData as Expense[]);
 
-      // 2. Cargar Ventas Cobradas (pedidos confirmados, en taller o entregados)
+      // 2. Cargar Ventas Cobradas (pedidos confirmados, en preparación o entregados)
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('total_amount, status');
@@ -256,7 +256,7 @@ export default function AdminExpensesPage() {
             </span>
           </div>
           <p className="text-sm text-neutral-400 mt-1">
-            Métricas financieras del taller floral, compras de insumos y ganancia neta real.
+            Métricas financieras de la florería, compras de insumos y ganancia neta real.
           </p>
         </div>
 
@@ -303,7 +303,7 @@ export default function AdminExpensesPage() {
         <div className="bg-neutral-900 border border-neutral-800/80 rounded-2xl p-5 shadow-lg shadow-black/20 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-              Gastos del Taller
+              Gastos de Florería
             </span>
             <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center">
               <TrendingDown className="w-4 h-4" />
@@ -421,7 +421,7 @@ export default function AdminExpensesPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 text-neutral-500 space-y-3">
           <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
-          <p className="text-sm">Calculando balance de taller...</p>
+          <p className="text-sm">Calculando balance operativo...</p>
         </div>
       ) : filteredExpenses.length === 0 ? (
         <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/80 p-12 text-center space-y-3">
@@ -432,7 +432,7 @@ export default function AdminExpensesPage() {
           <p className="text-xs text-neutral-400 max-w-sm mx-auto">
             {searchQuery || filterCategory !== 'todos'
               ? 'Prueba modificando la categoría o término de búsqueda.'
-              : 'Registra los gastos del taller floral para tener control exacto del margen de ganancia.'}
+              : 'Registra los gastos de la florería para tener control exacto del margen de ganancia.'}
           </p>
         </div>
       ) : (
@@ -536,7 +536,7 @@ export default function AdminExpensesPage() {
           <div className="bg-neutral-900 border border-neutral-800 w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <div>
-                <h2 className="text-lg font-bold text-white">Registrar Gasto del Taller</h2>
+                <h2 className="text-lg font-bold text-white">Registrar Gasto Operativo</h2>
                 <p className="text-xs text-neutral-400">
                   Añade compras de flores, bases, lazos, delivery o costos del negocio.
                 </p>
@@ -604,7 +604,7 @@ export default function AdminExpensesPage() {
                   <option value="flores_frescas">Flores Frescas & Follaje</option>
                   <option value="empaques_bases">Empaques, Cajas & Lazos</option>
                   <option value="logistica_delivery">Logística & Delivery</option>
-                  <option value="fijos">Costos Fijos & Taller</option>
+                  <option value="fijos">Costos Fijos & Operaciones</option>
                   <option value="publicidad">Publicidad & Redes</option>
                 </select>
               </div>

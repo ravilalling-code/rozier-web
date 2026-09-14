@@ -85,7 +85,7 @@ function LoginForm() {
             </span>
           </div>
           <p className="text-xs text-neutral-400 mt-1">
-            Acceso exclusivo al taller y gestión floral de PETALIA
+            Acceso exclusivo a gestión y pedidos de PETALIA
           </p>
         </div>
       </div>
@@ -174,7 +174,7 @@ function LoginForm() {
       {/* Footer de Seguridad */}
       <div className="mt-6 pt-5 border-t border-neutral-800/80 flex items-center justify-center gap-1.5 text-[11px] text-neutral-500">
         <ShieldCheck className="w-3.5 h-3.5 text-rose-500/80" />
-        <span>Sesión encriptada y protegida • Taller PETALIA</span>
+        <span>Sesión encriptada y protegida • Florería PETALIA</span>
       </div>
     </div>
   );

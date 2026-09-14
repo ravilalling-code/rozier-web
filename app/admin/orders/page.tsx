@@ -59,13 +59,6 @@ const STATUS_CONFIG: Record<
     border: 'border-purple-800/60',
     icon: Hammer,
   },
-  en_taller: {
-    label: 'En Preparación',
-    bg: 'bg-purple-950/50',
-    text: 'text-purple-400',
-    border: 'border-purple-800/60',
-    icon: Hammer,
-  },
   en_despacho: {
     label: 'En Despacho',
     bg: 'bg-indigo-950/50',
@@ -144,6 +137,7 @@ export default function AdminOrdersPage() {
   const [editDedication, setEditDedication] = useState('');
   const [editTotalAmount, setEditTotalAmount] = useState('');
   const [editPaymentMethod, setEditPaymentMethod] = useState<'yape' | 'plin' | 'transferencia' | 'efectivo'>('yape');
+  const [editStatus, setEditStatus] = useState<OrderStatus>('pendiente');
   const [editOperationNumber, setEditOperationNumber] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [editLoading, setEditLoading] = useState(false);
@@ -345,7 +339,7 @@ export default function AdminOrdersPage() {
             .from('customers')
             .insert([
               {
-                full_name: customerName.trim() || 'Cliente Taller',
+                full_name: customerName.trim() || 'Cliente Petalia',
                 phone: cleanPhone,
                 anniversary_date: anniversaryDate || null,
                 notes: customerNotes.trim() || null,
@@ -378,7 +372,7 @@ export default function AdminOrdersPage() {
             voucher_url: voucherStorageUrl || null,
             delivery_date: sqlDeliveryDate,
             recipient_name: recipientName.trim() || (customerName.trim() ? `${customerName.trim()} (Cel: ${cleanPhone})` : 'Cliente'),
-            delivery_address: deliveryAddress.trim() || 'Entrega en taller',
+            delivery_address: deliveryAddress.trim() || 'Entrega en tienda',
             dedication_message: dedicationMessage.trim() || null,
             status: sqlStatus,
             tracking_code: generateTrackingCode(),
@@ -441,15 +435,15 @@ export default function AdminOrdersPage() {
       return;
     }
 
-    const tracking = order.tracking_code || 'PET-TALLER';
+    const tracking = order.tracking_code || 'PET-ORDEN';
     const trackingUrl = `https://petalia-web.vercel.app/?track=${tracking}`;
     const cleanPhone = phone.replace(/\D/g, '');
     const phoneWithCountry = cleanPhone.startsWith('51') ? cleanPhone : `51${cleanPhone}`;
 
     let message = '';
     const norm = (targetStatus || '').toLowerCase();
-    if (norm === 'en_preparacion' || norm === 'en_taller') {
-      message = `¡Hola ${clientName}! Tu pedido ${tracking} ha sido confirmado y ya se encuentra *En Preparación* en nuestro taller floral 🌸. Puedes rastrearlo aquí: ${trackingUrl}`;
+    if (norm === 'en_preparacion') {
+      message = `¡Hola ${clientName}! Tu pedido ${tracking} ya se encuentra *En Preparación* 🌸. Puedes rastrearlo aquí: ${trackingUrl}`;
     } else if (norm === 'en_despacho') {
       message = `¡Hola ${clientName}! Tu arreglo floral de PETALIA (${tracking}) ya está *En Despacho* en camino a la dirección indicada 🚗💐. Puedes seguir su recorrido aquí: ${trackingUrl}`;
     } else if (norm === 'entregado') {
@@ -503,6 +497,8 @@ export default function AdminOrdersPage() {
     setEditPaymentMethod(
       (['yape', 'plin', 'transferencia', 'efectivo'].includes(rawMethod) ? rawMethod : 'yape') as any
     );
+    const rawSt = (order.status || 'pendiente').toLowerCase();
+    setEditStatus(rawSt as OrderStatus);
     setEditOperationNumber(order.operation_number || '');
     setEditNotes(order.customer?.notes || '');
   };
@@ -540,6 +536,7 @@ export default function AdminOrdersPage() {
       const updatedPayload: Record<string, any> = {
         total_amount: numAmount,
         payment_method: editPaymentMethod.toLowerCase(),
+        status: editStatus,
         operation_number: editOperationNumber.trim() || null,
         delivery_date: editDeliveryDate || editingOrder.delivery_date,
         recipient_name: editRecipientName.trim() || 'Cliente',
@@ -688,7 +685,7 @@ export default function AdminOrdersPage() {
       // Abrir o sugerir confirmación inmediata por WhatsApp
       if (
         window.confirm(
-          `¡Pago validado con éxito! Pedido asignado a ${trackingCode} y pasado al taller.\n\n¿Deseas abrir WhatsApp para enviar la confirmación y enlace de rastreo al cliente?`
+          `¡Pago validado con éxito! Pedido asignado a ${trackingCode} y pasado a preparación.\n\n¿Deseas abrir WhatsApp para enviar la confirmación y enlace de rastreo al cliente?`
         )
       ) {
         handleSendStatusWhatsApp(orderToNotify, 'en_preparacion');
@@ -709,7 +706,6 @@ export default function AdminOrdersPage() {
       pendiente: 'pendiente',
       confirmado: 'confirmado',
       en_preparacion: 'en_preparacion',
-      en_taller: 'en_taller',
       en_despacho: 'en_despacho',
       entregado: 'entregado',
       cancelado: 'cancelado',
@@ -726,7 +722,7 @@ export default function AdminOrdersPage() {
     let trackingToSave = previousOrder?.tracking_code;
     if (
       !trackingToSave &&
-      ['confirmado', 'en_preparacion', 'en_taller', 'en_despacho'].includes(normalizedStatus)
+      ['confirmado', 'en_preparacion', 'en_despacho'].includes(normalizedStatus)
     ) {
       trackingToSave = generateTrackingCode();
     }
@@ -876,9 +872,7 @@ export default function AdminOrdersPage() {
     const rawSt = (order.status || 'pendiente').toLowerCase();
     const matchesStatus =
       statusFilter === 'todos' ||
-      rawSt === statusFilter.toLowerCase() ||
-      ((statusFilter === 'en_preparacion' || statusFilter === 'en_taller') &&
-        (rawSt === 'en_preparacion' || rawSt === 'en_taller'));
+      rawSt === statusFilter.toLowerCase();
 
     const { phone, clientName } = getOrderDetailsHelpers(order);
     const recipient = order.recipient_name || '';
@@ -912,7 +906,7 @@ export default function AdminOrdersPage() {
             </span>
           </div>
           <p className="text-sm text-neutral-400 mt-1">
-            Pedidos de la tienda, Asistente Virtual IA y registro en taller sincronizados en tiempo real.
+            Pedidos de la tienda y del Asistente Virtual IA sincronizados en tiempo real.
           </p>
         </div>
 
@@ -975,7 +969,6 @@ export default function AdminOrdersPage() {
             {(['pendiente', 'confirmado', 'en_preparacion', 'en_despacho', 'entregado'] as OrderStatus[]).map((st) => {
               const count = orders.filter((o) => {
                 const s = (o.status || '').toLowerCase();
-                if (st === 'en_preparacion') return s === 'en_preparacion' || s === 'en_taller';
                 return s === st;
               }).length;
               const cfg = STATUS_CONFIG[st] || STATUS_CONFIG.pendiente;
@@ -984,7 +977,7 @@ export default function AdminOrdersPage() {
                   key={st}
                   onClick={() => setStatusFilter(st)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition ${
-                    statusFilter === st || (statusFilter === 'en_taller' && st === 'en_preparacion')
+                    statusFilter === st
                       ? 'bg-rose-500 text-white'
                       : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white'
                   }`}
@@ -1096,7 +1089,7 @@ export default function AdminOrdersPage() {
 
                     {/* Selector de estado rápido con valores normalizados */}
                     <select
-                      value={currentStatus === 'en_taller' ? 'en_preparacion' : currentStatus}
+                      value={currentStatus}
                       onChange={(e) =>
                         handleUpdateStatus(order.id, e.target.value as OrderStatus)
                       }
@@ -1238,19 +1231,19 @@ export default function AdminOrdersPage() {
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-emerald-950/40 transition active:scale-95"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Validar Pago & Pasar a Taller</span>
+                        <span>Validar Pago & Preparación</span>
                       </button>
                     )}
 
                     {/* Botón WhatsApp contextual por estado */}
-                    {(currentStatus === 'en_preparacion' || currentStatus === 'en_taller') && (
+                    {currentStatus === 'en_preparacion' && (
                       <button
                         onClick={() => handleSendStatusWhatsApp(order, 'en_preparacion')}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-950/50 hover:bg-purple-900/50 border border-purple-800/60 text-purple-300 text-xs font-semibold transition"
                         title="Avisar al cliente que su arreglo está en preparación con link de rastreo"
                       >
                         <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Avisar Taller 🌸</span>
+                        <span>Avisar Preparación 🌸</span>
                       </button>
                     )}
 
@@ -1500,7 +1493,7 @@ export default function AdminOrdersPage() {
               {/* Sección Entrega & Arreglo */}
               <div className="space-y-3 pt-2 border-t border-neutral-800">
                 <span className="text-xs font-bold text-sky-400 uppercase tracking-wider">
-                  3. Logística de Entrega & Taller
+                  3. Logística de Entrega & Preparación
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -1527,7 +1520,7 @@ export default function AdminOrdersPage() {
                     >
                       <option value="confirmado">Confirmado (Pago verificado)</option>
                       <option value="pendiente">Pendiente</option>
-                      <option value="en_taller">En Taller (Armando)</option>
+                      <option value="en_preparacion">En Preparación (Armando)</option>
                       <option value="entregado">Entregado</option>
                     </select>
                   </div>
@@ -1704,7 +1697,7 @@ export default function AdminOrdersPage() {
                         Fecha: {formatLocalDate(selectedOrderDetails.delivery_date)}
                       </p>
                       <p className="text-neutral-400">
-                        Dirección: {selectedOrderDetails.delivery_address || 'Entrega en taller'}
+                        Dirección: {selectedOrderDetails.delivery_address || 'Entrega en tienda'}
                       </p>
                     </div>
 
@@ -1805,11 +1798,7 @@ export default function AdminOrdersPage() {
                     );
                   })()}
                   <select
-                    value={
-                      (selectedOrderDetails.status || 'pendiente').toLowerCase() === 'en_taller'
-                        ? 'en_preparacion'
-                        : (selectedOrderDetails.status || 'pendiente').toLowerCase()
-                    }
+                    value={(selectedOrderDetails.status || 'pendiente').toLowerCase()}
                     onChange={(e) => handleUpdateStatus(selectedOrderDetails.id, e.target.value)}
                     className="bg-neutral-800 text-neutral-200 text-xs rounded-xl px-3 py-1.5 border border-neutral-700 focus:outline-none focus:border-rose-500 transition cursor-pointer font-medium"
                   >
@@ -1831,7 +1820,7 @@ export default function AdminOrdersPage() {
                       className="px-2.5 py-1 rounded-lg bg-purple-950/60 border border-purple-800/60 text-purple-300 hover:bg-purple-900/60 text-[11px] font-medium transition flex items-center gap-1"
                     >
                       <MessageCircle className="w-3 h-3 text-emerald-400" />
-                      <span>Taller</span>
+                      <span>Preparación</span>
                     </button>
                     <button
                       onClick={() => handleSendStatusWhatsApp(selectedOrderDetails, 'en_despacho')}
@@ -1909,7 +1898,7 @@ export default function AdminOrdersPage() {
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">Validar Pago & Pasar a Taller</h3>
+                  <h3 className="text-base font-bold text-white">Validar Pago & Preparación</h3>
                   <p className="text-xs text-neutral-400">
                     Confirma el pago recibido para asignar tracking y pasar el arreglo a preparación.
                   </p>
@@ -2025,7 +2014,7 @@ export default function AdminOrdersPage() {
               )}
 
               <div className="bg-neutral-950/80 rounded-xl p-3 border border-neutral-800/80 text-[11px] text-neutral-400 space-y-1">
-                <p className="font-semibold text-neutral-300">⚡ Automatización de Taller & Tracking:</p>
+                <p className="font-semibold text-neutral-300">⚡ Automatización de Preparación & Tracking:</p>
                 <p>
                   Al confirmar, el pedido pasará de inmediato a <strong>En Preparación</strong>, se generará el código único de rastreo y podrás abrir WhatsApp con el mensaje preformateado para el cliente con un solo clic.
                 </p>
@@ -2048,17 +2037,234 @@ export default function AdminOrdersPage() {
                   {valLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Guardando & Pasando a Taller...</span>
+                      <span>Guardando & Pasando a Preparación...</span>
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="w-4 h-4" />
-                      <span>Confirmar Pago y Pasar a Taller</span>
+                      <span>Confirmar Pago y Pasar a Preparación</span>
                     </>
                   )}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* MODAL: Editar Pedido */}
+      {editingOrder && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-neutral-900 border border-neutral-800 w-full max-w-xl rounded-3xl p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Editar Pedido #{editingOrder.tracking_code || editingOrder.id.slice(0, 8)}
+                  </h3>
+                  <p className="text-xs text-neutral-400">
+                    Modifica los datos del cliente, entrega, monto y notas internas.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingOrder(null)}
+                className="p-1.5 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditedOrder} className="space-y-4 text-xs">
+              {/* Cliente */}
+              <div className="bg-neutral-950 p-3.5 rounded-2xl border border-neutral-800 space-y-3">
+                <span className="text-[11px] font-bold text-rose-400 uppercase tracking-wider block">
+                  Datos del Cliente
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-neutral-400 mb-1 font-medium">Nombre Completo</label>
+                    <input
+                      type="text"
+                      value={editCustomerName}
+                      onChange={(e) => setEditCustomerName(e.target.value)}
+                      placeholder="Ej. Carlos Mendoza"
+                      className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-neutral-400 mb-1 font-medium">Teléfono / WhatsApp</label>
+                    <input
+                      type="tel"
+                      value={editCustomerPhone}
+                      onChange={(e) => setEditCustomerPhone(e.target.value)}
+                      placeholder="Ej. 924 257 784"
+                      className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Destinatario y Entrega */}
+              <div className="bg-neutral-950 p-3.5 rounded-2xl border border-neutral-800 space-y-3">
+                <span className="text-[11px] font-bold text-sky-400 uppercase tracking-wider block">
+                  Entrega & Destinatario
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-neutral-400 mb-1 font-medium">Nombre Destinatario</label>
+                    <input
+                      type="text"
+                      value={editRecipientName}
+                      onChange={(e) => setEditRecipientName(e.target.value)}
+                      placeholder="Ej. Lucía Flores"
+                      className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-white placeholder-neutral-500 focus:outline-none focus:border-sky-500 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-neutral-400 mb-1 font-medium">Fecha de Entrega</label>
+                    <input
+                      type="date"
+                      value={editDeliveryDate}
+                      onChange={(e) => setEditDeliveryDate(e.target.value)}
+                      className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-sky-500 text-xs"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-neutral-400 mb-1 font-medium">Dirección de Envío y Referencia</label>
+                  <input
+                    type="text"
+                    value={editDeliveryAddress}
+                    onChange={(e) => setEditDeliveryAddress(e.target.value)}
+                    placeholder="Ej. Av. Larco 450, Miraflores (Dpto 402)"
+                    className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-white placeholder-neutral-500 focus:outline-none focus:border-sky-500 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-neutral-400 mb-1 font-medium">Dedicatoria para la Tarjeta</label>
+                  <textarea
+                    rows={2}
+                    value={editDedication}
+                    onChange={(e) => setEditDedication(e.target.value)}
+                    placeholder="Mensaje especial para el destinatario..."
+                    className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-white placeholder-neutral-500 focus:outline-none focus:border-sky-500 resize-none text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Pago, Estado y Notas */}
+              <div className="bg-neutral-950 p-3.5 rounded-2xl border border-neutral-800 space-y-3">
+                <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block">
+                  Pago, Estado y Notas CRM
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-neutral-400 mb-1 font-medium">Monto Total (S/)</label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      value={editTotalAmount}
+                      onChange={(e) => setEditTotalAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-white font-mono placeholder-neutral-500 focus:outline-none focus:border-emerald-500 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-neutral-400 mb-1 font-medium">Método de Pago</label>
+                    <select
+                      value={editPaymentMethod}
+                      onChange={(e) => setEditPaymentMethod(e.target.value as any)}
+                      className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500 capitalize text-xs cursor-pointer"
+                    >
+                      <option value="yape">Yape</option>
+                      <option value="plin">Plin</option>
+                      <option value="transferencia">Transferencia</option>
+                      <option value="efectivo">Efectivo</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-neutral-400 mb-1 font-medium">N° Operación</label>
+                    <input
+                      type="text"
+                      value={editOperationNumber}
+                      onChange={(e) => setEditOperationNumber(e.target.value)}
+                      placeholder="Ej. 123456"
+                      className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-white font-mono placeholder-neutral-500 focus:outline-none focus:border-emerald-500 text-xs"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-neutral-400 mb-1 font-medium">Estado del Pedido</label>
+                    <select
+                      value={editStatus}
+                      onChange={(e) => setEditStatus(e.target.value as OrderStatus)}
+                      className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-rose-500 text-xs cursor-pointer font-medium"
+                    >
+                      <option value="pendiente">⏳ Pendiente</option>
+                      <option value="confirmado">✅ Confirmado</option>
+                      <option value="en_preparacion">🌸 En Preparación</option>
+                      <option value="en_despacho">🚗 En Despacho</option>
+                      <option value="entregado">✨ Entregado</option>
+                      <option value="cancelado">❌ Cancelado</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-neutral-400 mb-1 font-medium">Notas Internas CRM</label>
+                    <input
+                      type="text"
+                      value={editNotes}
+                      onChange={(e) => setEditNotes(e.target.value)}
+                      placeholder="Detalles sobre preferencias, timbre, etc."
+                      className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-neutral-800">
+                <button
+                  type="button"
+                  onClick={() => setEditingOrder(null)}
+                  disabled={editLoading}
+                  className="px-4 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-medium transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={editLoading}
+                  className="flex items-center gap-2 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-semibold px-5 py-2.5 rounded-xl text-xs shadow-lg shadow-sky-950/50 transition active:scale-95 disabled:opacity-50 cursor-pointer"
+                >
+                  {editLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Guardando Cambios...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Guardar Cambios</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* TOAST FLOTANTE */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 animate-bounce">
+          <div className="bg-emerald-950/95 border border-emerald-500/80 text-emerald-200 px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-md">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+            <span className="text-xs font-medium">{toastMessage}</span>
           </div>
         </div>
       )}

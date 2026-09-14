@@ -235,7 +235,7 @@ export default function ChatBot() {
                 </div>
                 <p className="text-[11px] text-stone-400 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>En línea • Taller Floral Lima</span>
+                  <span>En línea • Florería PETALIA Lima</span>
                 </p>
               </div>
             </div>
@@ -465,7 +465,7 @@ export default function ChatBot() {
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-500" />
                 </div>
                 <span className="text-[11px] italic text-stone-400">
-                  La asesora está consultando el taller...
+                  La asesora está consultando disponibilidad...
                 </span>
               </div>
             )}

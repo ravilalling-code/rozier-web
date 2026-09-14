@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Product, Category, Order, OrderStatus, StoreSettings } from '@/lib/types';
+import { Product, Category, Order, OrderStatus, StoreSettings, CartItem } from '@/lib/types';
 import { getCategories } from '@/lib/categories';
 import { getStoreSettings } from '@/lib/settings';
 import {
@@ -24,7 +24,6 @@ import {
   Search,
   Package,
   CheckCircle2,
-  Hammer,
   Check,
   MapPin,
   Loader2,
@@ -32,6 +31,13 @@ import {
   Copy,
   Download,
   QrCode,
+  ShoppingCart,
+  Plus,
+  Minus,
+  Trash2,
+  ArrowRight,
+  CreditCard,
+  ShoppingBag,
 } from 'lucide-react';
 import { formatLocalDate } from '@/lib/format';
 import ChatBot from '@/components/ChatBot';
@@ -44,8 +50,30 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('todos');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [modalQuantity, setModalQuantity] = useState(1);
   const [deliveryDate, setDeliveryDate] = useState('');
   const [dedication, setDedication] = useState('');
+
+  // Carrito de compras Multi-producto
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+
+  // Formulario de Checkout Unificado
+  const [buyerName, setBuyerName] = useState('');
+  const [buyerPhone, setBuyerPhone] = useState('');
+  const [recipientName, setRecipientName] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [checkoutDeliveryDate, setCheckoutDeliveryDate] = useState('');
+  const [checkoutDedication, setCheckoutDedication] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'yape' | 'plin' | 'transferencia' | 'efectivo'>('yape');
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+  const [orderSuccessData, setOrderSuccessData] = useState<{
+    trackingCode: string;
+    total: number;
+    itemsSummary: string;
+    whatsappUrl: string;
+  } | null>(null);
 
   // Estados de Rastreo de Pedido (Tracking)
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
@@ -54,7 +82,7 @@ export default function HomePage() {
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackingError, setTrackingError] = useState<string | null>(null);
 
-  // Modal QR de Pago Yape / Plin
+  // Modal QR de Pago Yape / Plin (usado en checkout o solicitud)
   const [isYapeModalOpen, setIsYapeModalOpen] = useState(false);
   const [copiedYapePhone, setCopiedYapePhone] = useState(false);
 
@@ -67,6 +95,7 @@ export default function HomePage() {
   // Ajustes de la tienda (Redes sociales y WhatsApp)
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
 
+  // 1. Cargar catálogo y recuperar carrito de LocalStorage al montar
   useEffect(() => {
     const fetchCatalogAndCategories = async () => {
       setLoading(true);
@@ -97,6 +126,19 @@ export default function HomePage() {
 
     fetchCatalogAndCategories();
 
+    // Recuperar carrito persistente
+    try {
+      const savedCart = localStorage.getItem('petalia_cart');
+      if (savedCart) {
+        const parsed = JSON.parse(savedCart);
+        if (Array.isArray(parsed)) {
+          setCart(parsed);
+        }
+      }
+    } catch (e) {
+      console.warn('Error al cargar carrito persistente:', e);
+    }
+
     // Soportar lectura directa por URL (?track=CODIGO)
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -109,6 +151,58 @@ export default function HomePage() {
       }
     }
   }, []);
+
+  // 2. Persistir carrito en LocalStorage al cambiar
+  const saveCart = (newCart: CartItem[]) => {
+    setCart(newCart);
+    try {
+      localStorage.setItem('petalia_cart', JSON.stringify(newCart));
+    } catch (e) {
+      console.warn('Error guardando carrito en localStorage:', e);
+    }
+  };
+
+  // Funciones del Carrito
+  const addToCart = (product: Product, quantity: number = 1) => {
+    const existingIndex = cart.findIndex((item) => item.product.id === product.id);
+    let updated: CartItem[];
+    if (existingIndex > -1) {
+      updated = [...cart];
+      updated[existingIndex].quantity += quantity;
+    } else {
+      updated = [...cart, { product, quantity }];
+    }
+    saveCart(updated);
+  };
+
+  const updateCartQuantity = (productId: string, delta: number) => {
+    const updated = cart
+      .map((item) => {
+        if (item.product.id === productId) {
+          const newQty = item.quantity + delta;
+          return newQty > 0 ? { ...item, quantity: newQty } : null;
+        }
+        return item;
+      })
+      .filter(Boolean) as CartItem[];
+    saveCart(updated);
+  };
+
+  const removeFromCart = (productId: string) => {
+    const updated = cart.filter((item) => item.product.id !== productId);
+    saveCart(updated);
+  };
+
+  const clearCart = () => {
+    saveCart([]);
+  };
+
+  // Totales calculados del carrito
+  const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const cartSubtotal = cart.reduce((sum, item) => {
+    const price = item.product.promotional_price || item.product.price;
+    return sum + price * item.quantity;
+  }, 0);
 
   // Función para consultar estado del pedido en tiempo real
   const lookupTrackingOrder = async (codeToSearch: string) => {
@@ -157,28 +251,147 @@ export default function HomePage() {
           (p) => (p.category || '').toLowerCase().trim() === category.toLowerCase().trim()
         );
 
-  const handleSendWhatsApp = () => {
-    if (!selectedProduct) return;
+  // Enviar pedido consolidado a Supabase y generar comprobante WhatsApp
+  const handleCheckoutSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (cart.length === 0) return;
+    if (!buyerName.trim() || !buyerPhone.trim()) {
+      alert('Por favor ingresa tu nombre y número de teléfono o WhatsApp.');
+      return;
+    }
+    if (!recipientName.trim() || !deliveryAddress.trim() || !checkoutDeliveryDate) {
+      alert('Por favor completa los datos de entrega (destinatario, dirección y fecha).');
+      return;
+    }
 
-    const finalPrice = selectedProduct.promotional_price || selectedProduct.price;
-    const lines = [
-      `¡Hola *PETALIA*! 🌸 Deseo realizar este pedido:`,
-      ``,
-      `📦 *Arreglo:* ${selectedProduct.name}`,
-      `💰 *Precio:* S/ ${finalPrice.toFixed(2)}`,
-      deliveryDate
-        ? `📅 *Fecha de entrega:* ${formatLocalDate(deliveryDate)}`
-        : `📅 *Fecha de entrega:* Lo antes posible / Hoy`,
-      dedication.trim()
-        ? `✍️ *Dedicatoria:* "${dedication.trim()}"`
-        : `✍️ *Dedicatoria:* Sin dedicatoria por ahora`,
-      ``,
-      `¿Tienen disponibilidad y número de Yape/Plin para confirmar? ✨`,
-    ];
+    setIsSubmittingOrder(true);
 
-    const message = encodeURIComponent(lines.join('\n'));
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
-    window.open(url, '_blank');
+    try {
+      const cleanPhone = buyerPhone.replace(/\D/g, '');
+      const trackingCode = `PET-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      // 1. Crear o asociar cliente en Supabase
+      let customerId: string | null = null;
+      try {
+        const { data: existingCust } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('phone', cleanPhone)
+          .maybeSingle();
+
+        if (existingCust) {
+          customerId = existingCust.id;
+        } else {
+          const { data: newCust } = await supabase
+            .from('customers')
+            .insert([
+              {
+                full_name: buyerName.trim(),
+                phone: cleanPhone,
+                notes: 'Cliente registrado desde tienda web (Carrito)',
+              },
+            ])
+            .select()
+            .single();
+          if (newCust) customerId = newCust.id;
+        }
+      } catch (cErr) {
+        console.warn('Advertencia vinculando cliente:', cErr);
+      }
+
+      // 2. Resumen consolidado de productos
+      const itemsSummary = cart
+        .map((i) => `${i.product.name} (x${i.quantity})`)
+        .join(', ');
+
+      const formattedDedication = `[Arreglos: ${itemsSummary}] [Comprador: ${buyerName.trim()} | Cel: ${cleanPhone}] ${
+        checkoutDedication.trim() || 'Sin dedicatoria'
+      }`;
+
+      // 3. Insertar orden consolidada en public.orders
+      const orderPayload: Record<string, any> = {
+        customer_id: customerId,
+        total_amount: cartSubtotal,
+        payment_method: paymentMethod.toLowerCase(),
+        status: 'en_preparacion' as OrderStatus,
+        delivery_date: checkoutDeliveryDate,
+        recipient_name: recipientName.trim(),
+        delivery_address: deliveryAddress.trim(),
+        dedication_message: formattedDedication,
+        tracking_code: trackingCode,
+      };
+
+      // Intentar insertar con columnas enriquecidas si existen
+      let { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert([
+          {
+            ...orderPayload,
+            customer_name: buyerName.trim(),
+            customer_phone: cleanPhone,
+          },
+        ])
+        .select()
+        .single();
+
+      if (orderError && orderError.code === 'PGRST204') {
+        // Fallback a columnas base de la tabla orders
+        const retry = await supabase.from('orders').insert([orderPayload]).select().single();
+        orderData = retry.data;
+        orderError = retry.error;
+      }
+
+      if (orderError) throw orderError;
+
+      // 4. Construir mensaje preformateado de WhatsApp
+      const trackingLink = `https://petalia-web.vercel.app/?track=${trackingCode}`;
+      const waLines = [
+        `¡Hola *PETALIA*! 🌸 Acabo de registrar mi pedido en la tienda:`,
+        ``,
+        `🏷️ *Código de Pedido:* ${trackingCode}`,
+        `📦 *Arreglos seleccionados:*`,
+        ...cart.map(
+          (i) =>
+            `  • ${i.product.name} x${i.quantity} - S/ ${(
+              (i.product.promotional_price || i.product.price) * i.quantity
+            ).toFixed(2)}`
+        ),
+        ``,
+        `💰 *Total a pagar:* S/ ${cartSubtotal.toFixed(2)}`,
+        `💳 *Método de pago:* ${paymentMethod.toUpperCase()}`,
+        `👤 *Destinatario:* ${recipientName.trim()}`,
+        `📍 *Dirección de entrega:* ${deliveryAddress.trim()}`,
+        `📅 *Fecha de entrega:* ${formatLocalDate(checkoutDeliveryDate)}`,
+        checkoutDedication.trim()
+          ? `✍️ *Dedicatoria:* "${checkoutDedication.trim()}"`
+          : `✍️ *Dedicatoria:* Sin dedicatoria por ahora`,
+        ``,
+        `🔍 *Rastreo en vivo:* ${trackingLink}`,
+        ``,
+        paymentMethod === 'yape' || paymentMethod === 'plin'
+          ? `Adjunto por este medio mi comprobante de pago para que inicien la preparación. ¡Muchas gracias! ✨`
+          : `Por favor confírmenme la recepción del pedido para coordinar. ¡Muchas gracias! ✨`,
+      ];
+
+      const whatsappUrl = `https://wa.me/${storeSettings?.whatsapp_number || WHATSAPP_NUMBER}?text=${encodeURIComponent(
+        waLines.join('\n')
+      )}`;
+
+      // 5. Guardar datos de éxito y limpiar carrito
+      setOrderSuccessData({
+        trackingCode,
+        total: cartSubtotal,
+        itemsSummary,
+        whatsappUrl,
+      });
+
+      clearCart();
+    } catch (err: any) {
+      console.error('Error al registrar pedido consolidado:', err);
+      alert('Ocurrió un error al procesar tu pedido: ' + (err.message || err));
+    } finally {
+      setIsSubmittingOrder(false);
+    }
   };
 
   return (
@@ -218,15 +431,19 @@ export default function HomePage() {
               <span className="sm:hidden">Rastrear</span>
             </button>
 
-            {/* Botón Ver QR Yape / Plin */}
+            {/* BOTÓN DEL CARRITO DE COMPRAS CON BADGE DINÁMICO */}
             <button
-              onClick={() => setIsYapeModalOpen(true)}
-              className="flex items-center gap-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full text-xs font-semibold transition active:scale-95 border border-purple-200"
-              title="Ver QR y datos para pagar con Yape o Plin"
+              onClick={() => setIsCartOpen(true)}
+              className="relative flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 px-3.5 py-1.5 rounded-full text-xs font-semibold transition active:scale-95 border border-rose-200"
+              title="Ver carrito de compras"
             >
-              <QrCode className="w-3.5 h-3.5 text-purple-600" />
-              <span className="hidden sm:inline">Pagar con Yape</span>
-              <span className="sm:hidden">Yape</span>
+              <ShoppingCart className="w-3.5 h-3.5 text-rose-600" />
+              <span className="hidden sm:inline">Carrito</span>
+              {totalCartItems > 0 && (
+                <span className="bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
+                  {totalCartItems}
+                </span>
+              )}
             </button>
 
             {/* Botón WhatsApp de Atención Directa */}
@@ -290,43 +507,19 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Hero / Promesa de Valor */}
-      <div className="max-w-5xl mx-auto px-4 pt-4 pb-2">
-        <div className="bg-gradient-to-r from-rose-50 to-stone-100 border border-rose-100/80 rounded-3xl p-4 sm:p-5 flex items-center justify-between shadow-xs">
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-rose-600 font-semibold text-xs tracking-wide">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Flores frescas & acabados premium</span>
-            </div>
-            <h2 className="text-base sm:text-lg font-bold text-stone-900">
-              Sorprende con momentos inolvidables
-            </h2>
-            <p className="text-xs text-stone-600">
-              Elige tu arreglo favorito y personaliza tu dedicatoria en un clic por WhatsApp.
-            </p>
-          </div>
-          <div className="hidden sm:flex flex-col items-end gap-1 text-right text-xs text-stone-500">
-            <span className="flex items-center gap-1">
-              <Truck className="w-3.5 h-3.5 text-stone-700" /> Envíos puntuales
-            </span>
-            <span className="flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Yape / Plin 100% seguro
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Grid de Productos Mobile-First */}
-      <main className="max-w-5xl mx-auto px-4 pt-3">
+      {/* Catálogo de Productos con Filtro Dinámico */}
+      <main className="max-w-5xl mx-auto px-4 py-6">
         {loading ? (
-          <div className="py-24 text-center space-y-3">
-            <div className="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-xs font-medium text-stone-500">Cargando catálogo floral...</p>
+          <div className="flex flex-col items-center justify-center py-24 text-stone-400 space-y-3">
+            <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
+            <p className="text-xs">Cargando los arreglos más frescos de Lima...</p>
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div className="py-20 text-center space-y-3 bg-white rounded-3xl border border-stone-200/80 p-8 shadow-xs">
-            <Flower2 className="w-10 h-10 text-stone-300 mx-auto" />
-            <h3 className="text-sm font-semibold text-stone-800">No hay arreglos en esta categoría</h3>
+          <div className="text-center py-24 bg-white rounded-3xl border border-stone-200/80 p-8 space-y-3 shadow-xs">
+            <Flower2 className="w-12 h-12 text-stone-300 mx-auto stroke-1" />
+            <p className="text-sm font-semibold text-stone-700">
+              No hay arreglos disponibles en esta categoría.
+            </p>
             <p className="text-xs text-stone-500">
               Explora otras categorías o consúltanos directamente por WhatsApp.
             </p>
@@ -350,18 +543,24 @@ export default function HomePage() {
               );
               const catBadgeName = catObj ? catObj.name : product.category;
 
+              // Comprobar si el producto ya está en el carrito
+              const cartItem = cart.find((i) => i.product.id === product.id);
+
               return (
                 <div
                   key={product.id}
-                  onClick={() => {
-                    setSelectedProduct(product);
-                    setDeliveryDate('');
-                    setDedication('');
-                  }}
-                  className="group bg-white rounded-2xl sm:rounded-3xl border border-stone-200/80 shadow-xs overflow-hidden flex flex-col cursor-pointer transition transform active:scale-98 hover:shadow-md hover:border-stone-300"
+                  className="group bg-white rounded-2xl sm:rounded-3xl border border-stone-200/80 shadow-xs overflow-hidden flex flex-col transition hover:shadow-md hover:border-stone-300"
                 >
                   {/* Foto Cuadrada en Alta Definición */}
-                  <div className="relative aspect-square w-full bg-stone-100 overflow-hidden">
+                  <div
+                    onClick={() => {
+                      setSelectedProduct(product);
+                      setModalQuantity(1);
+                      setDeliveryDate('');
+                      setDedication('');
+                    }}
+                    className="relative aspect-square w-full bg-stone-100 overflow-hidden cursor-pointer"
+                  >
                     <img
                       src={product.image_url}
                       alt={product.name}
@@ -381,8 +580,16 @@ export default function HomePage() {
                   </div>
 
                   {/* Detalle del Arreglo */}
-                  <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between space-y-2">
-                    <div>
+                  <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between space-y-2.5">
+                    <div
+                      onClick={() => {
+                        setSelectedProduct(product);
+                        setModalQuantity(1);
+                        setDeliveryDate('');
+                        setDedication('');
+                      }}
+                      className="cursor-pointer"
+                    >
                       <h3 className="font-semibold text-xs sm:text-sm text-stone-900 line-clamp-1 group-hover:text-rose-600 transition">
                         {product.name}
                       </h3>
@@ -391,7 +598,7 @@ export default function HomePage() {
                       </p>
                     </div>
 
-                    <div className="flex items-baseline justify-between pt-1">
+                    <div className="flex items-baseline justify-between pt-0.5">
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-sm sm:text-base font-bold text-stone-900 font-mono">
                           S/ {finalPrice.toFixed(2)}
@@ -402,10 +609,51 @@ export default function HomePage() {
                           </span>
                         )}
                       </div>
+                    </div>
 
-                      <span className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 flex items-center">
-                        Pedir <ChevronRight className="w-3 h-3 ml-0.5" />
-                      </span>
+                    {/* BOTÓN Y SELECTOR DE CANTIDAD PARA AGREGAR AL CARRITO */}
+                    <div className="pt-1 border-t border-stone-100">
+                      {cartItem ? (
+                        <div className="flex items-center justify-between bg-rose-50 border border-rose-200 rounded-xl p-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateCartQuantity(product.id, -1);
+                            }}
+                            className="w-7 h-7 rounded-lg bg-white text-rose-700 hover:bg-rose-100 flex items-center justify-center transition shadow-xs"
+                            title="Disminuir"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="text-xs font-bold text-rose-950 font-mono px-2">
+                            {cartItem.quantity} en carrito
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateCartQuantity(product.id, 1);
+                            }}
+                            className="w-7 h-7 rounded-lg bg-rose-600 text-white hover:bg-rose-700 flex items-center justify-center transition shadow-xs"
+                            title="Aumentar"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToCart(product, 1);
+                          }}
+                          className="w-full flex items-center justify-center gap-1.5 bg-stone-900 hover:bg-rose-600 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-xs transition active:scale-95"
+                        >
+                          <ShoppingCart className="w-3.5 h-3.5" />
+                          <span>Agregar al carrito</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -415,15 +663,15 @@ export default function HomePage() {
         )}
       </main>
 
-      {/* Modal Interactivo "Ordenar Detalle" */}
+      {/* MODAL: Vista Previa y Personalización de Producto */}
       {selectedProduct && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
           <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-stone-100 pb-3">
               <div>
-                <h3 className="font-bold text-base text-stone-900">Personaliza tu Pedido</h3>
+                <h3 className="font-bold text-base text-stone-900">{selectedProduct.name}</h3>
                 <p className="text-xs text-stone-500">
-                  Listo para enviar a nuestro WhatsApp oficial
+                  {selectedProduct.category ? `Categoría: ${selectedProduct.category}` : 'Florería Petalia'}
                 </p>
               </div>
               <button
@@ -439,17 +687,14 @@ export default function HomePage() {
               <img
                 src={selectedProduct.image_url}
                 alt={selectedProduct.name}
-                className="w-16 h-16 rounded-xl object-cover border border-stone-200"
+                className="w-20 h-20 rounded-2xl object-cover border border-stone-200 shadow-xs"
               />
               <div className="flex-1">
-                <h4 className="font-bold text-sm text-stone-900 line-clamp-1">
-                  {selectedProduct.name}
-                </h4>
-                <p className="text-[11px] text-stone-500 line-clamp-1">
-                  {selectedProduct.description || 'Diseño floral artesanal'}
+                <p className="text-xs text-stone-600">
+                  {selectedProduct.description || 'Diseño floral artesanal con flores frescas'}
                 </p>
-                <div className="flex items-baseline gap-1.5 mt-1">
-                  <span className="text-rose-600 font-bold text-base font-mono">
+                <div className="flex items-baseline gap-1.5 mt-2">
+                  <span className="text-rose-600 font-bold text-lg font-mono">
                     S/{' '}
                     {(selectedProduct.promotional_price || selectedProduct.price).toFixed(2)}
                   </span>
@@ -462,93 +707,584 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Formulario de Pedido */}
-            <div className="space-y-3 pt-1">
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
-                  📅 Fecha de entrega deseada
-                </label>
-                <input
-                  type="date"
-                  value={deliveryDate}
-                  onChange={(e) => setDeliveryDate(e.target.value)}
-                  className="w-full border border-stone-300 rounded-xl p-2.5 text-sm outline-none focus:border-stone-900 transition bg-white"
-                />
-                <div className="flex gap-1.5 mt-1.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const today = new Date().toISOString().split('T')[0];
-                      setDeliveryDate(today);
-                    }}
-                    className="text-[11px] px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-600 hover:bg-stone-200 transition"
-                  >
-                    Hoy mismo
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const tomorrow = new Date();
-                      tomorrow.setDate(tomorrow.getDate() + 1);
-                      setDeliveryDate(tomorrow.toISOString().split('T')[0]);
-                    }}
-                    className="text-[11px] px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-600 hover:bg-stone-200 transition"
-                  >
-                    Mañana
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
-                  ✍️ Dedicatoria personalizada para la tarjeta
-                </label>
-                <textarea
-                  rows={3}
-                  value={dedication}
-                  onChange={(e) => setDedication(e.target.value)}
-                  placeholder="Ej: Para el amor de mi vida, feliz aniversario. ¡Te amo con todo mi corazón!"
-                  className="w-full border border-stone-300 rounded-xl p-2.5 text-sm outline-none focus:border-stone-900 transition resize-none bg-white placeholder-stone-400"
-                />
-                <p className="text-[10px] text-stone-500 mt-0.5">
-                  Incluye tarjeta impresa de alta calidad sin costo adicional.
-                </p>
-              </div>
-              {/* Sección Métodos de Pago: Yape / Plin */}
-              <div className="bg-purple-50/70 border border-purple-200/80 rounded-2xl p-3 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                    Y
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-purple-950">Pago 100% Seguro con Yape / Plin</p>
-                    <p className="text-[11px] text-purple-700">Aceptamos transferencias y billeteras digitales</p>
-                  </div>
-                </div>
+            {/* Selector de Cantidad */}
+            <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-100 flex items-center justify-between">
+              <span className="text-xs font-semibold text-stone-700">Cantidad deseada:</span>
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setIsYapeModalOpen(true)}
-                  className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
+                  onClick={() => setModalQuantity((prev) => Math.max(1, prev - 1))}
+                  className="w-8 h-8 rounded-xl bg-white border border-stone-200 text-stone-700 hover:bg-stone-100 flex items-center justify-center font-bold"
                 >
-                  <QrCode className="w-3.5 h-3.5" />
-                  <span>Ver QR</span>
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-sm font-bold font-mono text-stone-900 w-6 text-center">
+                  {modalQuantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setModalQuantity((prev) => prev + 1)}
+                  className="w-8 h-8 rounded-xl bg-stone-900 text-white hover:bg-stone-800 flex items-center justify-center font-bold"
+                >
+                  <Plus className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
 
-            {/* Botón WhatsApp Prominente */}
-            <button
-              onClick={handleSendWhatsApp}
-              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-3.5 rounded-2xl shadow-lg shadow-emerald-700/20 transition active:scale-98 flex items-center justify-center gap-2.5 text-sm"
-            >
-              <MessageCircle className="w-5 h-5 fill-white/20" />
-              <span>Pedir por WhatsApp</span>
-            </button>
+            {/* Botones de Acción */}
+            <div className="space-y-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  addToCart(selectedProduct, modalQuantity);
+                  setSelectedProduct(null);
+                  setIsCartOpen(true);
+                }}
+                className="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3 rounded-2xl shadow-md transition active:scale-98 flex items-center justify-center gap-2 text-xs"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                <span>
+                  Agregar al Carrito • S/{' '}
+                  {(
+                    (selectedProduct.promotional_price || selectedProduct.price) * modalQuantity
+                  ).toFixed(2)}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  addToCart(selectedProduct, modalQuantity);
+                  setSelectedProduct(null);
+                  setIsCheckoutModalOpen(true);
+                }}
+                className="w-full bg-stone-900 hover:bg-stone-800 text-white font-semibold py-3 rounded-2xl shadow-sm transition active:scale-98 flex items-center justify-center gap-2 text-xs"
+              >
+                <ArrowRight className="w-4 h-4 text-emerald-400" />
+                <span>Comprar Ahora</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Botón Flotante Permanente de WhatsApp (Ubicado ARRIBA de la burbuja de la Asesora Virtual para no taparse) */}
+      {/* DRAWER LATERAL: Carrito de Compras */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            {/* Header del Carrito */}
+            <div className="p-4 sm:p-5 border-b border-stone-200/80 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                  <ShoppingBag className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm sm:text-base text-stone-900">Tu Carrito Floral</h3>
+                  <p className="text-[11px] text-stone-500">
+                    {totalCartItems} {totalCartItems === 1 ? 'producto agregado' : 'productos agregados'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsCartOpen(false)}
+                className="p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-xl transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Contenido del Carrito (Scroll) */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
+              {cart.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center py-12 space-y-3">
+                  <div className="w-16 h-16 rounded-full bg-stone-100 flex items-center justify-center text-stone-400">
+                    <Flower2 className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-stone-800 text-sm">Tu carrito está vacío</p>
+                    <p className="text-xs text-stone-500 mt-1 max-w-xs">
+                      Explora nuestros ramos, boxes y detalles florales para sorprender a quien más quieres.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setIsCartOpen(false)}
+                    className="px-5 py-2.5 rounded-xl bg-stone-900 text-white text-xs font-semibold shadow hover:bg-stone-800 transition"
+                  >
+                    Ver Catálogo Floral
+                  </button>
+                </div>
+              ) : (
+                cart.map((item) => {
+                  const finalPrice = item.product.promotional_price || item.product.price;
+                  const itemTotal = finalPrice * item.quantity;
+                  return (
+                    <div
+                      key={item.product.id}
+                      className="bg-stone-50/80 border border-stone-200/80 rounded-2xl p-3 flex gap-3 items-center hover:bg-white transition"
+                    >
+                      <img
+                        src={item.product.image_url}
+                        alt={item.product.name}
+                        className="w-16 h-16 rounded-xl object-cover border border-stone-200 shadow-2xs shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-xs text-stone-900 truncate">
+                          {item.product.name}
+                        </h4>
+                        <p className="text-[11px] text-stone-500 font-mono mt-0.5">
+                          S/ {finalPrice.toFixed(2)} c/u
+                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center border border-stone-200 bg-white rounded-lg">
+                            <button
+                              type="button"
+                              onClick={() => updateCartQuantity(item.product.id, -1)}
+                              className="p-1 hover:bg-stone-100 text-stone-600 rounded-l-lg"
+                              title="Disminuir"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="text-xs font-bold font-mono px-2 text-stone-800">
+                              {item.quantity}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => updateCartQuantity(item.product.id, 1)}
+                              className="p-1 hover:bg-stone-100 text-stone-600 rounded-r-lg"
+                              title="Aumentar"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeFromCart(item.product.id)}
+                            className="text-stone-400 hover:text-rose-600 p-1 transition"
+                            title="Eliminar del carrito"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-bold font-mono text-sm text-stone-900 block">
+                          S/ {itemTotal.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Footer con Subtotal y Checkout */}
+            {cart.length > 0 && (
+              <div className="p-4 sm:p-5 border-t border-stone-200/80 bg-stone-50/50 space-y-3">
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center text-xs text-stone-500">
+                    <span>Subtotal de arreglos:</span>
+                    <span className="font-mono font-semibold text-stone-800">
+                      S/ {cartSubtotal.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-stone-500">
+                    <span>Envío:</span>
+                    <span className="text-emerald-600 font-semibold">Coordinado por WhatsApp</span>
+                  </div>
+                  <div className="flex justify-between items-baseline pt-2 border-t border-stone-200 text-sm">
+                    <span className="font-bold text-stone-900">Total a pagar:</span>
+                    <span className="font-bold font-mono text-lg text-rose-600">
+                      S/ {cartSubtotal.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-1">
+                  <button
+                    onClick={() => {
+                      setIsCartOpen(false);
+                      setIsCheckoutModalOpen(true);
+                    }}
+                    className="w-full bg-gradient-to-r from-stone-900 to-stone-800 hover:from-stone-800 hover:to-stone-700 text-white font-semibold py-3.5 rounded-2xl shadow-lg transition active:scale-98 flex items-center justify-center gap-2 text-xs sm:text-sm"
+                  >
+                    <span>Continuar compra</span>
+                    <ArrowRight className="w-4 h-4 text-emerald-400" />
+                  </button>
+
+                  <button
+                    onClick={clearCart}
+                    className="w-full text-center text-[11px] text-stone-400 hover:text-stone-600 py-1 transition"
+                  >
+                    Vaciar carrito
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Checkout Unificado Multi-producto */}
+      {isCheckoutModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-white border border-stone-200 max-w-xl w-full rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[94vh] overflow-y-auto">
+            {orderSuccessData ? (
+              /* PANTALLA DE ÉXITO DE COMPRA */
+              <div className="text-center space-y-4 py-4 animate-in zoom-in-95 duration-200">
+                <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-bold text-stone-900">
+                    ¡Tu Pedido ha sido Registrado con Éxito! 🌸
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-1">
+                    Hemos reservado tus arreglos florales frescos en nuestro sistema.
+                  </p>
+                </div>
+
+                {/* Tarjeta de Código de Rastreo */}
+                <div className="bg-stone-50 border border-stone-200/80 rounded-2xl p-4 max-w-sm mx-auto space-y-2">
+                  <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider block">
+                    Tu Código de Rastreo en Vivo
+                  </span>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-xl font-bold font-mono text-rose-600">
+                      {orderSuccessData.trackingCode}
+                    </span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(orderSuccessData.trackingCode);
+                        alert('¡Código de rastreo copiado!');
+                      }}
+                      className="p-1.5 rounded-lg bg-white border border-stone-200 hover:bg-stone-100 text-stone-600 transition"
+                      title="Copiar código"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-stone-400">
+                    Total del pedido: S/ {orderSuccessData.total.toFixed(2)}
+                  </p>
+                </div>
+
+                {/* Botón WhatsApp para confirmación y envío de voucher */}
+                <div className="space-y-2 pt-2 max-w-md mx-auto">
+                  <a
+                    href={orderSuccessData.whatsappUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-2xl shadow-lg shadow-emerald-950/20 transition active:scale-98 flex items-center justify-center gap-2 text-xs sm:text-sm"
+                  >
+                    <MessageCircle className="w-5 h-5 fill-white/20" />
+                    <span>Enviar Detalles y Voucher por WhatsApp</span>
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const code = orderSuccessData.trackingCode;
+                      setOrderSuccessData(null);
+                      setIsCheckoutModalOpen(false);
+                      setTrackingInput(code);
+                      setIsTrackingModalOpen(true);
+                      lookupTrackingOrder(code);
+                    }}
+                    className="w-full py-2.5 rounded-xl border border-stone-200 text-stone-700 hover:bg-stone-50 text-xs font-semibold transition"
+                  >
+                    Ver Rastreo en Vivo
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* FORMULARIO DE FINALIZACIÓN DE COMPRA */
+              <form onSubmit={handleCheckoutSubmit} className="space-y-4">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-stone-900 text-white flex items-center justify-center shadow-xs">
+                      <CreditCard className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-stone-900">Finalizar Compra</h3>
+                      <p className="text-xs text-stone-500">
+                        {cart.length} {cart.length === 1 ? 'arreglo floral' : 'arreglos florales'} en tu pedido
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsCheckoutModalOpen(false)}
+                    className="p-1.5 text-stone-400 hover:text-stone-700 rounded-xl hover:bg-stone-100 transition"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Resumen Compacto de Productos */}
+                <div className="bg-stone-50 rounded-2xl p-3 border border-stone-200/80 space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-semibold text-stone-700">Resumen del Pedido:</span>
+                    <span className="font-mono font-bold text-rose-600 text-sm">
+                      Total: S/ {cartSubtotal.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="max-h-24 overflow-y-auto space-y-1 pr-1 text-[11px] text-stone-600 divide-y divide-stone-200/50">
+                    {cart.map((item) => (
+                      <div key={item.product.id} className="pt-1 first:pt-0 flex justify-between">
+                        <span className="truncate max-w-[240px]">
+                          • {item.product.name} (x{item.quantity})
+                        </span>
+                        <span className="font-mono font-medium">
+                          S/{' '}
+                          {(
+                            (item.product.promotional_price || item.product.price) * item.quantity
+                          ).toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 1. Datos del Comprador */}
+                <div className="space-y-2 pt-1">
+                  <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider block">
+                    1. Datos de Quien Compra
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-700 mb-1">
+                        Tu Nombre Completo *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={buyerName}
+                        onChange={(e) => setBuyerName(e.target.value)}
+                        placeholder="Ej. Carlos Mendoza"
+                        className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs outline-none focus:border-stone-900 bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-700 mb-1">
+                        Tu WhatsApp / Celular *
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        value={buyerPhone}
+                        onChange={(e) => setBuyerPhone(e.target.value)}
+                        placeholder="Ej. 987654321"
+                        className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs outline-none focus:border-stone-900 bg-white font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Datos de Entrega */}
+                <div className="space-y-2 pt-1 border-t border-stone-100">
+                  <span className="text-[11px] font-bold text-sky-600 uppercase tracking-wider block">
+                    2. Datos del Destinatario y Entrega
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-700 mb-1">
+                        Nombre de Quien Recibe *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={recipientName}
+                        onChange={(e) => setRecipientName(e.target.value)}
+                        placeholder="Ej. María López"
+                        className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs outline-none focus:border-stone-900 bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-700 mb-1">
+                        Fecha de Entrega *
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={checkoutDeliveryDate}
+                        onChange={(e) => setCheckoutDeliveryDate(e.target.value)}
+                        className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs outline-none focus:border-stone-900 bg-white"
+                      />
+                      <div className="flex gap-1.5 mt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const today = new Date().toISOString().split('T')[0];
+                            setCheckoutDeliveryDate(today);
+                          }}
+                          className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium transition"
+                        >
+                          Hoy mismo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const tom = new Date();
+                            tom.setDate(tom.getDate() + 1);
+                            setCheckoutDeliveryDate(tom.toISOString().split('T')[0]);
+                          }}
+                          className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium transition"
+                        >
+                          Mañana
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-700 mb-1">
+                      Dirección y Distrito de Entrega *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={deliveryAddress}
+                      onChange={(e) => setDeliveryAddress(e.target.value)}
+                      placeholder="Ej. Av. Larco 450, Miraflores (Dpto 402)"
+                      className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs outline-none focus:border-stone-900 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-700 mb-1">
+                      Dedicatoria para la Tarjeta (Opcional)
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={checkoutDedication}
+                      onChange={(e) => setCheckoutDedication(e.target.value)}
+                      placeholder="Mensaje de amor, felicitación o cariño para adjuntar en la tarjeta..."
+                      className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs outline-none focus:border-stone-900 resize-none bg-white placeholder-stone-400"
+                    />
+                    <p className="text-[10px] text-stone-500">
+                      Incluye tarjeta de dedicatoria impresa de alta calidad de cortesía.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 3. Selección de Método de Pago con QR de Yape integrado */}
+                <div className="space-y-2 pt-1 border-t border-stone-100">
+                  <span className="text-[11px] font-bold text-purple-700 uppercase tracking-wider block">
+                    3. Método de Pago
+                  </span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: 'yape' as const, label: 'Yape / Plin', desc: 'Pago instantáneo' },
+                      { id: 'transferencia' as const, label: 'Transferencia', desc: 'BCP / BBVA' },
+                      { id: 'efectivo' as const, label: 'Efectivo', desc: 'Contra entrega' },
+                    ].map((m) => (
+                      <button
+                        type="button"
+                        key={m.id}
+                        onClick={() => setPaymentMethod(m.id)}
+                        className={`p-2.5 rounded-2xl border text-left transition ${
+                          paymentMethod === m.id
+                            ? 'border-purple-600 bg-purple-50/80 ring-2 ring-purple-600/20'
+                            : 'border-stone-200 hover:bg-stone-50'
+                        }`}
+                      >
+                        <p className="font-bold text-xs text-stone-900">{m.label}</p>
+                        <p className="text-[10px] text-stone-500">{m.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* QR de Yape interactivo si el cliente selecciona Yape / Plin */}
+                  {(paymentMethod === 'yape' || paymentMethod === 'plin') && (
+                    <div className="bg-purple-50/80 border border-purple-200 rounded-2xl p-3.5 space-y-2.5 animate-in fade-in duration-200">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={storeSettings?.yape_qr_url || '/images/qr-yape.png'}
+                          alt="QR Yape Petalia"
+                          className="w-20 h-20 rounded-xl object-contain bg-white p-1 border border-purple-200 shadow-2xs shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/images/qr-yape.png';
+                          }}
+                        />
+                        <div className="space-y-1">
+                          <p className="text-xs font-bold text-purple-950">
+                            Paga S/ {cartSubtotal.toFixed(2)} escaneando el QR
+                          </p>
+                          <p className="text-[11px] text-purple-800">
+                            Número: <span className="font-mono font-bold">924 257 784</span> (PETALIA)
+                          </p>
+                          <button
+                            type="button"
+                            onClick={handleCopyYapePhone}
+                            className="inline-flex items-center gap-1 bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-1 rounded-lg text-[10px] font-semibold transition"
+                          >
+                            {copiedYapePhone ? (
+                              <>
+                                <Check className="w-3 h-3" />
+                                <span>¡Número Copiado!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3 h-3" />
+                                <span>Copiar número</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-purple-700">
+                        Al confirmar tu orden, se abrirá WhatsApp con el resumen de tu compra para que puedas adjuntar la constancia de pago.
+                      </p>
+                    </div>
+                  )}
+
+                  {paymentMethod === 'transferencia' && (
+                    <div className="bg-blue-50/80 border border-blue-200 rounded-2xl p-3 text-xs text-blue-900 space-y-1">
+                      <p className="font-bold">Cuentas bancarias de PETALIA:</p>
+                      <p className="text-[11px] text-blue-800">
+                        • BCP / BBVA / Interbank (coordinación inmediata de cuenta al confirmar por WhatsApp).
+                      </p>
+                    </div>
+                  )}
+
+                  {paymentMethod === 'efectivo' && (
+                    <div className="bg-emerald-50/80 border border-emerald-200 rounded-2xl p-3 text-xs text-emerald-900 space-y-1">
+                      <p className="font-bold">Pago en Efectivo:</p>
+                      <p className="text-[11px] text-emerald-800">
+                        Se abona al momento de la entrega previa confirmación telefónica con nuestro chofer.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Botón Confirmar Compra */}
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={isSubmittingOrder}
+                    className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-3.5 rounded-2xl shadow-lg shadow-emerald-700/20 transition active:scale-98 flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50"
+                  >
+                    {isSubmittingOrder ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Procesando tu pedido...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Confirmar Pedido (S/ {cartSubtotal.toFixed(2)})</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* BOTÓN FLOTANTE PERMANENTE DE WHATSAPP */}
       <a
         href={`https://wa.me/${storeSettings?.whatsapp_number || WHATSAPP_NUMBER}?text=${encodeURIComponent(
           '¡Hola PETALIA! Deseo realizar una consulta sobre un arreglo floral 🌸'
@@ -560,11 +1296,30 @@ export default function HomePage() {
       >
         <MessageCircle className="w-6 h-6 fill-white/20" />
         <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out text-xs font-semibold pl-0 group-hover:pl-2">
-          WhatsApp Taller
+          WhatsApp Ventas
         </span>
       </a>
 
-      {/* Asistente Virtual Inteligente (Chatbot IA - Esquina inferior derecha) */}
+      {/* BOTÓN FLOTANTE DEL CARRITO EN MÓVIL/DESKTOP CUANDO TIENE PRODUCTOS */}
+      {totalCartItems > 0 && (
+        <button
+          onClick={() => setIsCartOpen(true)}
+          className="fixed bottom-6 left-5 z-40 bg-stone-900 hover:bg-stone-800 text-white px-4 py-3 rounded-full shadow-2xl flex items-center gap-2.5 transition transform hover:scale-105 active:scale-95 border border-stone-700"
+          title="Abrir Carrito de Compras"
+        >
+          <div className="relative">
+            <ShoppingCart className="w-4 h-4 text-rose-400" />
+            <span className="absolute -top-2 -right-2 bg-rose-600 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full">
+              {totalCartItems}
+            </span>
+          </div>
+          <span className="text-xs font-semibold">
+            Ver Carrito • S/ {cartSubtotal.toFixed(2)}
+          </span>
+        </button>
+      )}
+
+      {/* Asistente Virtual Inteligente (Chatbot IA) */}
       <ChatBot />
 
       {/* MODAL: Rastreo de Pedido en Tiempo Real */}
@@ -654,7 +1409,7 @@ export default function HomePage() {
                       Código de Seguimiento
                     </span>
                     <p className="text-lg font-bold font-mono text-stone-900">
-                      {trackingOrder.tracking_code || 'PET-TALLER'}
+                      {trackingOrder.tracking_code || 'PET-ORDEN'}
                     </p>
                     <p className="text-xs text-stone-500 mt-0.5">
                       Fecha programada: {formatLocalDate(trackingOrder.delivery_date)}
@@ -664,7 +1419,7 @@ export default function HomePage() {
                   <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-100/80 text-rose-800 border border-rose-200 self-start sm:self-auto">
                     <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
                     <span className="capitalize">
-                      {trackingOrder.status === 'en_taller' ? 'En Preparación' : trackingOrder.status}
+                      {trackingOrder.status === 'en_preparacion' ? 'En Preparación' : trackingOrder.status}
                     </span>
                   </div>
                 </div>
@@ -680,7 +1435,7 @@ export default function HomePage() {
                     const getRank = (st: string) => {
                       if (st === 'pendiente') return 1;
                       if (st === 'confirmado') return 2;
-                      if (st === 'en_preparacion' || st === 'en_taller') return 3;
+                      if (st === 'en_preparacion') return 3;
                       if (st === 'en_despacho') return 4;
                       if (st === 'entregado') return 5;
                       return 1;
@@ -690,7 +1445,7 @@ export default function HomePage() {
                     const stages = [
                       { rank: 1, label: 'Recibido', desc: 'Pedido registrado' },
                       { rank: 2, label: 'Confirmado', desc: 'Pago validado' },
-                      { rank: 3, label: 'En Preparación', desc: 'Taller floral' },
+                      { rank: 3, label: 'En Preparación', desc: 'Florería' },
                       { rank: 4, label: 'En Despacho', desc: 'Chofer en camino' },
                       { rank: 5, label: 'Entregado', desc: 'Entrega exitosa' },
                     ];
@@ -700,11 +1455,9 @@ export default function HomePage() {
                         {stages.map((st) => {
                           const isCompleted = currentRank > st.rank;
                           const isCurrent = currentRank === st.rank;
-                          const isPending = currentRank < st.rank;
 
                           return (
                             <div key={st.rank} className="relative flex items-start gap-3">
-                              {/* Icono de Etapa */}
                               <div
                                 className={`absolute -left-6 top-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition ${
                                   isCompleted
@@ -772,7 +1525,7 @@ export default function HomePage() {
                 {/* Botón WhatsApp para consultas sobre este pedido */}
                 <a
                   href={`https://wa.me/${storeSettings?.whatsapp_number || WHATSAPP_NUMBER}?text=${encodeURIComponent(
-                    `¡Hola PETALIA! 🌸 Deseo consultar sobre el estado de mi pedido con código ${trackingOrder.tracking_code || 'PET-TALLER'}.`
+                    `¡Hola PETALIA! 🌸 Deseo consultar sobre el estado de mi pedido con código ${trackingOrder.tracking_code || 'PET-ORDEN'}.`
                   )}`}
                   target="_blank"
                   rel="noreferrer"
@@ -783,89 +1536,6 @@ export default function HomePage() {
                 </a>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: QR de Pago Oficial Yape / Plin */}
-      {isYapeModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-stone-200 max-w-sm w-full rounded-3xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 text-stone-800">
-            {/* Header del Modal */}
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg shadow-xs">
-                  Y
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-stone-900">QR Oficial Yape / Plin</h3>
-                  <p className="text-xs text-stone-500">PETALIA • Florería y Arreglos</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsYapeModalOpen(false)}
-                className="p-1.5 text-stone-400 hover:text-stone-800 rounded-xl hover:bg-stone-100 transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Imagen del QR Yape */}
-            <div className="flex flex-col items-center bg-purple-50/50 p-4 rounded-2xl border border-purple-100 shadow-inner">
-              <img
-                src={storeSettings?.yape_qr_url || '/images/qr-yape.png'}
-                alt="Código QR de Yape PETALIA"
-                className="w-56 h-56 object-contain rounded-xl shadow-xs bg-white p-2"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/images/qr-yape.png';
-                }}
-              />
-              <p className="text-xs text-purple-900 font-semibold mt-2.5 text-center">
-                Escanea desde tu app Yape o Plin sin comisión
-              </p>
-            </div>
-
-            {/* Número Copiable con 1 Clic */}
-            <div className="bg-stone-50 rounded-2xl p-3 border border-stone-200/80 flex items-center justify-between">
-              <div>
-                <span className="text-[11px] text-stone-500 block">Número de celular Yape / Plin:</span>
-                <span className="font-mono font-bold text-stone-900 text-sm tracking-wider">
-                  924 257 784
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={handleCopyYapePhone}
-                className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-xl text-xs font-semibold shadow-xs transition active:scale-95"
-                title="Copiar número"
-              >
-                {copiedYapePhone ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-emerald-300" />
-                    <span>¡Copiado!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Copiar</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Botón de Descarga Directa del QR */}
-            <a
-              href={storeSettings?.yape_qr_url || '/images/qr-yape.png'}
-              download="qr-yape-petalia.png"
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white font-semibold py-3 rounded-2xl text-xs shadow-md transition active:scale-98"
-            >
-              <Download className="w-4 h-4" />
-              <span>Descargar QR en mi celular</span>
-            </a>
-
-            <p className="text-[11px] text-center text-stone-400">
-              Luego de realizar tu pago, envía la captura por WhatsApp para agilizar el despacho 🌸
-            </p>
           </div>
         </div>
       )}
@@ -933,7 +1603,7 @@ export default function HomePage() {
           <span>Diseño Floral & Decoraciones</span>
         </div>
         <p className="text-[11px] text-stone-400">
-          Taller floral en Lima, Perú • Pedidos y delivery coordinados por WhatsApp: +{storeSettings?.whatsapp_number || WHATSAPP_NUMBER}
+          Florería en Lima, Perú • Pedidos y delivery coordinados por WhatsApp: +{storeSettings?.whatsapp_number || WHATSAPP_NUMBER}
         </p>
       </footer>
     </div>
