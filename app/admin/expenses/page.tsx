@@ -76,10 +76,13 @@ const SUGGESTIONS = [
 
 export default function AdminExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [totalSales, setTotalSales] = useState<number>(0);
+  const [allOrders, setAllOrders] = useState<
+    Array<{ total_amount: number; status: string; created_at?: string; delivery_date?: string }>
+  >([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('todos');
+  const [period, setPeriod] = useState<'mes_actual' | 'mes_anterior' | 'historico'>('mes_actual');
 
   // Modal Registrar Gasto
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -108,16 +111,13 @@ export default function AdminExpensesPage() {
       if (expensesError) throw expensesError;
       if (expensesData) setExpenses(expensesData as Expense[]);
 
-      // 2. Cargar Ventas Cobradas (pedidos confirmados, en preparación o entregados)
+      // 2. Cargar Ventas Cobradas (pedidos confirmados, en preparación, despacho o entregados)
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
-        .select('total_amount, status');
+        .select('total_amount, status, created_at, delivery_date');
 
       if (!ordersError && ordersData) {
-        const sumSales = ordersData
-          .filter((o) => o.status !== 'pendiente')
-          .reduce((acc, curr) => acc + (Number(curr.total_amount) || 0), 0);
-        setTotalSales(sumSales);
+        setAllOrders(ordersData as any);
       }
     } catch (err: any) {
       console.error('Error cargando finanzas:', err);
@@ -230,13 +230,54 @@ export default function AdminExpensesPage() {
     }
   };
 
-  // Cálculos Financieros
-  const totalExpenses = expenses.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
-  const netProfit = totalSales - totalExpenses;
-  const operatingMargin = totalSales > 0 ? (netProfit / totalSales) * 100 : 0;
+  // Cálculos Financieros por Periodo Seleccionado
+  const now = new Date();
+  const currentMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevMonthPrefix = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
 
-  // Filtrado de gastos
-  const filteredExpenses = expenses.filter((exp) => {
+  const monthNames = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+  const currentMonthLabel = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+  const prevMonthLabel = `${monthNames[prevDate.getMonth()]} ${prevDate.getFullYear()}`;
+
+  // Pedidos del periodo
+  const activeOrdersForPeriod = allOrders.filter((o) => {
+    const rawSt = (o.status || '').toLowerCase();
+    const isPaid = !['pendiente', 'cancelado'].includes(rawSt);
+    if (!isPaid) return false;
+
+    if (period === 'historico') return true;
+    const dateStr = o.delivery_date || o.created_at || '';
+    if (period === 'mes_actual') return dateStr.startsWith(currentMonthPrefix);
+    if (period === 'mes_anterior') return dateStr.startsWith(prevMonthPrefix);
+    return true;
+  });
+
+  // Gastos del periodo
+  const activeExpensesForPeriod = expenses.filter((exp) => {
+    if (period === 'historico') return true;
+    const dateStr = exp.expense_date || '';
+    if (period === 'mes_actual') return dateStr.startsWith(currentMonthPrefix);
+    if (period === 'mes_anterior') return dateStr.startsWith(prevMonthPrefix);
+    return true;
+  });
+
+  const periodIncome = activeOrdersForPeriod.reduce(
+    (acc, curr) => acc + (Number(curr.total_amount) || 0),
+    0
+  );
+  const periodExpenses = activeExpensesForPeriod.reduce(
+    (acc, curr) => acc + (Number(curr.amount) || 0),
+    0
+  );
+  const periodNetMargin = periodIncome - periodExpenses;
+  const periodMarginPercent = periodIncome > 0 ? (periodNetMargin / periodIncome) * 100 : 0;
+
+  // Filtrado de gastos para la tabla
+  const filteredExpenses = activeExpensesForPeriod.filter((exp) => {
     const matchesCategory = filterCategory === 'todos' || exp.category === filterCategory;
     const matchesQuery = exp.concept.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesQuery;
@@ -252,11 +293,11 @@ export default function AdminExpensesPage() {
               Control de Gastos & Flujo de Caja
             </h1>
             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-neutral-800 text-rose-400 border border-neutral-700">
-              {expenses.length} egresos
+              {filteredExpenses.length} egresos en vista
             </span>
           </div>
           <p className="text-sm text-neutral-400 mt-1">
-            Métricas financieras de la florería, compras de insumos y ganancia neta real.
+            Métricas financieras, compras de insumos, flujo mensual y margen neto de PETALIA.
           </p>
         </div>
 
@@ -279,53 +320,90 @@ export default function AdminExpensesPage() {
         </div>
       </div>
 
-      {/* Tarjetas Resumen Financiero */}
+      {/* Selector de Periodo Financiero (Pills) */}
+      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-neutral-900 border border-neutral-800/80 rounded-2xl w-fit">
+        <button
+          type="button"
+          onClick={() => setPeriod('mes_actual')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+            period === 'mes_actual'
+              ? 'bg-rose-500 text-neutral-950 shadow-sm'
+              : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+          }`}
+        >
+          {currentMonthLabel} (Mes Actual)
+        </button>
+        <button
+          type="button"
+          onClick={() => setPeriod('mes_anterior')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+            period === 'mes_anterior'
+              ? 'bg-rose-500 text-neutral-950 shadow-sm'
+              : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+          }`}
+        >
+          {prevMonthLabel} (Mes Anterior)
+        </button>
+        <button
+          type="button"
+          onClick={() => setPeriod('historico')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+            period === 'historico'
+              ? 'bg-rose-500 text-neutral-950 shadow-sm'
+              : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+          }`}
+        >
+          Histórico Total
+        </button>
+      </div>
+
+      {/* Tarjetas Resumen Financiero Mensual */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Ingresos Cobrados */}
         <div className="bg-neutral-900 border border-neutral-800/80 rounded-2xl p-5 shadow-lg shadow-black/20 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-              Ventas Cobradas
+              Total Ingresos
             </span>
             <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-white">
-            S/ {totalSales.toFixed(2)}
+          <div className="text-2xl font-bold text-white font-mono">
+            S/ {periodIncome.toFixed(2)}
           </div>
           <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
-            <span>●</span> Pedidos con pago verificado
+            <span>●</span> {activeOrdersForPeriod.length} pedidos pagados / entregados
           </p>
         </div>
 
-        {/* Total Egresos */}
+        {/* Total Gastos */}
         <div className="bg-neutral-900 border border-neutral-800/80 rounded-2xl p-5 shadow-lg shadow-black/20 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-              Gastos de Florería
+              Total Gastos
             </span>
             <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center">
               <TrendingDown className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-white">
-            S/ {totalExpenses.toFixed(2)}
+          <div className="text-2xl font-bold text-white font-mono">
+            S/ {periodExpenses.toFixed(2)}
           </div>
           <p className="text-[11px] text-rose-400 font-medium flex items-center gap-1">
-            <span>●</span> Flores, bases, empaques y envíos
+            <span>●</span> {activeExpensesForPeriod.length} egresos en el periodo
           </p>
         </div>
 
-        {/* Ganancia Neta Real */}
+        {/* Margen Neto (Ingresos - Gastos) */}
         <div className="bg-neutral-900 border border-neutral-800/80 rounded-2xl p-5 shadow-lg shadow-black/20 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-              Ganancia Neta Real
+              Margen Neto
             </span>
             <div
               className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                netProfit >= 0
+                periodNetMargin >= 0
                   ? 'bg-emerald-500/10 text-emerald-400'
                   : 'bg-rose-500/10 text-rose-400'
               }`}
@@ -334,18 +412,18 @@ export default function AdminExpensesPage() {
             </div>
           </div>
           <div
-            className={`text-2xl font-bold ${
-              netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'
+            className={`text-2xl font-bold font-mono ${
+              periodNetMargin >= 0 ? 'text-emerald-400' : 'text-rose-400'
             }`}
           >
-            S/ {netProfit.toFixed(2)}
+            S/ {periodNetMargin.toFixed(2)}
           </div>
           <p className="text-[11px] text-neutral-400 font-medium">
-            Ingresos menos egresos registrados
+            Ingresos menos egresos del periodo
           </p>
         </div>
 
-        {/* Margen Operativo */}
+        {/* Margen Operativo % */}
         <div className="bg-neutral-900 border border-neutral-800/80 rounded-2xl p-5 shadow-lg shadow-black/20 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
@@ -355,11 +433,11 @@ export default function AdminExpensesPage() {
               <Percent className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-white">
-            {operatingMargin.toFixed(1)}%
+          <div className="text-2xl font-bold text-white font-mono">
+            {periodMarginPercent.toFixed(1)}%
           </div>
           <p className="text-[11px] text-purple-400 font-medium">
-            Rentabilidad sobre ventas
+            Rentabilidad sobre ventas del mes
           </p>
         </div>
       </div>

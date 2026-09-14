@@ -32,6 +32,7 @@ import {
   Share2,
   Edit3,
   Trash2,
+  Download,
 } from 'lucide-react';
 
 const STATUS_CONFIG: Record<
@@ -892,6 +893,76 @@ export default function AdminOrdersPage() {
     return matchesStatus && matchesSearch;
   });
 
+  // Exportar pedidos a Excel / CSV estructurado con UTF-8 BOM
+  const handleExportCSV = () => {
+    if (filteredOrders.length === 0) {
+      alert('No hay pedidos para exportar con los filtros seleccionados.');
+      return;
+    }
+
+    const headers = [
+      'Código',
+      'Cliente',
+      'Teléfono',
+      'Destinatario',
+      'Distrito',
+      'Dirección',
+      'Franja Horaria',
+      'Ocasión',
+      'Total (S/)',
+      'Flete Envío (S/)',
+      'Método Pago',
+      'Estado',
+      'Fecha Entrega',
+      'Fecha Registro',
+    ];
+
+    const rows = filteredOrders.map((order) => {
+      const { phone, clientName, cleanRecipient } = getOrderDetailsHelpers(order);
+      const code = order.tracking_code || order.id.slice(0, 8);
+      const district =
+        (order as any).delivery_district ||
+        (order.delivery_address ? order.delivery_address.split(',').pop()?.trim() : '') ||
+        'Lima';
+      const timeSlot = (order as any).delivery_time_slot || 'Normal';
+      const occasion = (order as any).occasion || '-';
+      const total = Number(order.total_amount || 0).toFixed(2);
+      const cost = Number((order as any).delivery_cost || 0).toFixed(2);
+      const method = (order.payment_method || 'yape').toUpperCase();
+      const status = (order.status || 'pendiente').toUpperCase();
+      const deliveryDate = formatLocalDate(order.delivery_date);
+      const createdAt = formatLocalDateTime(order.created_at);
+
+      return [
+        `"${code}"`,
+        `"${clientName.replace(/"/g, '""')}"`,
+        `"${phone}"`,
+        `"${cleanRecipient.replace(/"/g, '""')}"`,
+        `"${district.replace(/"/g, '""')}"`,
+        `"${(order.delivery_address || '').replace(/"/g, '""')}"`,
+        `"${timeSlot}"`,
+        `"${occasion}"`,
+        total,
+        cost,
+        `"${method}"`,
+        `"${status}"`,
+        `"${deliveryDate}"`,
+        `"${createdAt}"`,
+      ].join(';');
+    });
+
+    const csvContent = '\uFEFF' + [headers.join(';'), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `pedidos_petalia_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -911,6 +982,14 @@ export default function AdminOrdersPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 transition text-xs font-medium"
+            title="Exportar pedidos filtrados a Excel / CSV"
+          >
+            <Download className="w-4 h-4 text-emerald-400" />
+            <span className="hidden sm:inline">Exportar Excel</span>
+          </button>
           <button
             onClick={() => fetchOrders(true)}
             disabled={loading || isRefreshing}

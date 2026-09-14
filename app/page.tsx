@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Product, Category, Order, OrderStatus, StoreSettings, CartItem } from '@/lib/types';
+import { Product, Category, Order, OrderStatus, StoreSettings, CartItem, DeliveryZone, AddOnItem } from '@/lib/types';
 import { getCategories } from '@/lib/categories';
 import { getStoreSettings } from '@/lib/settings';
 import {
@@ -38,11 +38,42 @@ import {
   ArrowRight,
   CreditCard,
   ShoppingBag,
+  Gift,
 } from 'lucide-react';
 import { formatLocalDate } from '@/lib/format';
 import ChatBot from '@/components/ChatBot';
 
 const WHATSAPP_NUMBER = '51924257784';
+
+// Complementos rápidos para Cross-Selling en el carrito
+const QUICK_ADDONS = [
+  { id: 'addon-chocolates', name: 'Chocolates Ferrero Rocher', price: 25, icon: '🍫', desc: 'Caja x8 bombones finos' },
+  { id: 'addon-globo', name: 'Globo Metálico Ocasión', price: 12, icon: '🎈', desc: 'Con helio de larga duración' },
+  { id: 'addon-peluche', name: 'Peluche Premium', price: 35, icon: '🧸', desc: 'Suave felpa 25cm' },
+  { id: 'addon-tarjeta', name: 'Tarjeta Caligráfica', price: 8, icon: '💌', desc: 'Dedicatoria hecha a mano' },
+];
+
+// Distritos estándar de Lima con tarifas de flete
+const DEFAULT_ZONES: DeliveryZone[] = [
+  { id: 1, district: 'Miraflores', cost: 12 },
+  { id: 2, district: 'San Isidro', cost: 12 },
+  { id: 3, district: 'Barranco', cost: 15 },
+  { id: 4, district: 'Surco', cost: 15 },
+  { id: 5, district: 'San Borja', cost: 15 },
+  { id: 6, district: 'La Molina', cost: 18 },
+  { id: 7, district: 'Jesús María', cost: 12 },
+  { id: 8, district: 'Lince', cost: 12 },
+  { id: 9, district: 'Magdalena', cost: 12 },
+  { id: 10, district: 'Pueblo Libre', cost: 12 },
+  { id: 11, district: 'San Miguel', cost: 14 },
+  { id: 12, district: 'Surquillo', cost: 12 },
+  { id: 13, district: 'Lima Cercado', cost: 15 },
+  { id: 14, district: 'Los Olivos', cost: 22 },
+  { id: 15, district: 'San Martín de Porres', cost: 22 },
+  { id: 16, district: 'Chorrillos', cost: 18 },
+  { id: 17, district: 'Ate', cost: 20 },
+  { id: 18, district: 'Callao', cost: 25 },
+];
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -58,6 +89,19 @@ export default function HomePage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+
+  // Cross-selling: Complementos añadidos al carrito { [addonId]: quantity }
+  const [selectedAddOns, setSelectedAddOns] = useState<{ [id: string]: number }>({});
+
+  // Logística: Tarifas por Distrito y Franja Horaria
+  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>(DEFAULT_ZONES);
+  const [selectedDistrict, setSelectedDistrict] = useState('Miraflores');
+  const [deliveryFee, setDeliveryFee] = useState(12);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState('Tarde (2:00 PM - 6:00 PM)');
+
+  // Fidelización: Ocasión y Fechas Especiales a Recordar
+  const [celebrationReason, setCelebrationReason] = useState('');
+  const [specialDateToRemember, setSpecialDateToRemember] = useState('');
 
   // Formulario de Checkout Unificado
   const [buyerName, setBuyerName] = useState('');
@@ -95,12 +139,12 @@ export default function HomePage() {
   // Ajustes de la tienda (Redes sociales y WhatsApp)
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
 
-  // 1. Cargar catálogo y recuperar carrito de LocalStorage al montar
+  // 1. Cargar catálogo, zonas de delivery y recuperar carrito de LocalStorage al montar
   useEffect(() => {
     const fetchCatalogAndCategories = async () => {
       setLoading(true);
       try {
-        const [prodsRes, catsData, settingsData] = await Promise.all([
+        const [prodsRes, catsData, settingsData, zonesRes] = await Promise.all([
           supabase
             .from('products')
             .select('*')
@@ -108,6 +152,10 @@ export default function HomePage() {
             .order('created_at', { ascending: false }),
           getCategories(),
           getStoreSettings(),
+          supabase
+            .from('delivery_zones')
+            .select('*')
+            .order('district', { ascending: true }),
         ]);
 
         if (!prodsRes.error && prodsRes.data) {
@@ -116,6 +164,14 @@ export default function HomePage() {
         setCategories(catsData);
         if (settingsData) {
           setStoreSettings(settingsData);
+        }
+        if (!zonesRes.error && zonesRes.data && zonesRes.data.length > 0) {
+          setDeliveryZones(zonesRes.data as DeliveryZone[]);
+          const defaultZone = zonesRes.data.find(
+            (z: any) => z.district?.toLowerCase() === 'miraflores'
+          ) || zonesRes.data[0];
+          setSelectedDistrict(defaultZone.district);
+          setDeliveryFee(defaultZone.cost);
         }
       } catch (err) {
         console.error('Error cargando catálogo:', err);
@@ -195,14 +251,50 @@ export default function HomePage() {
 
   const clearCart = () => {
     saveCart([]);
+    setSelectedAddOns({});
   };
 
-  // Totales calculados del carrito
+  // Manejo reactivo de complementos (Cross-Selling)
+  const toggleAddOn = (addonId: string) => {
+    setSelectedAddOns((prev) => {
+      const current = prev[addonId] || 0;
+      if (current > 0) {
+        const next = { ...prev };
+        delete next[addonId];
+        return next;
+      }
+      return { ...prev, [addonId]: 1 };
+    });
+  };
+
+  const updateAddOnQty = (addonId: string, delta: number) => {
+    setSelectedAddOns((prev) => {
+      const current = prev[addonId] || 0;
+      const nextVal = current + delta;
+      if (nextVal <= 0) {
+        const next = { ...prev };
+        delete next[addonId];
+        return next;
+      }
+      return { ...prev, [addonId]: nextVal };
+    });
+  };
+
+  // Totales calculados del carrito y complementos
   const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const cartSubtotal = cart.reduce((sum, item) => {
     const price = item.product.promotional_price || item.product.price;
     return sum + price * item.quantity;
   }, 0);
+
+  const addOnsSubtotal = Object.entries(selectedAddOns).reduce((sum, [id, qty]) => {
+    const item = QUICK_ADDONS.find((a) => a.id === id);
+    return sum + (item ? item.price * qty : 0);
+  }, 0);
+  const totalAddonsCount = Object.values(selectedAddOns).reduce((sum, q) => sum + q, 0);
+
+  const cartTotalWithAddons = cartSubtotal + addOnsSubtotal;
+  const grandTotal = cartTotalWithAddons + deliveryFee;
 
   // Función para consultar estado del pedido en tiempo real
   const lookupTrackingOrder = async (codeToSearch: string) => {
@@ -299,24 +391,40 @@ export default function HomePage() {
         console.warn('Advertencia vinculando cliente:', cErr);
       }
 
-      // 2. Resumen consolidado de productos
-      const itemsSummary = cart
-        .map((i) => `${i.product.name} (x${i.quantity})`)
-        .join(', ');
+      // 2. Resumen consolidado de productos y complementos
+      const extraItemsList = Object.entries(selectedAddOns)
+        .map(([id, qty]) => {
+          const item = QUICK_ADDONS.find((a) => a.id === id);
+          return item ? { name: item.name, price: item.price, quantity: qty } : null;
+        })
+        .filter(Boolean) as Array<{ name: string; price: number; quantity: number }>;
+
+      const itemsSummary = [
+        ...cart.map((i) => `${i.product.name} (x${i.quantity})`),
+        ...extraItemsList.map((e) => `${e.name} (x${e.quantity})`),
+      ].join(', ');
 
       const formattedDedication = `[Arreglos: ${itemsSummary}] [Comprador: ${buyerName.trim()} | Cel: ${cleanPhone}] ${
         checkoutDedication.trim() || 'Sin dedicatoria'
       }`;
 
       // 3. Insertar orden consolidada en public.orders
+      const finalTotalAmount = cartSubtotal + addOnsSubtotal + deliveryFee;
+
       const orderPayload: Record<string, any> = {
         customer_id: customerId,
-        total_amount: cartSubtotal,
+        total_amount: finalTotalAmount,
         payment_method: paymentMethod.toLowerCase(),
         status: 'en_preparacion' as OrderStatus,
         delivery_date: checkoutDeliveryDate,
         recipient_name: recipientName.trim(),
-        delivery_address: deliveryAddress.trim(),
+        delivery_address: `${deliveryAddress.trim()}, ${selectedDistrict}`,
+        delivery_district: selectedDistrict,
+        delivery_cost: deliveryFee,
+        delivery_time_slot: selectedTimeSlot,
+        occasion: celebrationReason || null,
+        special_date: specialDateToRemember || null,
+        extra_items: extraItemsList,
         dedication_message: formattedDedication,
         tracking_code: trackingCode,
       };
@@ -356,11 +464,23 @@ export default function HomePage() {
               (i.product.promotional_price || i.product.price) * i.quantity
             ).toFixed(2)}`
         ),
+        ...(extraItemsList.length > 0
+          ? [
+              `🎁 *Complementos añadidos:*`,
+              ...extraItemsList.map(
+                (e) => `  • ${e.name} x${e.quantity} - S/ ${(e.price * e.quantity).toFixed(2)}`
+              ),
+            ]
+          : []),
         ``,
-        `💰 *Total a pagar:* S/ ${cartSubtotal.toFixed(2)}`,
+        `💵 *Subtotal Arreglos & Extras:* S/ ${(cartSubtotal + addOnsSubtotal).toFixed(2)}`,
+        `🚚 *Envío a ${selectedDistrict}:* S/ ${deliveryFee.toFixed(2)}`,
+        `💰 *Total a pagar:* S/ ${finalTotalAmount.toFixed(2)}`,
         `💳 *Método de pago:* ${paymentMethod.toUpperCase()}`,
+        `🕒 *Franja Horaria:* ${selectedTimeSlot}`,
+        ...(celebrationReason ? [`🎉 *Motivo / Ocasión:* ${celebrationReason}`] : []),
         `👤 *Destinatario:* ${recipientName.trim()}`,
-        `📍 *Dirección de entrega:* ${deliveryAddress.trim()}`,
+        `📍 *Dirección de entrega:* ${deliveryAddress.trim()} (${selectedDistrict})`,
         `📅 *Fecha de entrega:* ${formatLocalDate(checkoutDeliveryDate)}`,
         checkoutDedication.trim()
           ? `✍️ *Dedicatoria:* "${checkoutDedication.trim()}"`
@@ -380,7 +500,7 @@ export default function HomePage() {
       // 5. Guardar datos de éxito y limpiar carrito
       setOrderSuccessData({
         trackingCode,
-        total: cartSubtotal,
+        total: finalTotalAmount,
         itemsSummary,
         whatsappUrl,
       });
@@ -774,7 +894,7 @@ export default function HomePage() {
       {/* DRAWER LATERAL: Carrito de Compras */}
       {isCartOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 border-l border-warm-100">
+          <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-spring-drawer border-l border-warm-100">
             {/* Header del Carrito */}
             <div className="p-4 sm:p-5 border-b border-warm-100 flex items-center justify-between bg-rose-50">
               <div className="flex items-center gap-2.5">
@@ -784,7 +904,7 @@ export default function HomePage() {
                 <div>
                   <h3 className="font-bold text-sm sm:text-base text-ink-900 tracking-tight">Tu Carrito Floral</h3>
                   <p className="text-[11px] text-warm-500">
-                    {totalCartItems} {totalCartItems === 1 ? 'producto seleccionado' : 'productos seleccionados'}
+                    {totalCartItems} {totalCartItems === 1 ? 'arreglo seleccionado' : 'arreglos seleccionados'}
                   </p>
                 </div>
               </div>
@@ -880,24 +1000,115 @@ export default function HomePage() {
               )}
             </div>
 
+            {/* Cross-Selling en el Carrito (Add-ons rápidos) */}
+            {cart.length > 0 && (
+              <div className="px-4 sm:px-5 py-3 border-t border-warm-100 bg-white">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold text-ink-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Añade un toque especial</span>
+                  </span>
+                  <span className="text-[10px] text-warm-500 font-medium">Add-ons rápidos</span>
+                </div>
+                <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+                  {QUICK_ADDONS.map((addon) => {
+                    const qty = selectedAddOns[addon.id] || 0;
+                    const isSelected = qty > 0;
+                    return (
+                      <div
+                        key={addon.id}
+                        className={`shrink-0 w-36 sm:w-40 p-2.5 rounded-2xl border transition-all duration-200 ease-spring flex flex-col justify-between ${
+                          isSelected
+                            ? 'bg-rose-100 border-rose-500 shadow-xs ring-1 ring-rose-500/40'
+                            : 'bg-rose-50 border-warm-100 hover:border-rose-400'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xl">{addon.icon}</span>
+                            {isSelected && (
+                              <span className="text-[10px] font-bold font-mono bg-ink-900 text-white px-1.5 py-0.2 rounded-full">
+                                x{qty}
+                              </span>
+                            )}
+                          </div>
+                          <p className="font-bold text-xs text-ink-900 mt-1 leading-tight line-clamp-1">
+                            {addon.name}
+                          </p>
+                          <p className="text-[10px] text-warm-500 line-clamp-1 mt-0.5">
+                            {addon.desc}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-2 pt-1 border-t border-warm-100/60">
+                          <span className="font-mono font-bold text-xs text-ink-900">
+                            S/ {addon.price.toFixed(2)}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            {isSelected ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => updateAddOnQty(addon.id, -1)}
+                                  className="w-5 h-5 rounded-md bg-white border border-warm-100 text-ink-900 flex items-center justify-center hover:bg-rose-100 active:scale-90 transition text-xs font-bold shadow-2xs"
+                                  title="Reducir"
+                                >
+                                  -
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => updateAddOnQty(addon.id, 1)}
+                                  className="w-5 h-5 rounded-md bg-ink-900 text-white flex items-center justify-center hover:bg-rose-600 active:scale-90 transition text-xs font-bold shadow-2xs"
+                                  title="Añadir más"
+                                >
+                                  +
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => toggleAddOn(addon.id)}
+                                className="w-6 h-6 rounded-lg bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 flex items-center justify-center active:scale-90 transition shadow-xs"
+                                title="Añadir al pedido"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Footer con Subtotal y Checkout */}
             {cart.length > 0 && (
               <div className="p-4 sm:p-5 border-t border-warm-100 bg-rose-50 space-y-3">
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center text-xs text-warm-500">
-                    <span>Subtotal de arreglos:</span>
+                    <span>Subtotal arreglos:</span>
                     <span className="font-mono font-semibold text-ink-900">
                       S/ {cartSubtotal.toFixed(2)}
                     </span>
                   </div>
+                  {totalAddonsCount > 0 && (
+                    <div className="flex justify-between items-center text-xs text-rose-600 font-medium">
+                      <span>Complementos ({totalAddonsCount}):</span>
+                      <span className="font-mono font-semibold">
+                        + S/ {addOnsSubtotal.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center text-xs text-warm-500">
-                    <span>Envío:</span>
-                    <span className="text-ink-900 font-semibold">Coordinado por WhatsApp</span>
+                    <span>Flete de envío:</span>
+                    <span className="text-ink-900 font-semibold">S/ {deliveryFee.toFixed(2)} ({selectedDistrict})</span>
                   </div>
                   <div className="flex justify-between items-baseline pt-2 border-t border-warm-100 text-sm">
                     <span className="font-bold text-ink-900">Total a pagar:</span>
                     <span className="font-bold font-mono text-lg text-ink-900">
-                      S/ {cartSubtotal.toFixed(2)}
+                      S/ {grandTotal.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -930,7 +1141,7 @@ export default function HomePage() {
       {/* MODAL: Checkout Unificado Multi-producto */}
       {isCheckoutModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-white border border-warm-100 max-w-xl w-full rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[94vh] overflow-y-auto">
+          <div className="bg-white border border-warm-100 max-w-xl w-full rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[94vh] overflow-y-auto animate-spring-modal">
             {orderSuccessData ? (
               /* PANTALLA DE ÉXITO DE COMPRA */
               <div className="text-center space-y-4 py-4 animate-in zoom-in-95 duration-200">
@@ -1011,7 +1222,8 @@ export default function HomePage() {
                     <div>
                       <h3 className="text-base font-bold text-ink-900 tracking-tight">Finalizar Compra</h3>
                       <p className="text-xs text-warm-500">
-                        {cart.length} {cart.length === 1 ? 'arreglo floral' : 'arreglos florales'} en tu pedido
+                        {cart.length} {cart.length === 1 ? 'arreglo floral' : 'arreglos florales'}{' '}
+                        {totalAddonsCount > 0 ? `+ ${totalAddonsCount} complementos` : ''}
                       </p>
                     </div>
                   </div>
@@ -1024,15 +1236,16 @@ export default function HomePage() {
                   </button>
                 </div>
 
-                {/* Resumen Compacto de Productos */}
-                <div className="bg-rose-50 rounded-2xl p-3 border border-warm-100 space-y-2">
+                {/* Resumen Compacto y Desglose Económico */}
+                <div className="bg-rose-50 rounded-2xl p-3.5 border border-warm-100 space-y-2.5">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="font-semibold text-ink-900">Resumen del Pedido:</span>
+                    <span className="font-bold text-ink-900">Desglose del Pedido:</span>
                     <span className="font-mono font-bold text-ink-900 text-sm">
-                      Total: S/ {cartSubtotal.toFixed(2)}
+                      Total: S/ {grandTotal.toFixed(2)}
                     </span>
                   </div>
-                  <div className="max-h-24 overflow-y-auto space-y-1 pr-1 text-[11px] text-warm-500 divide-y divide-warm-100">
+
+                  <div className="max-h-24 overflow-y-auto space-y-1 pr-1 text-[11px] text-warm-500 divide-y divide-warm-100/70">
                     {cart.map((item) => (
                       <div key={item.product.id} className="pt-1 first:pt-0 flex justify-between">
                         <span className="truncate max-w-[240px]">
@@ -1046,6 +1259,42 @@ export default function HomePage() {
                         </span>
                       </div>
                     ))}
+                    {Object.entries(selectedAddOns).map(([id, qty]) => {
+                      const item = QUICK_ADDONS.find((a) => a.id === id);
+                      if (!item) return null;
+                      return (
+                        <div key={id} className="pt-1 flex justify-between text-rose-600 font-medium">
+                          <span className="truncate max-w-[240px]">
+                            • {item.icon} {item.name} (x{qty})
+                          </span>
+                          <span className="font-mono">
+                            S/ {(item.price * qty).toFixed(2)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Flete & Total Desglosado */}
+                  <div className="pt-2 border-t border-warm-100 text-xs space-y-1">
+                    <div className="flex justify-between text-warm-500">
+                      <span>Subtotal Arreglos & Extras:</span>
+                      <span className="font-mono text-ink-900 font-medium">
+                        S/ {cartTotalWithAddons.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-warm-500">
+                      <span>Envío ({selectedDistrict}):</span>
+                      <span className="font-mono text-ink-900 font-medium">
+                        + S/ {deliveryFee.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-baseline pt-1 font-bold text-sm text-ink-900">
+                      <span>Total con Delivery:</span>
+                      <span className="font-mono text-base text-ink-900">
+                        S/ {grandTotal.toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -1084,8 +1333,8 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* 2. Datos de Entrega */}
-                <div className="space-y-2 pt-1 border-t border-warm-100">
+                {/* 2. Datos de Entrega y Logística */}
+                <div className="space-y-2.5 pt-1 border-t border-warm-100">
                   <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider block">
                     2. Datos del Destinatario y Entrega
                   </span>
@@ -1140,20 +1389,77 @@ export default function HomePage() {
                     </div>
                   </div>
 
+                  {/* Selector de Distrito con Tarifas de Delivery */}
                   <div>
                     <label className="block text-xs font-semibold text-ink-900 mb-1">
-                      Dirección y Distrito de Entrega *
+                      Distrito de Entrega (Lima & Callao) *
+                    </label>
+                    <select
+                      required
+                      value={selectedDistrict}
+                      onChange={(e) => {
+                        const dist = e.target.value;
+                        setSelectedDistrict(dist);
+                        const zone = deliveryZones.find((z) => z.district === dist);
+                        if (zone) setDeliveryFee(zone.cost);
+                      }}
+                      className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900 font-medium"
+                    >
+                      {deliveryZones.map((z) => (
+                        <option key={z.id} value={z.district}>
+                          {z.district} — S/ {z.cost.toFixed(2)} (Delivery oficial)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Dirección Detallada */}
+                  <div>
+                    <label className="block text-xs font-semibold text-ink-900 mb-1">
+                      Dirección Específica (Calle, Av., Nro, Dpto/Referencia) *
                     </label>
                     <input
                       type="text"
                       required
                       value={deliveryAddress}
                       onChange={(e) => setDeliveryAddress(e.target.value)}
-                      placeholder="Ej. Av. Larco 450, Miraflores (Dpto 402)"
+                      placeholder="Ej. Av. Larco 450, Dpto 402 (Ref: a media cuadra del parque)"
                       className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900"
                     />
                   </div>
 
+                  {/* Franja Horaria de Entrega */}
+                  <div className="space-y-1.5 pt-1">
+                    <label className="block text-xs font-semibold text-ink-900">
+                      Franja Horaria Preferida *
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {[
+                        { id: 'Mañana (9:00 AM - 1:00 PM)', label: 'Mañana', time: '9:00 AM - 1:00 PM', icon: '🌅' },
+                        { id: 'Tarde (2:00 PM - 6:00 PM)', label: 'Tarde', time: '2:00 PM - 6:00 PM', icon: '☀️' },
+                        { id: 'Noche / Rango Especial (6:00 PM - 8:30 PM)', label: 'Noche', time: '6:00 PM - 8:30 PM', icon: '🌙' },
+                      ].map((slot) => (
+                        <button
+                          type="button"
+                          key={slot.id}
+                          onClick={() => setSelectedTimeSlot(slot.id)}
+                          className={`p-2 rounded-xl border text-left transition flex items-center gap-2 ${
+                            selectedTimeSlot === slot.id
+                              ? 'border-rose-600 bg-rose-100 ring-2 ring-rose-500/30 shadow-xs'
+                              : 'border-warm-100 hover:bg-rose-50 bg-white'
+                          }`}
+                        >
+                          <span className="text-base shrink-0">{slot.icon}</span>
+                          <div>
+                            <p className="font-bold text-[11px] text-ink-900 leading-tight">{slot.label}</p>
+                            <p className="text-[9px] text-warm-500">{slot.time}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Dedicatoria */}
                   <div>
                     <label className="block text-xs font-semibold text-ink-900 mb-1">
                       Dedicatoria para la Tarjeta (Opcional)
@@ -1162,7 +1468,7 @@ export default function HomePage() {
                       rows={2}
                       value={checkoutDedication}
                       onChange={(e) => setCheckoutDedication(e.target.value)}
-                      placeholder="Mensaje de amor, felicitación o cariño para adjuntar en la tarjeta..."
+                      placeholder="Mensaje de amor, felicitación o cariño para adjuntar en la tarjeta de cortesía..."
                       className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 resize-none bg-white text-ink-900 placeholder-warm-300"
                     />
                     <p className="text-[10px] text-warm-500">
@@ -1171,10 +1477,50 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* 3. Selección de Método de Pago con QR de Yape integrado */}
+                {/* 3. Fidelización y Fechas Especiales */}
                 <div className="space-y-2 pt-1 border-t border-warm-100">
                   <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider block">
-                    3. Método de Pago
+                    3. Fidelización & Ocasión Especial
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-xs font-semibold text-ink-900 mb-1">
+                        ¿Qué celebramos hoy? (Opcional)
+                      </label>
+                      <select
+                        value={celebrationReason}
+                        onChange={(e) => setCelebrationReason(e.target.value)}
+                        className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900"
+                      >
+                        <option value="">Selecciona motivo...</option>
+                        <option value="Cumpleaños">🎂 Cumpleaños</option>
+                        <option value="Aniversario">💍 Aniversario</option>
+                        <option value="Amor / Detalle">❤️ Amor / Detalle</option>
+                        <option value="Agradecimiento">🙏 Agradecimiento</option>
+                        <option value="Condolencias">🕊️ Condolencias / Respeto</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-ink-900 mb-1">
+                        Fecha especial a recordar (Opcional)
+                      </label>
+                      <input
+                        type="date"
+                        value={specialDateToRemember}
+                        onChange={(e) => setSpecialDateToRemember(e.target.value)}
+                        className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900"
+                      />
+                      <p className="text-[9px] text-warm-500 mt-0.5">
+                        Te recordaremos cada año con días de anticipación.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Método de Pago con QR de Yape */}
+                <div className="space-y-2 pt-1 border-t border-warm-100">
+                  <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider block">
+                    4. Método de Pago
                   </span>
                   <div className="grid grid-cols-3 gap-2">
                     {[
@@ -1212,7 +1558,7 @@ export default function HomePage() {
                         />
                         <div className="space-y-1">
                           <p className="text-xs font-bold text-ink-900">
-                            Paga S/ {cartSubtotal.toFixed(2)} escaneando el QR
+                            Paga S/ {grandTotal.toFixed(2)} escaneando el QR
                           </p>
                           <p className="text-[11px] text-warm-500">
                             Número: <span className="font-mono font-bold text-ink-900">924 257 784</span> (PETALIA)
@@ -1276,7 +1622,7 @@ export default function HomePage() {
                     ) : (
                       <>
                         <CheckCircle2 className="w-4 h-4 text-rose-500" />
-                        <span>Confirmar Pedido (S/ {cartSubtotal.toFixed(2)})</span>
+                        <span>Confirmar Pedido (S/ {grandTotal.toFixed(2)})</span>
                       </>
                     )}
                   </button>
@@ -1327,8 +1673,8 @@ export default function HomePage() {
 
       {/* MODAL: Rastreo de Pedido en Tiempo Real */}
       {isTrackingModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-warm-100 max-w-lg w-full rounded-3xl p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white border border-warm-100 max-w-lg w-full rounded-3xl p-5 sm:p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto animate-spring-modal">
             {/* Header del Modal */}
             <div className="flex items-center justify-between border-b border-warm-100 pb-3">
               <div className="flex items-center gap-2.5">
@@ -1427,18 +1773,24 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* LÍNEA DE TIEMPO VISUAL (5 ETAPAS) */}
-                <div className="bg-white border border-warm-100 rounded-2xl p-4 space-y-4 shadow-xs">
-                  <h4 className="text-xs font-bold text-ink-900 uppercase tracking-wider">
-                    Línea de Tiempo del Arreglo
-                  </h4>
+                {/* LÍNEA DE TIEMPO VISUAL ESTRICTAMENTE HORIZONTAL (5 ETAPAS) */}
+                <div className="bg-white border border-warm-100 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs overflow-hidden">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-ink-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <Truck className="w-3.5 h-3.5 text-rose-600" />
+                      <span>Línea de Tiempo del Arreglo</span>
+                    </h4>
+                    <span className="text-[11px] text-warm-500 font-mono">
+                      Seguimiento en vivo
+                    </span>
+                  </div>
 
                   {(() => {
                     const normStatus = (trackingOrder.status || 'pendiente').toLowerCase();
                     const getRank = (st: string) => {
                       if (st === 'pendiente') return 1;
                       if (st === 'confirmado') return 2;
-                      if (st === 'en_preparacion') return 3;
+                      if (st === 'en_preparacion' || st === 'en_taller') return 3;
                       if (st === 'en_despacho') return 4;
                       if (st === 'entregado') return 5;
                       return 1;
@@ -1446,54 +1798,74 @@ export default function HomePage() {
                     const currentRank = getRank(normStatus);
 
                     const stages = [
-                      { rank: 1, label: 'Recibido', desc: 'Pedido registrado' },
-                      { rank: 2, label: 'Confirmado', desc: 'Pago validado' },
-                      { rank: 3, label: 'En Preparación', desc: 'Florería' },
-                      { rank: 4, label: 'En Despacho', desc: 'Chofer en camino' },
-                      { rank: 5, label: 'Entregado', desc: 'Entrega exitosa' },
+                      { rank: 1, label: 'Recibido', desc: 'Registrado', icon: Sparkles },
+                      { rank: 2, label: 'Confirmado', desc: 'Validado', icon: ShieldCheck },
+                      { rank: 3, label: 'En Preparación', desc: 'Taller floral', icon: Flower2 },
+                      { rank: 4, label: 'En Despacho', desc: 'Chofer en ruta', icon: Truck },
+                      { rank: 5, label: 'Entregado', desc: 'Completado', icon: Heart },
                     ];
 
+                    const progressPercent =
+                      currentRank === 1 ? 0 : Math.min(100, ((currentRank - 1) / 4) * 100);
+
                     return (
-                      <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2.5 before:bottom-2.5 before:w-0.5 before:bg-warm-100">
-                        {stages.map((st) => {
-                          const isCompleted = currentRank > st.rank;
-                          const isCurrent = currentRank === st.rank;
+                      <div className="relative py-3 px-1 overflow-hidden">
+                        {/* Línea conectora base horizontal continua */}
+                        <div className="absolute top-7 sm:top-8 left-6 right-6 h-1 bg-warm-100 -translate-y-1/2 z-0 rounded-full" />
+                        
+                        {/* Línea conectora activa iluminada con gradiente rose-500 a rose-600 */}
+                        <div
+                          className="absolute top-7 sm:top-8 left-6 h-1 bg-gradient-to-r from-rose-500 to-rose-600 -translate-y-1/2 z-0 rounded-full transition-all duration-500 ease-spring shadow-xs"
+                          style={{
+                            width: `calc(${progressPercent}% - ${progressPercent > 0 ? '16px' : '0px'})`,
+                          }}
+                        />
 
-                          return (
-                            <div key={st.rank} className="relative flex items-start gap-3">
+                        {/* 5 Pasos distribuidos uniformemente en una sola fila continua sin scrollbar */}
+                        <div className="relative z-10 flex items-start justify-between w-full">
+                          {stages.map((st) => {
+                            const isCompleted = currentRank > st.rank;
+                            const isCurrent = currentRank === st.rank;
+                            const IconComp = st.icon;
+
+                            return (
                               <div
-                                className={`absolute -left-6 top-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition ${
-                                  isCompleted
-                                    ? 'bg-ink-900 text-white ring-4 ring-rose-100'
-                                    : isCurrent
-                                    ? 'bg-rose-600 text-white ring-4 ring-rose-100 animate-rose-pulse'
-                                    : 'bg-warm-100 text-warm-500'
-                                }`}
+                                key={st.rank}
+                                className="flex flex-col items-center text-center flex-1 min-w-0 px-0.5"
                               >
-                                {isCompleted ? (
-                                  <Check className="w-3 h-3 stroke-[3]" />
-                                ) : (
-                                  <span>{st.rank}</span>
-                                )}
-                              </div>
-
-                              <div>
-                                <p
-                                  className={`text-xs font-bold leading-none ${
+                                <div
+                                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-300 ease-spring ${
+                                    isCompleted
+                                      ? 'bg-ink-900 text-white shadow-xs'
+                                      : isCurrent
+                                      ? 'bg-rose-500 text-ink-900 ring-4 ring-rose-100 shadow-md scale-110 font-bold animate-rose-pulse'
+                                      : 'bg-warm-100 text-warm-500'
+                                  }`}
+                                >
+                                  {isCompleted ? (
+                                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[3]" />
+                                  ) : (
+                                    <IconComp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                  )}
+                                </div>
+                                <span
+                                  className={`mt-2 text-[10px] sm:text-xs font-semibold leading-tight line-clamp-1 ${
                                     isCurrent
-                                      ? 'text-rose-600'
+                                      ? 'text-rose-600 font-bold'
                                       : isCompleted
                                       ? 'text-ink-900'
-                                      : 'text-warm-500'
+                                      : 'text-warm-300'
                                   }`}
                                 >
                                   {st.label}
-                                </p>
-                                <p className="text-[11px] text-warm-500 mt-1">{st.desc}</p>
+                                </span>
+                                <span className="hidden sm:block text-[9px] text-warm-500 mt-0.5 truncate max-w-full">
+                                  {st.desc}
+                                </span>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
                       </div>
                     );
                   })()}

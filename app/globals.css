@@ -119,3 +119,50 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--rose-600);
 }
+
+/* Emil Kowalski Taste: Micro-interactions & Spring Curves */
+:root {
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes springScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes springSlideRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-spring-modal {
+  animation: springScaleIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-spring-drawer {
+  animation: springSlideRight 0.36s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.ease-spring {
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Utilidad para scroll horizontal táctil limpio sin scrollbar visible */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+

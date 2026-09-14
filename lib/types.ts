@@ -39,6 +39,21 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface DeliveryZone {
+  id: number;
+  district: string;
+  cost: number;
+  active?: boolean;
+}
+
+export interface AddOnItem {
+  id: string;
+  name: string;
+  price: number;
+  icon?: string;
+  image?: string;
+}
+
 export interface Order {
   id: string;
   customer_id: string | null;
@@ -51,6 +66,12 @@ export interface Order {
   delivery_date: string | null;
   recipient_name: string | null;
   delivery_address: string | null;
+  delivery_district?: string | null;
+  delivery_cost?: number | null;
+  delivery_time_slot?: string | null;
+  occasion?: string | null;
+  special_date?: string | null;
+  extra_items?: Array<{ name: string; price: number; quantity: number }> | null;
   dedication_message: string | null;
   status: OrderStatus;
   tracking_code?: string | null;

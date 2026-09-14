@@ -16,6 +16,7 @@ import {
   ChevronRight,
   LogOut,
   Share2,
+  Heart,
 } from 'lucide-react';
 
 const navigationItems = [
@@ -30,6 +31,12 @@ const navigationItems = [
     href: '/admin/orders',
     icon: ShoppingBag,
     description: 'Pedidos, vouchers y clientes',
+  },
+  {
+    name: 'Clientes & Fechas',
+    href: '/admin/customers',
+    icon: Heart,
+    description: 'Fidelización y aniversarios',
   },
   {
     name: 'Gastos & Finanzas',
