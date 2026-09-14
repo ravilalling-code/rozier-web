@@ -114,3 +114,12 @@ export interface OCRResult {
   numero_operacion: string;
   fecha: string;
 }
+
+export interface CategoryBanner {
+  id: string;
+  title: string;
+  badge_text: string;
+  image_url: string;
+  category_slug: string;
+  order_index?: number;
+}

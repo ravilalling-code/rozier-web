@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Product, Category, Order, OrderStatus, StoreSettings, CartItem, DeliveryZone, AddOnItem } from '@/lib/types';
+import { Product, Category, Order, OrderStatus, StoreSettings, CartItem, DeliveryZone, AddOnItem, CategoryBanner } from '@/lib/types';
 import { getCategories } from '@/lib/categories';
 import { getStoreSettings } from '@/lib/settings';
+import { getCategoryBanners, DEFAULT_CATEGORY_BANNERS } from '@/lib/banners';
 import {
   MessageCircle,
   Heart,
@@ -39,6 +40,8 @@ import {
   CreditCard,
   ShoppingBag,
   Gift,
+  ArrowUpRight,
+  Headphones,
 } from 'lucide-react';
 import { formatLocalDate } from '@/lib/format';
 import ChatBot from '@/components/ChatBot';
@@ -136,6 +139,19 @@ export default function HomePage() {
     setTimeout(() => setCopiedYapePhone(false), 2000);
   };
 
+  // Banners editoriales de "¿Qué quieres celebrar?"
+  const [celebrationBanners, setCelebrationBanners] = useState<CategoryBanner[]>(DEFAULT_CATEGORY_BANNERS);
+
+  // Expansión de categorías en vista compacta (Todos)
+  const [expandedCategories, setExpandedCategories] = useState<{ [slug: string]: boolean }>({});
+
+  const toggleCategoryExpand = (slug: string) => {
+    setExpandedCategories((prev) => ({
+      ...prev,
+      [slug]: !prev[slug],
+    }));
+  };
+
   // Ajustes de la tienda (Redes sociales y WhatsApp)
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
 
@@ -144,7 +160,7 @@ export default function HomePage() {
     const fetchCatalogAndCategories = async () => {
       setLoading(true);
       try {
-        const [prodsRes, catsData, settingsData, zonesRes] = await Promise.all([
+        const [prodsRes, catsData, settingsData, zonesRes, bannersData] = await Promise.all([
           supabase
             .from('products')
             .select('*')
@@ -156,6 +172,7 @@ export default function HomePage() {
             .from('delivery_zones')
             .select('*')
             .order('district', { ascending: true }),
+          getCategoryBanners(),
         ]);
 
         if (!prodsRes.error && prodsRes.data) {
@@ -164,6 +181,9 @@ export default function HomePage() {
         setCategories(catsData);
         if (settingsData) {
           setStoreSettings(settingsData);
+        }
+        if (bannersData && bannersData.length > 0) {
+          setCelebrationBanners(bannersData);
         }
         if (!zonesRes.error && zonesRes.data && zonesRes.data.length > 0) {
           setDeliveryZones(zonesRes.data as DeliveryZone[]);
@@ -343,6 +363,41 @@ export default function HomePage() {
           (p) => (p.category || '').toLowerCase().trim() === category.toLowerCase().trim()
         );
 
+  // Agrupación de productos por categoría para carruseles de 1 sola fila en "Todos"
+  const categoryGroups = (
+    activeCategories.length > 0
+      ? activeCategories
+      : [
+          { id: 'ramos', name: 'Ramos de Autor', slug: 'ramos' },
+          { id: 'boxes', name: 'Boxes de Rosas', slug: 'boxes' },
+          { id: 'girasoles', name: 'Girasoles & Exóticos', slug: 'girasoles' },
+          { id: 'detalles', name: 'Detalles Especiales', slug: 'detalles' },
+        ]
+  )
+    .map((cat) => ({
+      ...cat,
+      products: products.filter(
+        (p) => (p.category || '').toLowerCase().trim() === cat.slug.toLowerCase().trim()
+      ),
+    }))
+    .filter((g) => g.products.length > 0);
+
+  // Incluir productos con slug no mapeado en otras creaciones si existen
+  const unmappedProducts = products.filter(
+    (p) =>
+      !categoryGroups.some(
+        (g) => g.slug.toLowerCase().trim() === (p.category || '').toLowerCase().trim()
+      )
+  );
+  if (unmappedProducts.length > 0) {
+    categoryGroups.push({
+      id: 'otros',
+      name: 'Otras Creaciones',
+      slug: 'otros',
+      products: unmappedProducts,
+    });
+  }
+
   // Enviar pedido consolidado a Supabase y generar comprobante WhatsApp
   const handleCheckoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -514,6 +569,137 @@ export default function HomePage() {
     }
   };
 
+  const renderProductCard = (product: Product, inCarousel: boolean = false) => {
+    const hasPromo = product.promotional_price !== null && product.promotional_price > 0;
+    const finalPrice = hasPromo ? product.promotional_price! : product.price;
+
+    const catObj = categories.find(
+      (c) => c.slug.toLowerCase() === (product.category || '').toLowerCase()
+    );
+    const catBadgeName = catObj ? catObj.name : product.category;
+    const cartItem = cart.find((i) => i.product.id === product.id);
+
+    return (
+      <div
+        key={product.id}
+        className={`group bg-white rounded-2xl border border-warm-100 card-editorial card-editorial-hover p-2.5 sm:p-3 flex flex-col overflow-hidden transition-all duration-300 hover:border-rose-600/60 ${
+          inCarousel
+            ? 'snap-start shrink-0 min-w-[220px] md:min-w-[260px] w-[220px] md:w-[260px]'
+            : ''
+        }`}
+      >
+        {/* Contenedor de Imagen Hijo Directo: aspect-[4/5], rounded-lg */}
+        <div
+          onClick={() => {
+            setSelectedProduct(product);
+            setModalQuantity(1);
+            setDeliveryDate('');
+            setDedication('');
+          }}
+          className="relative aspect-[4/5] w-full bg-rose-100 overflow-hidden cursor-pointer rounded-lg shrink-0"
+        >
+          <img
+            src={product.image_url}
+            alt={product.name}
+            className="w-full h-full object-cover [@media(hover:hover)]:group-hover:scale-[1.03] transition-transform duration-500 ease-out"
+            loading="lazy"
+          />
+
+          {/* Insignia Oferta (Nieto: rounded-md) */}
+          {hasPromo && (
+            <span className="absolute top-2 left-2 bg-rose-100 text-accent-carmine border border-accent-carmine/30 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md shadow-xs">
+              OFERTA
+            </span>
+          )}
+
+          {/* Insignia Categoría (Nieto: rounded-md) */}
+          <span className="absolute bottom-2 right-2 bg-ink-900/80 backdrop-blur-md text-rose-50 text-[10px] font-semibold tracking-wider px-2 py-0.5 rounded-md uppercase">
+            {catBadgeName}
+          </span>
+        </div>
+
+        {/* Detalle del Arreglo Floral */}
+        <div className="pt-2.5 sm:pt-3 flex-1 flex flex-col justify-between space-y-2">
+          <div
+            onClick={() => {
+              setSelectedProduct(product);
+              setModalQuantity(1);
+              setDeliveryDate('');
+              setDedication('');
+            }}
+            className="cursor-pointer"
+          >
+            <h3 className="font-bold text-xs sm:text-sm text-ink-900 line-clamp-1 group-hover:text-rose-600 transition tracking-tight">
+              {product.name}
+            </h3>
+            <p className="text-[11px] text-warm-500 line-clamp-1 mt-0.5">
+              {product.description || 'Detalle floral exclusivo'}
+            </p>
+          </div>
+
+          {/* Jerarquía de Precios (tabular-nums & WCAG AA) */}
+          <div className="flex items-baseline justify-between pt-0.5">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-sm sm:text-base font-bold text-ink-900 tabular-nums">
+                S/ {finalPrice.toFixed(2)}
+              </span>
+              {hasPromo && (
+                <span className="text-xs text-warm-500 line-through tabular-nums">
+                  S/ {product.price.toFixed(2)}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* BOTÓN PRINCIPAL Y SELECTOR DE CANTIDAD (Feedback táctil inmediato 100ms) */}
+          <div className="pt-1.5 border-t border-warm-100">
+            {cartItem ? (
+              <div className="flex items-center justify-between bg-rose-100 border border-rose-500/60 rounded-lg p-1">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    updateCartQuantity(product.id, -1);
+                  }}
+                  className="btn-tactile w-7 h-7 rounded-md bg-white text-ink-900 hover:bg-rose-50 flex items-center justify-center shadow-2xs border border-warm-100"
+                  title="Disminuir"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-xs font-bold text-ink-900 tabular-nums px-2">
+                  {cartItem.quantity} en carrito
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    updateCartQuantity(product.id, 1);
+                  }}
+                  className="btn-tactile w-7 h-7 rounded-md bg-ink-900 text-white hover:bg-rose-600 flex items-center justify-center shadow-2xs"
+                  title="Aumentar"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addToCart(product, 1);
+                }}
+                className="btn-tactile w-full flex items-center justify-center gap-1.5 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 py-2 px-3 rounded-lg text-xs font-semibold shadow-xs border border-ink-900 hover:border-rose-600"
+              >
+                <ShoppingCart className="w-3.5 h-3.5" />
+                <span>+ Añadir</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-rose-50 text-ink-900 font-sans pb-28 selection:bg-rose-500 selection:text-ink-900">
       {/* Top Banner de Confianza - Alta Gama */}
@@ -602,6 +788,149 @@ export default function HomePage() {
         </p>
       </section>
 
+      {/* 1. Barra de Confianza (Trust Badges Horizontales) */}
+      <section className="w-full bg-rose-50 border-y border-warm-100 py-6 md:py-8">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex lg:grid lg:grid-cols-6 gap-4 overflow-x-auto no-scrollbar snap-x">
+            {/* 1. Entrega Hoy Mismo */}
+            <div className="snap-start shrink-0 w-[220px] sm:w-[240px] lg:w-auto flex items-center lg:flex-col lg:items-center lg:text-center gap-3 p-2 rounded-xl">
+              <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center shrink-0 text-rose-600 shadow-2xs border border-warm-100">
+                <Truck className="w-5 h-5 stroke-[1.75]" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-ink-900 tracking-tight">Entrega Hoy Mismo</h4>
+                <p className="text-[11px] text-warm-500 leading-tight mt-0.5">Envíos rápidos en Lima y Callao.</p>
+              </div>
+            </div>
+
+            {/* 2. Horario en Rangos */}
+            <div className="snap-start shrink-0 w-[220px] sm:w-[240px] lg:w-auto flex items-center lg:flex-col lg:items-center lg:text-center gap-3 p-2 rounded-xl">
+              <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center shrink-0 text-rose-600 shadow-2xs border border-warm-100">
+                <Clock className="w-5 h-5 stroke-[1.75]" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-ink-900 tracking-tight">Horario en Rangos</h4>
+                <p className="text-[11px] text-warm-500 leading-tight mt-0.5">Mañana, tarde o noche garantizada.</p>
+              </div>
+            </div>
+
+            {/* 3. Flores Frescas */}
+            <div className="snap-start shrink-0 w-[220px] sm:w-[240px] lg:w-auto flex items-center lg:flex-col lg:items-center lg:text-center gap-3 p-2 rounded-xl">
+              <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center shrink-0 text-rose-600 shadow-2xs border border-warm-100">
+                <Flower2 className="w-5 h-5 stroke-[1.75]" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-ink-900 tracking-tight">Flores Frescas</h4>
+                <p className="text-[11px] text-warm-500 leading-tight mt-0.5">Selección premium de exportación.</p>
+              </div>
+            </div>
+
+            {/* 4. Wow Garantizado */}
+            <div className="snap-start shrink-0 w-[220px] sm:w-[240px] lg:w-auto flex items-center lg:flex-col lg:items-center lg:text-center gap-3 p-2 rounded-xl">
+              <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center shrink-0 text-rose-600 shadow-2xs border border-warm-100">
+                <Heart className="w-5 h-5 stroke-[1.75]" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-ink-900 tracking-tight">Wow Garantizado</h4>
+                <p className="text-[11px] text-warm-500 leading-tight mt-0.5">Tu regalo generará un recuerdo inolvidable.</p>
+              </div>
+            </div>
+
+            {/* 5. Compra Segura */}
+            <div className="snap-start shrink-0 w-[220px] sm:w-[240px] lg:w-auto flex items-center lg:flex-col lg:items-center lg:text-center gap-3 p-2 rounded-xl">
+              <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center shrink-0 text-rose-600 shadow-2xs border border-warm-100">
+                <ShieldCheck className="w-5 h-5 stroke-[1.75]" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-ink-900 tracking-tight">Compra Segura</h4>
+                <p className="text-[11px] text-warm-500 leading-tight mt-0.5">Yape, Plin y transferencias directas.</p>
+              </div>
+            </div>
+
+            {/* 6. Atención Dedicada */}
+            <div className="snap-start shrink-0 w-[220px] sm:w-[240px] lg:w-auto flex items-center lg:flex-col lg:items-center lg:text-center gap-3 p-2 rounded-xl">
+              <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center shrink-0 text-rose-600 shadow-2xs border border-warm-100">
+                <Headphones className="w-5 h-5 stroke-[1.75]" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-ink-900 tracking-tight">Atención Dedicada</h4>
+                <p className="text-[11px] text-warm-500 leading-tight mt-0.5">Seguimiento continuo de tu detalle.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 2. Sección "¿Qué quieres celebrar?" (Carrusel Editorial) */}
+      <section className="py-12 md:py-16 max-w-6xl mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          {/* Columna izquierda (~28% en desktop) */}
+          <div className="lg:col-span-4 space-y-3 md:pr-4">
+            <span className="text-[11px] uppercase tracking-widest font-semibold text-rose-600">
+              Colecciones Exclusivas
+            </span>
+            <h2 className="font-serif text-4xl lg:text-5xl font-normal tracking-tight text-ink-900 leading-[1.12]">
+              ¿QUÉ QUIERES CELEBRAR?
+            </h2>
+            <p className="text-sm sm:text-base text-[#686161] leading-relaxed">
+              El detalle floral exclusivo con el sello de lujo de PETALIA.
+            </p>
+          </div>
+
+          {/* Columna derecha (~72% en desktop, carrusel horizontal fluido con snap) */}
+          <div className="lg:col-span-8 overflow-hidden">
+            <div className="flex gap-5 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-3 pt-1">
+              {celebrationBanners.map((banner) => (
+                <div
+                  key={banner.id}
+                  onClick={() => {
+                    setCategory(banner.category_slug);
+                    const catElem = document.getElementById('catalogo');
+                    if (catElem) {
+                      catElem.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                  className="snap-start shrink-0 min-w-[260px] md:min-w-[300px] w-[260px] md:w-[300px] group cursor-pointer"
+                >
+                  {/* Tarjeta con imagen aspect-[3/4] */}
+                  <div className="aspect-[3/4] min-w-[260px] md:min-w-[300px] rounded-2xl overflow-hidden relative border border-warm-100 card-editorial shadow-xs">
+                    <img
+                      src={banner.image_url}
+                      alt={banner.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                      loading="lazy"
+                    />
+                    {/* Badge flotante en la foto */}
+                    <div className="absolute top-4 left-4">
+                      <span className="bg-rose-600/90 backdrop-blur-sm text-white text-xs font-medium px-3.5 py-1.5 rounded-full shadow-xs">
+                        {banner.badge_text}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Zona externa inferior */}
+                  <div className="pt-3.5 flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-2xl text-ink-900 tracking-tight uppercase group-hover:text-rose-600 transition">
+                        {banner.title}
+                      </h3>
+                      <div className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-rose-600 bg-rose-100 hover:bg-rose-500 hover:text-ink-900 px-3 py-1 rounded-full border border-warm-100 transition">
+                        <span>Ver colección</span>
+                      </div>
+                    </div>
+
+                    {/* Botón circular con flecha diagonal (↗) */}
+                    <div className="w-10 h-10 rounded-full bg-white border border-warm-100 text-ink-900 flex items-center justify-center group-hover:bg-ink-900 group-hover:text-white group-hover:border-ink-900 transition-all shadow-2xs shrink-0">
+                      <ArrowUpRight className="w-4 h-4" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Pestañas de Categoría (Pills de Navegación Palo Rosa) */}
       <nav id="catalogo" aria-label="Categorías" className="sticky top-[57px] sm:top-[61px] z-20 bg-rose-50/95 backdrop-blur-md border-y border-warm-100 py-2.5">
         <div className="max-w-6xl mx-auto px-4 flex gap-2 overflow-x-auto no-scrollbar text-xs">
@@ -637,8 +966,8 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* Catálogo de Productos - Grilla 2 Cols Móvil & 4 Cols Desktop */}
-      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+      {/* 3. Catálogo de Productos - Carruseles de 1 sola fila por Categoría o Grilla Completa */}
+      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8 space-y-12">
         {loading ? (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6">
             {Array.from({ length: 8 }).map((_, idx) => (
@@ -660,154 +989,109 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-        ) : filteredProducts.length === 0 ? (
-          <div className="text-center py-24 bg-white rounded-2xl border border-warm-100 card-editorial p-8 space-y-3 shadow-xs">
-            <Flower2 className="w-12 h-12 text-rose-600 mx-auto stroke-1" />
-            <p className="text-sm font-bold text-ink-900">
-              No hay arreglos disponibles en esta categoría.
-            </p>
-            <p className="text-xs text-warm-500">
-              Explora otras colecciones o consúltanos directamente por WhatsApp.
-            </p>
-            <button
-              onClick={() => setCategory('todos')}
-              className="btn-tactile text-xs text-rose-600 font-semibold hover:underline pt-1 inline-block"
-            >
-              Ver todos los arreglos
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6">
-            {filteredProducts.map((product) => {
-              const hasPromo =
-                product.promotional_price !== null && product.promotional_price > 0;
-              const finalPrice = hasPromo ? product.promotional_price! : product.price;
-
-              // Obtener el nombre legible de la categoría para el badge
-              const catObj = categories.find(
-                (c) => c.slug.toLowerCase() === (product.category || '').toLowerCase()
-              );
-              const catBadgeName = catObj ? catObj.name : product.category;
-
-              // Comprobar si el producto ya está en el carrito
-              const cartItem = cart.find((i) => i.product.id === product.id);
-
-              return (
-                <div
-                  key={product.id}
-                  className="group bg-white rounded-2xl border border-warm-100 card-editorial card-editorial-hover p-2.5 sm:p-3 flex flex-col overflow-hidden transition-all duration-300 hover:border-rose-600/60"
-                >
-                  {/* Contenedor de Imagen Hijo Directo: aspect-[4/5], rounded-lg */}
-                  <div
-                    onClick={() => {
-                      setSelectedProduct(product);
-                      setModalQuantity(1);
-                      setDeliveryDate('');
-                      setDedication('');
-                    }}
-                    className="relative aspect-[4/5] w-full bg-rose-100 overflow-hidden cursor-pointer rounded-lg shrink-0"
-                  >
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                      className="w-full h-full object-cover [@media(hover:hover)]:group-hover:scale-[1.03] transition-transform duration-500 ease-out"
-                      loading="lazy"
-                    />
-
-                    {/* Insignia Oferta (Nieto: rounded-md) */}
-                    {hasPromo && (
-                      <span className="absolute top-2 left-2 bg-rose-100 text-accent-carmine border border-accent-carmine/30 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md shadow-xs">
-                        OFERTA
+        ) : category === 'todos' ? (
+          /* Vista "Todos": Carruseles de 1 sola fila por categoría con expansión suave a grilla */
+          categoryGroups.length === 0 ? (
+            <div className="text-center py-24 bg-white rounded-2xl border border-warm-100 card-editorial p-8 space-y-3 shadow-xs">
+              <Flower2 className="w-12 h-12 text-rose-600 mx-auto stroke-1" />
+              <p className="text-sm font-bold text-ink-900">
+                No hay arreglos disponibles en este momento.
+              </p>
+              <p className="text-xs text-warm-500">
+                Estamos preparando nuevos diseños florales. Consúltanos directamente por WhatsApp.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-12">
+              {categoryGroups.map((group) => {
+                const isExpanded = !!expandedCategories[group.slug];
+                return (
+                  <section key={group.id || group.slug} className="space-y-4">
+                    {/* Encabezado elegante de categoría con descripción sutil */}
+                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-warm-100 pb-2">
+                      <div>
+                        <h3 className="font-serif text-2xl sm:text-3xl text-ink-900 font-normal tracking-tight">
+                          {group.name}
+                        </h3>
+                        <p className="text-xs text-warm-500 mt-0.5">
+                          Selección floral artesanal de alta gama con flores de corte fresco.
+                        </p>
+                      </div>
+                      <span className="text-xs text-warm-500 font-mono mt-1 sm:mt-0">
+                        {group.products.length} {group.products.length === 1 ? 'diseño' : 'diseños'}
                       </span>
+                    </div>
+
+                    {/* Fila Horizontal Continua o Grilla Expandida */}
+                    {isExpanded ? (
+                      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6 animate-in fade-in duration-300">
+                        {group.products.map((product) => renderProductCard(product, false))}
+                      </div>
+                    ) : (
+                      <div className="flex gap-5 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-4 pt-1">
+                        {group.products.map((product) => renderProductCard(product, true))}
+                      </div>
                     )}
 
-                    {/* Insignia Categoría (Nieto: rounded-md) */}
-                    <span className="absolute bottom-2 right-2 bg-ink-900/80 backdrop-blur-md text-rose-50 text-[10px] font-semibold tracking-wider px-2 py-0.5 rounded-md uppercase">
-                      {catBadgeName}
-                    </span>
-                  </div>
-
-                  {/* Detalle del Arreglo Floral */}
-                  <div className="pt-2.5 sm:pt-3 flex-1 flex flex-col justify-between space-y-2">
-                    <div
-                      onClick={() => {
-                        setSelectedProduct(product);
-                        setModalQuantity(1);
-                        setDeliveryDate('');
-                        setDedication('');
-                      }}
-                      className="cursor-pointer"
-                    >
-                      <h3 className="font-bold text-xs sm:text-sm text-ink-900 line-clamp-1 group-hover:text-rose-600 transition tracking-tight">
-                        {product.name}
-                      </h3>
-                      <p className="text-[11px] text-warm-500 line-clamp-1 mt-0.5">
-                        {product.description || 'Detalle floral exclusivo'}
-                      </p>
-                    </div>
-
-                    {/* Jerarquía de Precios (tabular-nums & WCAG AA) */}
-                    <div className="flex items-baseline justify-between pt-0.5">
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-sm sm:text-base font-bold text-ink-900 tabular-nums">
-                          S/ {finalPrice.toFixed(2)}
-                        </span>
-                        {hasPromo && (
-                          <span className="text-xs text-warm-500 line-through tabular-nums">
-                            S/ {product.price.toFixed(2)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* BOTÓN PRINCIPAL Y SELECTOR DE CANTIDAD (Feedback táctil inmediato 100ms) */}
-                    <div className="pt-1.5 border-t border-warm-100">
-                      {cartItem ? (
-                        <div className="flex items-center justify-between bg-rose-100 border border-rose-500/60 rounded-lg p-1">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              updateCartQuantity(product.id, -1);
-                            }}
-                            className="btn-tactile w-7 h-7 rounded-md bg-white text-ink-900 hover:bg-rose-50 flex items-center justify-center shadow-2xs border border-warm-100"
-                            title="Disminuir"
-                          >
-                            <Minus className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="text-xs font-bold text-ink-900 tabular-nums px-2">
-                            {cartItem.quantity} en carrito
-                          </span>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              updateCartQuantity(product.id, 1);
-                            }}
-                            className="btn-tactile w-7 h-7 rounded-md bg-ink-900 text-white hover:bg-rose-600 flex items-center justify-center shadow-2xs"
-                            title="Aumentar"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ) : (
+                    {/* Botón Editorial para Alternar Vista (Ver todos los diseños ↓ / Mostrar menos ↑) */}
+                    {group.products.length > 2 && (
+                      <div className="text-center pt-2 pb-4">
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addToCart(product, 1);
-                          }}
-                          className="btn-tactile w-full flex items-center justify-center gap-1.5 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 py-2 px-3 rounded-lg text-xs font-semibold shadow-xs border border-ink-900 hover:border-rose-600"
+                          onClick={() => toggleCategoryExpand(group.slug)}
+                          className="btn-tactile inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-ink-900 text-ink-900 hover:bg-rose-100 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
                         >
-                          <ShoppingCart className="w-3.5 h-3.5" />
-                          <span>+ Añadir</span>
+                          <span>
+                            {isExpanded
+                              ? 'Mostrar menos ↑'
+                              : `Ver todos los diseños de ${group.name} ↓`}
+                          </span>
                         </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                      </div>
+                    )}
+                  </section>
+                );
+              })}
+            </div>
+          )
+        ) : (
+          /* Vista de Categoría Específica Seleccionada */
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-warm-100 pb-2">
+              <div>
+                <h3 className="font-serif text-2xl sm:text-3xl text-ink-900 font-normal tracking-tight">
+                  {activeCategories.find((c) => c.slug.toLowerCase() === category.toLowerCase())?.name || category}
+                </h3>
+                <p className="text-xs text-warm-500 mt-0.5">
+                  Arreglos y complementos exclusivos preparados al momento.
+                </p>
+              </div>
+              <span className="text-xs text-warm-500 font-mono mt-1 sm:mt-0">
+                {filteredProducts.length} {filteredProducts.length === 1 ? 'diseño' : 'diseños'}
+              </span>
+            </div>
+
+            {filteredProducts.length === 0 ? (
+              <div className="text-center py-24 bg-white rounded-2xl border border-warm-100 card-editorial p-8 space-y-3 shadow-xs">
+                <Flower2 className="w-12 h-12 text-rose-600 mx-auto stroke-1" />
+                <p className="text-sm font-bold text-ink-900">
+                  No hay arreglos disponibles en esta categoría.
+                </p>
+                <p className="text-xs text-warm-500">
+                  Explora otras colecciones o consúltanos directamente por WhatsApp.
+                </p>
+                <button
+                  onClick={() => setCategory('todos')}
+                  className="btn-tactile text-xs text-rose-600 font-semibold hover:underline pt-1 inline-block"
+                >
+                  Ver todos los arreglos
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6">
+                {filteredProducts.map((product) => renderProductCard(product, false))}
+              </div>
+            )}
           </div>
         )}
       </main>
@@ -1661,17 +1945,19 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* BOTÓN FLOTANTE PERMANENTE DE WHATSAPP */}
+      {/* BOTÓN FLOTANTE PERMANENTE DE WHATSAPP (Logo Oficial & Verde de Marca) */}
       <a
         href={`https://wa.me/${storeSettings?.whatsapp_number || WHATSAPP_NUMBER}?text=${encodeURIComponent(
           '¡Hola PETALIA! Deseo realizar una consulta sobre un arreglo floral 🌸'
         )}`}
         target="_blank"
         rel="noreferrer"
-        className="fixed bottom-24 right-5 z-40 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 p-3.5 rounded-full shadow-2xl flex items-center justify-center transition transform hover:scale-105 active:scale-95 group border border-rose-600/60"
+        className="fixed bottom-24 right-5 z-40 bg-[#25D366] hover:bg-[#20ba59] text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition transform hover:scale-105 active:scale-95 group border border-emerald-400/40"
         title="Consultar al WhatsApp de PETALIA"
       >
-        <MessageCircle className="w-6 h-6 fill-current opacity-90" />
+        <svg className="w-6 h-6 fill-white shrink-0" viewBox="0 0 24 24">
+          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+        </svg>
         <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out text-xs font-semibold pl-0 group-hover:pl-2">
           WhatsApp Ventas
         </span>
