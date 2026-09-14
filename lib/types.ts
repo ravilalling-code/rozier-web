@@ -142,15 +142,20 @@ export interface CategoryBanner {
 
 export interface Campaign {
   id: string;
+  name?: string | null;
   title: string;
   subtitle: string;
   badge_text: string;
-  layout_type: 'carousel' | 'banner';
-  images: string[];
-  cta_text: string;
+  layout_type?: 'carousel' | 'banner';
+  images?: string[];
+  banner_url?: string | null;
+  cta_text?: string;
   cta_link?: string;
+  start_date?: string | null;
+  end_date?: string | null;
   is_active: boolean;
   updated_at?: string;
+  slug?: string;
 }
 
 export interface HeroSlide {

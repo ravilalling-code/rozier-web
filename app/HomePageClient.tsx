@@ -154,8 +154,8 @@ export default function HomePage() {
     }
   };
 
-  // Campaña promocional activa (Día de las Flores Amarillas)
-  const [activeCampaign, setActiveCampaign] = useState<Campaign>(DEFAULT_CAMPAIGN);
+  // Campaña promocional activa
+  const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null);
   const campaignCarouselRef = useRef<HTMLDivElement>(null);
 
   const scrollCampaign = (direction: 'left' | 'right') => {
@@ -248,8 +248,10 @@ export default function HomePage() {
         if (bannersData && bannersData.length > 0) {
           setCelebrationBanners(bannersData);
         }
-        if (campaignData) {
+        if (campaignData && campaignData.is_active) {
           setActiveCampaign(campaignData);
+        } else {
+          setActiveCampaign(null);
         }
         if (slidesData && slidesData.length > 0) {
           setHeroSlides(slidesData);
@@ -306,9 +308,7 @@ export default function HomePage() {
         { event: '*', schema: 'public', table: 'campaigns' },
         async () => {
           const freshCampaign = await getActiveCampaign();
-          if (freshCampaign) {
-            setActiveCampaign(freshCampaign);
-          }
+          setActiveCampaign(freshCampaign && freshCampaign.is_active ? freshCampaign : null);
         }
       )
       .on(
@@ -377,6 +377,19 @@ export default function HomePage() {
       )
       .subscribe();
 
+    // Canal dedicado para sincronización en tiempo real de Campañas Estacionales
+    const campaignsChannel = supabase
+      .channel('campaigns_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'campaigns' },
+        async () => {
+          const fresh = await getActiveCampaign();
+          setActiveCampaign(fresh && fresh.is_active ? fresh : null);
+        }
+      )
+      .subscribe();
+
     // Soportar lectura directa por URL (?track=CODIGO)
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -393,6 +406,7 @@ export default function HomePage() {
       supabase.removeChannel(realtimeChannel);
       supabase.removeChannel(heroSlidesChannel);
       supabase.removeChannel(specialAddonsChannel);
+      supabase.removeChannel(campaignsChannel);
     };
   }, []);
 
@@ -1192,112 +1206,121 @@ export default function HomePage() {
               </section>
 
               {/* FILA 2: Campaña Activa (Promocional / Flores Amarillas) */}
-              {activeCampaign && activeCampaign.is_active && (
-                <section className="bg-gradient-to-br from-amber-500/10 via-rose-500/10 to-transparent rounded-3xl p-6 sm:p-8 border border-amber-200/70 shadow-xs space-y-6">
-                  {/* Header de la Campaña */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="inline-flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                        <span>{activeCampaign.badge_text || 'Campaña Especial'}</span>
-                      </div>
-                      <h3 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-normal text-ink-900 tracking-tight">
-                        {activeCampaign.title}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-warm-500 max-w-xl">
-                        {activeCampaign.subtitle}
-                      </p>
-                    </div>
+              {activeCampaign && activeCampaign.is_active && (() => {
+                const campaignImages = (activeCampaign.images && activeCampaign.images.length > 0)
+                  ? activeCampaign.images
+                  : (activeCampaign.banner_url ? [activeCampaign.banner_url] : []);
+                const mainBanner = activeCampaign.banner_url || campaignImages[0] || '/images/logo.jpg';
 
-                    <div className="flex items-center gap-3">
-                      {/* Botones de navegación si es carrusel */}
-                      {activeCampaign.layout_type === 'carousel' && activeCampaign.images.length > 1 && (
-                        <div className="hidden sm:flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => scrollCampaign('left')}
-                            className="w-9 h-9 rounded-full bg-white shadow-xs border border-warm-100 text-ink-900 hover:bg-rose-100 flex items-center justify-center transition active:scale-95"
-                            aria-label="Anterior foto de campaña"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => scrollCampaign('right')}
-                            className="w-9 h-9 rounded-full bg-white shadow-xs border border-warm-100 text-ink-900 hover:bg-rose-100 flex items-center justify-center transition active:scale-95"
-                            aria-label="Siguiente foto de campaña"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
+                return (
+                  <section className="bg-gradient-to-br from-amber-500/10 via-rose-500/10 to-transparent rounded-3xl p-6 sm:p-8 border border-amber-200/70 shadow-xs space-y-6">
+                    {/* Header de la Campaña */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="inline-flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                          <span>{activeCampaign.badge_text || 'Campaña Especial'}</span>
                         </div>
-                      )}
-
-                      {/* Botón CTA */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const link = activeCampaign.cta_link?.toLowerCase().trim();
-                          if (link && activeCategories.some((c) => c.slug.toLowerCase() === link)) {
-                            setCategory(link);
-                          } else {
-                            const el = document.getElementById('catalogo');
-                            if (el) el.scrollIntoView({ behavior: 'smooth' });
-                          }
-                        }}
-                        className="btn-tactile inline-flex items-center gap-2 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 px-5 py-2.5 rounded-full text-xs font-semibold shadow-xs transition"
-                      >
-                        <span>{activeCampaign.cta_text || 'Explorar Flores Amarillas'}</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Contenido Visual según layout_type */}
-                  {activeCampaign.layout_type === 'banner' ? (
-                    /* Modo Banner Grande Panorámico */
-                    <div className="relative rounded-2xl overflow-hidden aspect-[21/9] min-h-[220px] sm:min-h-[280px] border border-warm-100 card-editorial shadow-xs">
-                      <img
-                        src={activeCampaign.images[0] || '/images/logo.jpg'}
-                        alt={activeCampaign.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-r from-ink-950/85 via-ink-950/45 to-transparent flex items-center p-6 sm:p-10">
-                        <div className="max-w-md text-white space-y-2">
-                          <span className="text-[11px] font-semibold text-amber-300 uppercase tracking-wider">
-                            {activeCampaign.badge_text}
-                          </span>
-                          <h4 className="font-serif text-2xl sm:text-3xl md:text-4xl font-normal leading-tight">
-                            {activeCampaign.title}
-                          </h4>
-                          <p className="text-xs sm:text-sm text-neutral-200 line-clamp-2">
+                        <h3 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-normal text-ink-900 tracking-tight">
+                          {activeCampaign.title}
+                        </h3>
+                        {activeCampaign.subtitle && (
+                          <p className="text-xs sm:text-sm text-warm-500 max-w-xl">
                             {activeCampaign.subtitle}
                           </p>
-                        </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        {/* Botones de navegación si es carrusel */}
+                        {activeCampaign.layout_type === 'carousel' && campaignImages.length > 1 && (
+                          <div className="hidden sm:flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => scrollCampaign('left')}
+                              className="w-9 h-9 rounded-full bg-white shadow-xs border border-warm-100 text-ink-900 hover:bg-rose-100 flex items-center justify-center transition active:scale-95"
+                              aria-label="Anterior foto de campaña"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => scrollCampaign('right')}
+                              className="w-9 h-9 rounded-full bg-white shadow-xs border border-warm-100 text-ink-900 hover:bg-rose-100 flex items-center justify-center transition active:scale-95"
+                              aria-label="Siguiente foto de campaña"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Botón CTA */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const link = activeCampaign.cta_link?.toLowerCase().trim();
+                            if (link && activeCategories.some((c) => c.slug.toLowerCase() === link)) {
+                              setCategory(link);
+                            } else {
+                              const el = document.getElementById('catalogo');
+                              if (el) el.scrollIntoView({ behavior: 'smooth' });
+                            }
+                          }}
+                          className="btn-tactile inline-flex items-center gap-2 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 px-5 py-2.5 rounded-full text-xs font-semibold shadow-xs transition"
+                        >
+                          <span>{activeCampaign.cta_text || 'Explorar Flores Amarillas'}</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
-                  ) : (
-                    /* Modo Carrusel de Fotos con snap */
-                    <div
-                      ref={campaignCarouselRef}
-                      className="flex gap-4 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-2"
-                    >
-                      {activeCampaign.images.map((imgUrl, i) => (
-                        <div
-                          key={i}
-                          className="snap-start shrink-0 aspect-[4/3] sm:aspect-[16/10] min-w-[260px] sm:min-w-[320px] md:min-w-[360px] rounded-2xl overflow-hidden relative border border-warm-100 card-editorial shadow-xs group"
-                        >
-                          <img
-                            src={imgUrl}
-                            alt={`${activeCampaign.title} ${i + 1}`}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                            loading="lazy"
-                          />
+
+                    {/* Contenido Visual según layout_type */}
+                    {activeCampaign.layout_type === 'banner' ? (
+                      /* Modo Banner Grande Panorámico */
+                      <div className="relative rounded-2xl overflow-hidden aspect-[21/9] min-h-[220px] sm:min-h-[280px] border border-warm-100 card-editorial shadow-xs">
+                        <img
+                          src={mainBanner}
+                          alt={activeCampaign.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-r from-ink-950/85 via-ink-950/45 to-transparent flex items-center p-6 sm:p-10">
+                          <div className="max-w-md text-white space-y-2">
+                            <span className="text-[11px] font-semibold text-amber-300 uppercase tracking-wider">
+                              {activeCampaign.badge_text}
+                            </span>
+                            <h4 className="font-serif text-2xl sm:text-3xl md:text-4xl font-normal leading-tight">
+                              {activeCampaign.title}
+                            </h4>
+                            <p className="text-xs sm:text-sm text-neutral-200 line-clamp-2">
+                              {activeCampaign.subtitle}
+                            </p>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </section>
-              )}
+                      </div>
+                    ) : (
+                      /* Modo Carrusel de Fotos con snap */
+                      <div
+                        ref={campaignCarouselRef}
+                        className="flex gap-4 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-2"
+                      >
+                        {campaignImages.map((imgUrl, i) => (
+                          <div
+                            key={i}
+                            className="snap-start shrink-0 aspect-[4/3] sm:aspect-[16/10] min-w-[260px] sm:min-w-[320px] md:min-w-[360px] rounded-2xl overflow-hidden relative border border-warm-100 card-editorial shadow-xs group"
+                          >
+                            <img
+                              src={imgUrl}
+                              alt={`${activeCampaign.title} ${i + 1}`}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                              loading="lazy"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                );
+              })()}
 
               {/* SECCIONES DE PRODUCTOS POR CATEGORÍA */}
               <div className="space-y-12 pt-4">
