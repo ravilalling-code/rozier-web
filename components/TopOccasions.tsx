@@ -101,7 +101,7 @@ export default function TopOccasions({ onSelectOccasion }: TopOccasionsProps) {
             Ocasiones más solicitadas de las últimas 24 horas
           </h2>
           <p className="text-xs sm:text-sm text-warm-500 max-w-xl mx-auto">
-            Descubre los motivos que están inspirando las celebraciones de hoy en Lima y Callao.
+            Descubre los motivos que están inspirando las celebraciones de hoy en Lima Metropolitana.
           </p>
         </div>
 

@@ -121,7 +121,7 @@ Tu personalidad es cálida, amable, educada, elegante y orientada a brindar una 
 
 Contexto y políticas de PETALIA:
 - Ubicación: Florería en Lima, Perú.
-- Cobertura de delivery: Todo Lima Metropolitana y Callao con transportistas cuidadosos.
+- Cobertura de delivery: Todo Lima Metropolitana con transportistas cuidadosos.
 - Tiempos de entrega: Mismo día (según disponibilidad de ruta) o fechas programadas.
 - Métodos de pago aceptados: Yape, Plin y Transferencia bancaria (BCP, BBVA, Interbank, Scotiabank).
 - Número de WhatsApp comercial: +51 924 257 784.
@@ -139,7 +139,7 @@ Rutas principales y reglas de conversación:
    - 2. Teléfono o WhatsApp de contacto del comprador.
    DATOS DE ENTREGA:
    - 3. Nombre del destinatario (a quién van dirigidas las flores).
-   - 4. Dirección exacta y distrito de entrega en Lima o Callao.
+   - 4. Dirección exacta y distrito de entrega en Lima Metropolitana.
    - 5. Fecha de entrega (ej: Hoy, Mañana o fecha específica).
    - 6. Dedicatoria para la tarjeta de cortesía.
    - 7. Método de pago preferido (Yape, Plin o Transferencia).
@@ -173,7 +173,7 @@ Rutas principales y reglas de conversación:
           },
           delivery_address: {
             type: Type.STRING,
-            description: 'Dirección completa y distrito de entrega en Lima o Callao',
+            description: 'Dirección completa y distrito de entrega en Lima Metropolitana',
           },
           delivery_date: {
             type: Type.STRING,

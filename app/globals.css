@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --rose-300: #F0C4C8;   /* acento pill / dots */
+  --rose-300: #EBB6BC;   /* acento pill / dots */
   --rose-500: #E8B4B8;   /* palo rosa principal */
   --rose-600: #D49A9E;   /* palo rosa oscuro (hover, bordes activos) */
-  --rose-50:  #F8E9EC;   /* fondo general palo rosa empolvado cálido y refinado */
-  --rose-100: #F3DEE2;   /* fondo de tarjeta / badges delicados */
+  --rose-50:  #F6E2E6;   /* fondo general palo rosa visible, refinado y con cuerpo */
+  --rose-100: #ECD3D8;   /* fondo de tarjeta / badges delicados */
 
   /* Neutros alta gama */
   --ink-900: #1A1A1A;    /* texto principal, botón primario (evitar negro puro #000) */
   --ink-950: #111111;    /* superficies profundas */
   --warm-500: #686161;   /* texto secundario ajustado para contraste WCAG AA > 4.5:1 */
-  --warm-100: #EAD8DC;   /* bordes sutiles con matiz palo rosa */
+  --warm-100: #E2C4CB;   /* bordes sutiles con matiz palo rosa */
   --warm-300: #A09898;   /* precios tachados, disabled */
 
   /* Acento y Semántica */

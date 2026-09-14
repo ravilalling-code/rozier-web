@@ -20,7 +20,7 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   title: "PETALIA | Diseño Floral & Decoraciones de Alta Gama",
-  description: "Florería de alta gama en Lima y Callao. Arreglos florales exclusivos, boxes de rosas, ramos y detalles para toda ocasión. Pedidos directos y delivery coordinado.",
+  description: "Florería de alta gama en Lima Metropolitana. Arreglos florales exclusivos, boxes de rosas, ramos y detalles para toda ocasión. Pedidos directos y delivery coordinado.",
 };
 
 export default function RootLayout({

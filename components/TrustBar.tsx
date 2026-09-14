@@ -6,7 +6,7 @@ const TRUST_ITEMS = [
   {
     icon: Truck,
     title: 'Entrega Hoy Mismo',
-    desc: 'Envíos rápidos en Lima y Callao.',
+    desc: 'Envíos el mismo día en Lima Metropolitana.',
   },
   {
     icon: Clock,

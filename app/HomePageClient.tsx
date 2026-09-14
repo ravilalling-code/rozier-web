@@ -2001,7 +2001,7 @@ export default function HomePage() {
                   {/* Selector de Distrito con Tarifas de Delivery */}
                   <div>
                     <label className="block text-xs font-semibold text-ink-900 mb-1">
-                      Distrito de Entrega (Lima & Callao) *
+                      Distrito de Entrega (Lima Metropolitana) *
                     </label>
                     <select
                       required

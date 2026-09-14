@@ -82,7 +82,7 @@ export default function StoreHeader({
       <header
         className={`fixed top-0 w-full z-50 h-20 flex items-center justify-between px-6 md:px-12 transition-all duration-300 ease-out ${
           isScrolled
-            ? 'bg-[#F9ECEF]/90 dark:bg-[#2A2422]/90 backdrop-blur-md shadow-sm border-b border-rose-100/60 text-ink-900'
+            ? 'bg-[#F6E2E6]/95 backdrop-blur-md shadow-sm border-b border-rose-200/80 text-[#2A2422]'
             : 'bg-transparent text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]'
         }`}
       >
@@ -93,7 +93,7 @@ export default function StoreHeader({
               src={logoUrl}
               alt="PETALIA"
               className={`h-11 md:h-12 w-auto object-contain rounded-xl transition-all duration-300 shadow-xs border ${
-                isScrolled ? 'border-warm-100 shadow-2xs' : 'border-white/30 drop-shadow-md'
+                isScrolled ? 'border-rose-200/80 shadow-2xs' : 'border-white/30 drop-shadow-md'
               }`}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/images/logo.jpg';
@@ -103,14 +103,14 @@ export default function StoreHeader({
           <div className="flex flex-col">
             <span
               className={`font-serif tracking-[0.2em] font-normal text-xl md:text-2xl transition-colors ${
-                isScrolled ? 'text-ink-900' : 'text-white'
+                isScrolled ? 'text-[#2A2422]' : 'text-white'
               }`}
             >
               PETALIA
             </span>
             <span
-              className={`text-[9px] uppercase tracking-[0.25em] font-light -mt-1 font-sans ${
-                isScrolled ? 'text-warm-500' : 'text-white/80'
+              className={`text-[9px] uppercase tracking-[0.25em] font-medium -mt-1 font-sans transition-colors ${
+                isScrolled ? 'text-[#685D5A]' : 'text-white/85'
               }`}
             >
               Alta Floristería
@@ -130,13 +130,15 @@ export default function StoreHeader({
             <button
               type="button"
               onClick={() => setCollectionMenuOpen(!collectionMenuOpen)}
-              className={`flex items-center gap-1.5 py-2 hover:opacity-80 transition cursor-pointer ${
-                isScrolled ? 'text-ink-900' : 'text-white'
+              className={`flex items-center gap-1.5 py-2 hover:opacity-80 transition cursor-pointer font-semibold ${
+                isScrolled ? 'text-[#2A2422]' : 'text-white'
               }`}
             >
               <span>Colección</span>
               <ChevronDown
                 className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                  isScrolled ? 'text-[#2A2422]' : 'text-white'
+                } ${
                   collectionMenuOpen ? 'rotate-180' : ''
                 }`}
               />
@@ -145,14 +147,14 @@ export default function StoreHeader({
             {collectionMenuOpen && (
               <div className="absolute top-full left-0 pt-2 z-50">
                 <div
-                  className="rounded-lg shadow-xl bg-white p-3 border border-rose-100/60 min-w-[210px] space-y-1 animate-in fade-in"
+                  className="rounded-lg shadow-xl bg-white p-3 border border-rose-200/80 min-w-[210px] space-y-1 animate-in fade-in"
                   style={{
                     animation: 'popoverFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                   }}
                 >
                   <button
                     onClick={() => handleCategoryClick('todos')}
-                    className="w-full text-left px-3 py-2 text-xs font-semibold text-ink-900 hover:bg-rose-100/60 rounded-sm transition flex items-center justify-between"
+                    className="w-full text-left px-3 py-2 text-xs font-semibold text-[#2A2422] hover:bg-rose-100/60 rounded-sm transition flex items-center justify-between"
                   >
                     <span>Todos los Diseños</span>
                     <Sparkles className="w-3.5 h-3.5 text-rose-500" />
@@ -182,13 +184,15 @@ export default function StoreHeader({
             <button
               type="button"
               onClick={() => setOccasionsMenuOpen(!occasionsMenuOpen)}
-              className={`flex items-center gap-1.5 py-2 hover:opacity-80 transition cursor-pointer ${
-                isScrolled ? 'text-ink-900' : 'text-white'
+              className={`flex items-center gap-1.5 py-2 hover:opacity-80 transition cursor-pointer font-semibold ${
+                isScrolled ? 'text-[#2A2422]' : 'text-white'
               }`}
             >
               <span>Ocasiones</span>
               <ChevronDown
                 className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                  isScrolled ? 'text-[#2A2422]' : 'text-white'
+                } ${
                   occasionsMenuOpen ? 'rotate-180' : ''
                 }`}
               />
@@ -197,7 +201,7 @@ export default function StoreHeader({
             {occasionsMenuOpen && (
               <div className="absolute top-full left-0 pt-2 z-50">
                 <div
-                  className="rounded-lg shadow-xl bg-white p-3 border border-rose-100/60 min-w-[220px] space-y-1 animate-in fade-in"
+                  className="rounded-lg shadow-xl bg-white p-3 border border-rose-200/80 min-w-[220px] space-y-1 animate-in fade-in"
                   style={{
                     animation: 'popoverFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                   }}
@@ -240,8 +244,8 @@ export default function StoreHeader({
 
           <button
             onClick={() => handleScrollToSection('catalogo')}
-            className={`hover:opacity-80 transition cursor-pointer ${
-              isScrolled ? 'text-ink-900' : 'text-white'
+            className={`hover:opacity-80 transition cursor-pointer font-semibold ${
+              isScrolled ? 'text-[#2A2422]' : 'text-white'
             }`}
           >
             Catálogo
@@ -249,8 +253,8 @@ export default function StoreHeader({
 
           <button
             onClick={() => handleScrollToSection('unfold-story')}
-            className={`hover:opacity-80 transition cursor-pointer ${
-              isScrolled ? 'text-ink-900' : 'text-white'
+            className={`hover:opacity-80 transition cursor-pointer font-semibold ${
+              isScrolled ? 'text-[#2A2422]' : 'text-white'
             }`}
           >
             Nosotros
@@ -258,11 +262,11 @@ export default function StoreHeader({
 
           <button
             onClick={onOpenTracking}
-            className={`flex items-center gap-1.5 hover:opacity-80 transition cursor-pointer ${
-              isScrolled ? 'text-ink-900' : 'text-white'
+            className={`flex items-center gap-1.5 hover:opacity-80 transition cursor-pointer font-semibold ${
+              isScrolled ? 'text-[#2A2422]' : 'text-white'
             }`}
           >
-            <Truck className="w-3.5 h-3.5 text-rose-500" />
+            <Truck className="w-3.5 h-3.5 text-rose-600" />
             <span>Rastreo</span>
           </button>
         </nav>
@@ -277,7 +281,7 @@ export default function StoreHeader({
               aria-label="Buscar productos"
               className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
                 isScrolled
-                  ? 'hover:bg-rose-100 text-ink-900'
+                  ? 'hover:bg-rose-200/60 text-[#2A2422]'
                   : 'hover:bg-white/20 text-white'
               }`}
             >
@@ -298,7 +302,7 @@ export default function StoreHeader({
                     }
                   }}
                   autoFocus
-                  className="w-full text-xs px-3 py-2 bg-rose-50/50 rounded-lg border border-warm-100 focus:outline-rose-500"
+                  className="w-full text-xs px-3 py-2 bg-rose-50/50 rounded-lg border border-warm-100 focus:outline-rose-500 text-[#2A2422]"
                 />
               </div>
             )}
@@ -310,7 +314,7 @@ export default function StoreHeader({
             title="Panel de Administración"
             className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
               isScrolled
-                ? 'hover:bg-rose-100 text-ink-900'
+                ? 'hover:bg-rose-200/60 text-[#2A2422]'
                 : 'hover:bg-white/20 text-white'
             }`}
           >
@@ -324,7 +328,7 @@ export default function StoreHeader({
             aria-label="Ver carrito"
             className={`relative w-9 h-9 rounded-full flex items-center justify-center transition-all ${
               isScrolled
-                ? 'hover:bg-rose-100 text-ink-900'
+                ? 'hover:bg-rose-200/60 text-[#2A2422]'
                 : 'hover:bg-white/20 text-white'
             }`}
           >
@@ -343,7 +347,7 @@ export default function StoreHeader({
             aria-label="Menú principal"
             className={`lg:hidden w-9 h-9 rounded-full flex items-center justify-center transition-all ${
               isScrolled
-                ? 'hover:bg-rose-100 text-ink-900'
+                ? 'hover:bg-rose-200/60 text-[#2A2422]'
                 : 'hover:bg-white/20 text-white'
             }`}
           >
@@ -363,7 +367,7 @@ export default function StoreHeader({
 
           {/* Contenedor Drawer animado con cubic-bezier(0.16, 1, 0.3, 1) */}
           <div
-            className="relative w-full max-w-xs sm:max-w-sm bg-[#F9ECEF] h-full shadow-2xl p-6 flex flex-col justify-between overflow-y-auto border-l border-rose-200/80 animate-spring-drawer"
+            className="relative w-full max-w-xs sm:max-w-sm bg-[#F6E2E6] h-full shadow-2xl p-6 flex flex-col justify-between overflow-y-auto border-l border-rose-200/80 animate-spring-drawer text-[#2A2422]"
           >
             {/* Header Drawer */}
             <div className="flex items-center justify-between pb-5 border-b border-warm-100">
