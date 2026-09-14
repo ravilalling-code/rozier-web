@@ -13,17 +13,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PETALIA | Diseño Floral & Decoraciones",
-  description: "Arreglos florales exclusivos, boxes de rosas, ramos y detalles para toda ocasión. Pedidos directos a nuestro WhatsApp.",
+  title: "PETALIA | Diseño Floral & Decoraciones de Alta Gama",
+  description: "Florería de alta gama en Lima y Callao. Arreglos florales exclusivos, boxes de rosas, ramos y detalles para toda ocasión. Pedidos directos y delivery coordinado.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html
-      lang="en"
+      lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col bg-rose-50 text-ink-900 selection:bg-rose-500 selection:text-ink-900">
+        {children}
+      </body>
     </html>
   );
 }

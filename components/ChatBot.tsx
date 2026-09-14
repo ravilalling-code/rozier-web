@@ -190,24 +190,24 @@ export default function ChatBot() {
 
   return (
     <>
-      {/* Botón Flotante Moderno */}
+      {/* Botón Flotante Moderno Palo Rosa & Alta Gama */}
       {!isOpen && (
         <div className="fixed bottom-5 right-5 z-40 flex items-center gap-2">
           {hasUnread && (
-            <div className="hidden sm:flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-lg border border-rose-100 text-xs text-stone-800 font-medium animate-bounce">
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+            <div className="hidden sm:flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-lg border border-[#E8B4B8] text-xs text-[#1A1A1A] font-medium animate-bounce">
+              <span className="w-2 h-2 rounded-full bg-[#D49A9E] animate-ping" />
               <span>¿Buscas un arreglo especial?</span>
             </div>
           )}
 
           <button
             onClick={() => setIsOpen(true)}
-            className="group relative flex items-center gap-2.5 bg-gradient-to-r from-rose-600 via-rose-500 to-rose-600 hover:from-rose-500 hover:to-rose-400 text-white px-4 py-3.5 rounded-full shadow-xl shadow-rose-950/20 transition-all duration-300 transform hover:scale-105 active:scale-95"
+            className="group relative flex items-center gap-2.5 bg-[#1A1A1A] hover:bg-[#D49A9E] text-white hover:text-[#1A1A1A] px-4 py-3.5 rounded-full shadow-xl shadow-black/20 border border-[#D49A9E]/60 transition-all duration-300 transform hover:scale-105 active:scale-[0.98]"
             aria-label="Abrir Asistente Virtual PETALIA"
           >
             <div className="relative">
-              <Sparkles className="w-5 h-5 animate-pulse" />
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 border-2 border-rose-600 rounded-full" />
+              <Sparkles className="w-5 h-5 text-[#E8B4B8] group-hover:text-[#1A1A1A] animate-pulse" />
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#D49A9E] border-2 border-[#1A1A1A] rounded-full" />
             </div>
             <span className="text-xs font-bold tracking-wide">
               Asesora Virtual
@@ -218,23 +218,23 @@ export default function ChatBot() {
 
       {/* Ventana Desplegable del Chatbot */}
       {isOpen && (
-        <div className="fixed bottom-0 right-0 sm:bottom-5 sm:right-5 z-50 w-full sm:w-[420px] h-[92vh] sm:h-[620px] max-h-[100vh] bg-white sm:rounded-3xl shadow-2xl border border-stone-200 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
-          {/* Header Elegante */}
-          <div className="bg-gradient-to-r from-stone-900 via-neutral-900 to-stone-900 text-white p-4 flex items-center justify-between shadow-md border-b border-stone-800">
+        <div className="fixed bottom-0 right-0 sm:bottom-5 sm:right-5 z-50 w-full sm:w-[420px] h-[92vh] sm:h-[620px] max-h-[100vh] bg-white sm:rounded-3xl shadow-2xl border border-[#EFEAE9] flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
+          {/* Header Elegante Alta Gama */}
+          <div className="bg-[#111111] text-white p-4 flex items-center justify-between shadow-md border-b border-[#1A1A1A]">
             <div className="flex items-center gap-3">
-              <div className="relative w-10 h-10 rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center text-white shadow-md shadow-rose-950/40">
+              <div className="relative w-10 h-10 rounded-2xl bg-[#F9ECEE] text-[#D49A9E] border border-[#E8B4B8] flex items-center justify-center shadow-xs">
                 <Flower2 className="w-5 h-5" />
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-stone-900 rounded-full" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#D49A9E] border-2 border-[#111111] rounded-full" />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-bold text-sm text-white">Asesora PETALIA</h3>
-                  <span className="text-[10px] uppercase font-semibold bg-rose-950/80 text-rose-300 border border-rose-800/60 px-1.5 py-0.2 rounded-full">
+                  <h3 className="font-bold text-sm text-white tracking-tight">Asesora PETALIA</h3>
+                  <span className="text-[10px] uppercase font-semibold bg-[#F9ECEE] text-[#C94A58] border border-[#E8B4B8]/40 px-1.5 py-0.2 rounded-full">
                     IA
                   </span>
                 </div>
-                <p className="text-[11px] text-stone-400 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <p className="text-[11px] text-[#A09898] flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#E8B4B8] animate-pulse" />
                   <span>En línea • Florería PETALIA Lima</span>
                 </p>
               </div>
@@ -242,7 +242,7 @@ export default function ChatBot() {
 
             <button
               onClick={() => setIsOpen(false)}
-              className="p-1.5 text-stone-400 hover:text-white rounded-xl hover:bg-stone-800 transition"
+              className="p-1.5 text-[#A09898] hover:text-white rounded-xl hover:bg-[#1A1A1A] transition"
               title="Cerrar chat"
             >
               <X className="w-5 h-5" />
@@ -250,7 +250,7 @@ export default function ChatBot() {
           </div>
 
           {/* Área de Mensajes */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-stone-50/60 text-xs">
+          <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#FDF7F7] text-xs">
             {messages.map((msg) => {
               const isUser = msg.role === 'user';
 
@@ -260,7 +260,7 @@ export default function ChatBot() {
                   className={`flex gap-2.5 ${isUser ? 'justify-end' : 'justify-start'}`}
                 >
                   {!isUser && (
-                    <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 flex-shrink-0 flex items-center justify-center text-white shadow-xs mt-0.5">
+                    <div className="w-7 h-7 rounded-xl bg-[#F9ECEE] text-[#D49A9E] border border-[#E8B4B8] flex-shrink-0 flex items-center justify-center shadow-2xs mt-0.5">
                       <Flower2 className="w-3.5 h-3.5" />
                     </div>
                   )}
@@ -269,8 +269,8 @@ export default function ChatBot() {
                     <div
                       className={`p-3.5 rounded-2xl shadow-xs ${
                         isUser
-                          ? 'bg-stone-900 text-white rounded-br-xs font-normal'
-                          : 'bg-white border border-stone-200/80 text-stone-700 rounded-bl-xs'
+                          ? 'bg-[#1A1A1A] text-white rounded-br-xs font-normal'
+                          : 'bg-white border border-[#EFEAE9] text-[#1A1A1A] rounded-bl-xs'
                       }`}
                     >
                       {renderFormattedText(msg.content.replace('[MOSTRAR_QR_YAPE]', ''))}
@@ -475,13 +475,13 @@ export default function ChatBot() {
 
           {/* Sugerencias Rápidas Iniciales */}
           {messages.length <= 2 && (
-            <div className="p-2.5 bg-white border-t border-stone-100 flex gap-1.5 overflow-x-auto no-scrollbar">
+            <div className="p-2.5 bg-white border-t border-[#EFEAE9] flex gap-1.5 overflow-x-auto no-scrollbar">
               {INITIAL_SUGGESTIONS.map((sug) => (
                 <button
                   key={sug}
                   onClick={() => handleSendMessage(sug)}
                   disabled={isLoading}
-                  className="px-3 py-1 rounded-full bg-stone-100 hover:bg-rose-50 hover:text-rose-700 text-stone-600 text-[11px] whitespace-nowrap transition border border-stone-200/70"
+                  className="px-3 py-1 rounded-full bg-[#F9ECEE] hover:bg-[#F3E0E3] text-[#766E6E] hover:text-[#1A1A1A] text-[11px] whitespace-nowrap transition border border-[#EFEAE9]"
                 >
                   {sug}
                 </button>
@@ -490,7 +490,7 @@ export default function ChatBot() {
           )}
 
           {/* Barra de Entrada de Texto */}
-          <div className="p-3 bg-white border-t border-stone-200/80 flex items-center gap-2">
+          <div className="p-3 bg-white border-t border-[#EFEAE9] flex items-center gap-2">
             <input
               ref={inputRef}
               type="text"
@@ -499,12 +499,12 @@ export default function ChatBot() {
               onKeyDown={handleKeyDown}
               placeholder="Escribe tu consulta o pide un arreglo..."
               disabled={isLoading}
-              className="flex-1 bg-stone-100/80 border border-stone-200 rounded-2xl px-4 py-2.5 text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:border-stone-900 focus:bg-white transition"
+              className="flex-1 bg-[#FDF7F7] border border-[#EFEAE9] rounded-2xl px-4 py-2.5 text-xs text-[#1A1A1A] placeholder-[#A09898] focus:outline-none focus:border-[#D49A9E] focus:bg-white transition"
             />
             <button
               onClick={() => handleSendMessage()}
               disabled={isLoading || !inputValue.trim()}
-              className="p-2.5 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white shadow-md shadow-rose-950/20 transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="p-2.5 rounded-2xl bg-[#1A1A1A] hover:bg-[#D49A9E] text-white hover:text-[#1A1A1A] shadow-md border border-[#1A1A1A] hover:border-[#D49A9E] transition active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
               title="Enviar mensaje"
             >
               <Send className="w-4 h-4" />

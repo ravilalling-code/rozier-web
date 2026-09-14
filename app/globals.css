@@ -1,26 +1,121 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Marca */
+  --rose-500: #E8B4B8;   /* palo rosa principal */
+  --rose-600: #D49A9E;   /* palo rosa oscuro (hover, bordes activos) */
+  --rose-50:  #FDF7F7;   /* fondo alterno suave */
+  --rose-100: #F9ECEE;   /* fondo de tarjeta / badges delicados */
+
+  /* Neutros alta gama */
+  --ink-900: #1A1A1A;    /* texto principal, botón primario (evitar negro puro #000) */
+  --ink-950: #111111;    /* superficies profundas */
+  --warm-500: #686161;   /* texto secundario ajustado para contraste WCAG AA > 4.5:1 */
+  --warm-100: #EFEAE9;   /* bordes sutiles */
+  --warm-300: #A09898;   /* precios tachados, disabled */
+
+  /* Acento y Semántica */
+  --accent-carmine: #C94A58; /* ofertas y promociones */
+  --success: #6B8F71;        /* verde botánico sutil */
+  --error: #B3434A;          /* error semántico */
+  --focus-ring: #D49A9E;     /* foco de accesibilidad */
+
+  /* Sombras de Marca */
+  --shadow-rose: 0 10px 25px -5px rgba(232, 180, 184, 0.28);
+
+  /* Superficie Base */
+  --background: var(--rose-50);
+  --foreground: var(--ink-900);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+[data-theme="dark"] {
+  --surface: #111111;
+  --surface-raised: #1C1817; /* superficie cálida elevada */
+  --rose-500: #E3B7BB;       /* desaturado para no vibrar sobre oscuro */
+  --rose-600: #D49A9E;
+  --rose-50:  #111111;
+  --rose-100: #1C1817;
+  --ink-900: #F5F0EF;        /* texto invertido */
+  --ink-950: #0D0D0D;
+  --warm-100: #2A2523;
+  --warm-500: #A89F9E;
+  --warm-300: #665E5C;
+  --accent-carmine: #DB5C6A;
+  --success: #82A888;
+  --error: #CF535B;
+  --focus-ring: #E3B7BB;
+  --shadow-rose: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+
+  --background: var(--surface);
+  --foreground: var(--ink-900);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  --color-rose-50: var(--rose-50);
+  --color-rose-100: var(--rose-100);
+  --color-rose-500: var(--rose-500);
+  --color-rose-600: var(--rose-600);
+
+  --color-ink-900: var(--ink-900);
+  --color-ink-950: var(--ink-950);
+
+  --color-warm-100: var(--warm-100);
+  --color-warm-300: var(--warm-300);
+  --color-warm-500: var(--warm-500);
+
+  --color-accent-carmine: var(--accent-carmine);
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-focus-ring: var(--focus-ring);
+
+  --shadow-rose: var(--shadow-rose);
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* Micro-animaciones y Utilidades Alta Gama */
+@keyframes rosePulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.03);
+  }
+}
+
+.animate-rose-pulse {
+  animation: rosePulse 2.5s ease-in-out infinite;
+}
+
+/* Accesibilidad & Focus Ring */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Scrollbar delicado para la tienda */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--rose-50);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--rose-500);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--rose-600);
 }

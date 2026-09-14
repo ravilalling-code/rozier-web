@@ -82,7 +82,7 @@ export default function HomePage() {
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackingError, setTrackingError] = useState<string | null>(null);
 
-  // Modal QR de Pago Yape / Plin (usado en checkout o solicitud)
+  // Modal QR de Pago Yape / Plin
   const [isYapeModalOpen, setIsYapeModalOpen] = useState(false);
   const [copiedYapePhone, setCopiedYapePhone] = useState(false);
 
@@ -395,21 +395,21 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50/70 text-stone-800 font-sans pb-24 selection:bg-rose-100 selection:text-rose-900">
-      {/* Top Banner de Confianza */}
-      <div className="bg-neutral-900 text-neutral-300 text-[11px] py-1.5 px-4 text-center tracking-wide font-medium flex items-center justify-center gap-2">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-        <span>Atención directa por WhatsApp • Envíos a domicilio en Lima y Callao</span>
+    <div className="min-h-screen bg-rose-50 text-ink-900 font-sans pb-28 selection:bg-rose-500 selection:text-ink-900">
+      {/* Top Banner de Confianza - Alta Gama */}
+      <div className="bg-ink-950 text-rose-100 text-[11px] py-2 px-4 text-center tracking-wide font-medium flex items-center justify-center gap-2 border-b border-ink-900">
+        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-rose-pulse" />
+        <span>Diseño Floral de Alta Gama • Envíos a Domicilio Exclusivos en Lima y Callao</span>
       </div>
 
-      {/* Header Fijo con Identidad PETALIA */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-stone-200/80 shadow-xs">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+      {/* Header Fijo con Identidad PETALIA & Palo Rosa */}
+      <header className="sticky top-0 z-30 bg-rose-50/95 backdrop-blur-md border-b border-warm-100 shadow-xs">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 group">
             <img
               src={storeSettings?.logo_url || '/images/logo.jpg'}
               alt="PETALIA Diseño Floral"
-              className="h-11 sm:h-12 w-auto object-contain rounded-xl transition transform group-hover:scale-102 shadow-xs"
+              className="h-11 sm:h-12 w-auto object-contain rounded-xl transition transform group-hover:scale-102 shadow-2xs border border-warm-100"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/images/logo.jpg';
               }}
@@ -423,7 +423,7 @@ export default function HomePage() {
                 setTrackingError(null);
                 setIsTrackingModalOpen(true);
               }}
-              className="flex items-center gap-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 px-3 py-1.5 rounded-full text-xs font-semibold transition active:scale-95 border border-stone-200"
+              className="flex items-center gap-1.5 bg-rose-100 hover:bg-rose-50 text-warm-500 hover:text-ink-900 px-3.5 py-1.5 rounded-full text-xs font-semibold transition active:scale-[0.98] border border-warm-100"
               title="Rastrear estado de pedido en vivo"
             >
               <Truck className="w-3.5 h-3.5 text-rose-600" />
@@ -434,13 +434,13 @@ export default function HomePage() {
             {/* BOTÓN DEL CARRITO DE COMPRAS CON BADGE DINÁMICO */}
             <button
               onClick={() => setIsCartOpen(true)}
-              className="relative flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 px-3.5 py-1.5 rounded-full text-xs font-semibold transition active:scale-95 border border-rose-200"
+              className="relative flex items-center gap-1.5 bg-rose-100 hover:bg-rose-50 text-ink-900 px-3.5 py-1.5 rounded-full text-xs font-semibold transition active:scale-[0.98] border border-rose-500/60 shadow-2xs"
               title="Ver carrito de compras"
             >
               <ShoppingCart className="w-3.5 h-3.5 text-rose-600" />
               <span className="hidden sm:inline">Carrito</span>
               {totalCartItems > 0 && (
-                <span className="bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
+                <span className="bg-accent-carmine text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
                   {totalCartItems}
                 </span>
               )}
@@ -453,50 +453,50 @@ export default function HomePage() {
               )}`}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-sm transition active:scale-95"
+              className="flex items-center gap-1.5 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 px-4 py-1.5 rounded-full text-xs font-semibold shadow-xs border border-ink-900 hover:border-rose-600 transition active:scale-[0.98]"
             >
-              <MessageCircle className="w-4 h-4 fill-white/20" />
+              <MessageCircle className="w-3.5 h-3.5 fill-current opacity-80" />
               <span>WhatsApp</span>
             </a>
 
             {/* Acceso Administrativo Elegante */}
             <Link
               href="/admin/login"
-              className="p-2 text-stone-400 hover:text-stone-800 hover:bg-stone-100 rounded-full transition"
+              className="p-2 text-warm-500 hover:text-ink-900 hover:bg-rose-100 rounded-full transition"
               title="Panel Administrativo"
               aria-label="Acceso al Panel Administrativo"
             >
-              <Lock className="w-4 h-4" />
+              <Lock className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
 
-        {/* Pestañas Dinámicas de Categoría desde Supabase con productos activos */}
-        <div className="border-t border-stone-100">
-          <div className="max-w-5xl mx-auto px-4 py-2.5 flex gap-2 overflow-x-auto no-scrollbar text-xs">
+        {/* Pestañas de Categoría (Pills de Navegación Palo Rosa) */}
+        <div className="border-t border-warm-100">
+          <div className="max-w-6xl mx-auto px-4 py-2.5 flex gap-2 overflow-x-auto no-scrollbar text-xs">
             {/* Pestaña "Todos" */}
             <button
               onClick={() => setCategory('todos')}
-              className={`px-4 py-1.5 rounded-full whitespace-nowrap font-medium transition-all ${
+              className={`px-4 py-1.5 rounded-full whitespace-nowrap transition-all ${
                 category === 'todos'
-                  ? 'bg-stone-900 text-white shadow-sm'
-                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                  ? 'bg-rose-500 text-ink-900 font-semibold shadow-xs border border-rose-600'
+                  : 'bg-rose-100 text-warm-500 border border-warm-100 hover:bg-rose-50 hover:text-ink-900 font-medium'
               }`}
             >
-              Todos
+              Todos los Diseños
             </button>
 
-            {/* Pestañas Dinámicas conectadas a public.categories con productos activos */}
+            {/* Pestañas Dinámicas conectadas a public.categories */}
             {activeCategories.map((tab) => {
               const isActive = category.toLowerCase() === tab.slug.toLowerCase();
               return (
                 <button
                   key={tab.id}
                   onClick={() => setCategory(tab.slug)}
-                  className={`px-4 py-1.5 rounded-full whitespace-nowrap font-medium transition-all ${
+                  className={`px-4 py-1.5 rounded-full whitespace-nowrap transition-all ${
                     isActive
-                      ? 'bg-stone-900 text-white shadow-sm'
-                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                      ? 'bg-rose-500 text-ink-900 font-semibold shadow-xs border border-rose-600'
+                      : 'bg-rose-100 text-warm-500 border border-warm-100 hover:bg-rose-50 hover:text-ink-900 font-medium'
                   }`}
                 >
                   {tab.name}
@@ -507,31 +507,31 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Catálogo de Productos con Filtro Dinámico */}
-      <main className="max-w-5xl mx-auto px-4 py-6">
+      {/* Catálogo de Productos - Grilla 2 Cols Móvil & 4 Cols Desktop */}
+      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-24 text-stone-400 space-y-3">
-            <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
-            <p className="text-xs">Cargando los arreglos más frescos de Lima...</p>
+          <div className="flex flex-col items-center justify-center py-24 text-warm-500 space-y-3">
+            <Loader2 className="w-8 h-8 animate-spin text-rose-600" />
+            <p className="text-xs font-medium">Cargando la colección floral exclusiva de PETALIA...</p>
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div className="text-center py-24 bg-white rounded-3xl border border-stone-200/80 p-8 space-y-3 shadow-xs">
-            <Flower2 className="w-12 h-12 text-stone-300 mx-auto stroke-1" />
-            <p className="text-sm font-semibold text-stone-700">
+          <div className="text-center py-24 bg-white rounded-3xl border border-warm-100 p-8 space-y-3 shadow-xs">
+            <Flower2 className="w-12 h-12 text-rose-600 mx-auto stroke-1" />
+            <p className="text-sm font-bold text-ink-900">
               No hay arreglos disponibles en esta categoría.
             </p>
-            <p className="text-xs text-stone-500">
-              Explora otras categorías o consúltanos directamente por WhatsApp.
+            <p className="text-xs text-warm-500">
+              Explora otras colecciones o consúltanos directamente por WhatsApp.
             </p>
             <button
               onClick={() => setCategory('todos')}
-              className="text-xs text-rose-600 font-medium hover:underline pt-1 inline-block"
+              className="text-xs text-rose-600 font-semibold hover:underline pt-1 inline-block"
             >
               Ver todos los arreglos
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6">
             {filteredProducts.map((product) => {
               const hasPromo =
                 product.promotional_price !== null && product.promotional_price > 0;
@@ -549,9 +549,9 @@ export default function HomePage() {
               return (
                 <div
                   key={product.id}
-                  className="group bg-white rounded-2xl sm:rounded-3xl border border-stone-200/80 shadow-xs overflow-hidden flex flex-col transition hover:shadow-md hover:border-stone-300"
+                  className="group bg-white rounded-2xl border border-warm-100 shadow-xs hover:shadow-rose overflow-hidden flex flex-col transition hover:border-rose-600/60"
                 >
-                  {/* Foto Cuadrada en Alta Definición */}
+                  {/* Foto Cuadrada en Alta Definición con Zoom Suave */}
                   <div
                     onClick={() => {
                       setSelectedProduct(product);
@@ -559,27 +559,29 @@ export default function HomePage() {
                       setDeliveryDate('');
                       setDedication('');
                     }}
-                    className="relative aspect-square w-full bg-stone-100 overflow-hidden cursor-pointer"
+                    className="relative aspect-square w-full bg-rose-100 overflow-hidden cursor-pointer rounded-t-2xl"
                   >
                     <img
                       src={product.image_url}
                       alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                       loading="lazy"
                     />
 
+                    {/* Insignia Oferta */}
                     {hasPromo && (
-                      <span className="absolute top-2 left-2 bg-rose-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm tracking-wide">
+                      <span className="absolute top-2.5 left-2.5 bg-rose-100 text-accent-carmine border border-accent-carmine/30 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs">
                         OFERTA
                       </span>
                     )}
 
-                    <span className="absolute bottom-2 right-2 bg-stone-900/70 backdrop-blur-md text-white text-[10px] font-medium px-2 py-0.5 rounded-full capitalize">
+                    {/* Insignia Categoría */}
+                    <span className="absolute bottom-2.5 right-2.5 bg-ink-900/80 backdrop-blur-md text-rose-50 text-[10px] font-semibold tracking-wider px-2.5 py-0.5 rounded-full uppercase">
                       {catBadgeName}
                     </span>
                   </div>
 
-                  {/* Detalle del Arreglo */}
+                  {/* Detalle del Arreglo Floral */}
                   <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between space-y-2.5">
                     <div
                       onClick={() => {
@@ -590,43 +592,44 @@ export default function HomePage() {
                       }}
                       className="cursor-pointer"
                     >
-                      <h3 className="font-semibold text-xs sm:text-sm text-stone-900 line-clamp-1 group-hover:text-rose-600 transition">
+                      <h3 className="font-bold text-xs sm:text-sm text-ink-900 line-clamp-1 group-hover:text-rose-600 transition tracking-tight">
                         {product.name}
                       </h3>
-                      <p className="text-[11px] text-stone-500 line-clamp-1 mt-0.5">
+                      <p className="text-[11px] text-warm-500 line-clamp-1 mt-0.5">
                         {product.description || 'Detalle floral exclusivo'}
                       </p>
                     </div>
 
+                    {/* Jerarquía de Precios */}
                     <div className="flex items-baseline justify-between pt-0.5">
                       <div className="flex items-baseline gap-1.5">
-                        <span className="text-sm sm:text-base font-bold text-stone-900 font-mono">
+                        <span className="text-sm sm:text-base font-bold text-ink-900 font-mono">
                           S/ {finalPrice.toFixed(2)}
                         </span>
                         {hasPromo && (
-                          <span className="text-[11px] text-stone-400 line-through font-mono">
+                          <span className="text-xs text-warm-300 line-through font-mono">
                             S/ {product.price.toFixed(2)}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* BOTÓN Y SELECTOR DE CANTIDAD PARA AGREGAR AL CARRITO */}
-                    <div className="pt-1 border-t border-stone-100">
+                    {/* BOTÓN PRINCIPAL Y SELECTOR DE CANTIDAD */}
+                    <div className="pt-1 border-t border-warm-100">
                       {cartItem ? (
-                        <div className="flex items-center justify-between bg-rose-50 border border-rose-200 rounded-xl p-1">
+                        <div className="flex items-center justify-between bg-rose-100 border border-rose-500 rounded-xl p-1">
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               updateCartQuantity(product.id, -1);
                             }}
-                            className="w-7 h-7 rounded-lg bg-white text-rose-700 hover:bg-rose-100 flex items-center justify-center transition shadow-xs"
+                            className="w-7 h-7 rounded-lg bg-white text-ink-900 hover:bg-rose-50 flex items-center justify-center transition shadow-2xs border border-warm-100"
                             title="Disminuir"
                           >
                             <Minus className="w-3.5 h-3.5" />
                           </button>
-                          <span className="text-xs font-bold text-rose-950 font-mono px-2">
+                          <span className="text-xs font-bold text-ink-900 font-mono px-2">
                             {cartItem.quantity} en carrito
                           </span>
                           <button
@@ -635,7 +638,7 @@ export default function HomePage() {
                               e.stopPropagation();
                               updateCartQuantity(product.id, 1);
                             }}
-                            className="w-7 h-7 rounded-lg bg-rose-600 text-white hover:bg-rose-700 flex items-center justify-center transition shadow-xs"
+                            className="w-7 h-7 rounded-lg bg-ink-900 text-white hover:bg-rose-600 flex items-center justify-center transition shadow-2xs"
                             title="Aumentar"
                           >
                             <Plus className="w-3.5 h-3.5" />
@@ -648,7 +651,7 @@ export default function HomePage() {
                             e.stopPropagation();
                             addToCart(product, 1);
                           }}
-                          className="w-full flex items-center justify-center gap-1.5 bg-stone-900 hover:bg-rose-600 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-xs transition active:scale-95"
+                          className="w-full flex items-center justify-center gap-1.5 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 py-2 px-3 rounded-xl text-xs font-semibold shadow-xs border border-ink-900 hover:border-rose-600 transition active:scale-[0.98]"
                         >
                           <ShoppingCart className="w-3.5 h-3.5" />
                           <span>Agregar al carrito</span>
@@ -665,41 +668,41 @@ export default function HomePage() {
 
       {/* MODAL: Vista Previa y Personalización de Producto */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto">
-            <div className="flex justify-between items-center border-b border-stone-100 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto border border-warm-100">
+            <div className="flex justify-between items-center border-b border-warm-100 pb-3">
               <div>
-                <h3 className="font-bold text-base text-stone-900">{selectedProduct.name}</h3>
-                <p className="text-xs text-stone-500">
-                  {selectedProduct.category ? `Categoría: ${selectedProduct.category}` : 'Florería Petalia'}
+                <h3 className="font-bold text-base text-ink-900 tracking-tight">{selectedProduct.name}</h3>
+                <p className="text-xs text-warm-500">
+                  {selectedProduct.category ? `Colección: ${selectedProduct.category}` : 'Florería Petalia'}
                 </p>
               </div>
               <button
                 onClick={() => setSelectedProduct(null)}
-                className="p-1.5 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition"
+                className="p-1.5 rounded-full text-warm-500 hover:text-ink-900 hover:bg-rose-100 transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Arreglo Preview */}
-            <div className="flex gap-3.5 items-center bg-stone-50 p-3 rounded-2xl border border-stone-100">
+            <div className="flex gap-3.5 items-center bg-rose-50 p-3 rounded-2xl border border-warm-100">
               <img
                 src={selectedProduct.image_url}
                 alt={selectedProduct.name}
-                className="w-20 h-20 rounded-2xl object-cover border border-stone-200 shadow-xs"
+                className="w-20 h-20 rounded-2xl object-cover border border-warm-100 shadow-2xs"
               />
               <div className="flex-1">
-                <p className="text-xs text-stone-600">
-                  {selectedProduct.description || 'Diseño floral artesanal con flores frescas'}
+                <p className="text-xs text-warm-500">
+                  {selectedProduct.description || 'Diseño floral artesanal con flores frescas de primera calidad'}
                 </p>
                 <div className="flex items-baseline gap-1.5 mt-2">
-                  <span className="text-rose-600 font-bold text-lg font-mono">
+                  <span className="text-ink-900 font-bold text-lg font-mono">
                     S/{' '}
                     {(selectedProduct.promotional_price || selectedProduct.price).toFixed(2)}
                   </span>
                   {selectedProduct.promotional_price && (
-                    <span className="text-xs text-stone-400 line-through font-mono">
+                    <span className="text-xs text-warm-300 line-through font-mono">
                       S/ {selectedProduct.price.toFixed(2)}
                     </span>
                   )}
@@ -708,23 +711,23 @@ export default function HomePage() {
             </div>
 
             {/* Selector de Cantidad */}
-            <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-100 flex items-center justify-between">
-              <span className="text-xs font-semibold text-stone-700">Cantidad deseada:</span>
+            <div className="bg-rose-100 p-3.5 rounded-2xl border border-warm-100 flex items-center justify-between">
+              <span className="text-xs font-semibold text-ink-900">Cantidad deseada:</span>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setModalQuantity((prev) => Math.max(1, prev - 1))}
-                  className="w-8 h-8 rounded-xl bg-white border border-stone-200 text-stone-700 hover:bg-stone-100 flex items-center justify-center font-bold"
+                  className="w-8 h-8 rounded-xl bg-white border border-warm-100 text-ink-900 hover:bg-rose-50 flex items-center justify-center font-bold"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
-                <span className="text-sm font-bold font-mono text-stone-900 w-6 text-center">
+                <span className="text-sm font-bold font-mono text-ink-900 w-6 text-center">
                   {modalQuantity}
                 </span>
                 <button
                   type="button"
                   onClick={() => setModalQuantity((prev) => prev + 1)}
-                  className="w-8 h-8 rounded-xl bg-stone-900 text-white hover:bg-stone-800 flex items-center justify-center font-bold"
+                  className="w-8 h-8 rounded-xl bg-ink-900 text-white hover:bg-rose-600 flex items-center justify-center font-bold"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
@@ -740,7 +743,7 @@ export default function HomePage() {
                   setSelectedProduct(null);
                   setIsCartOpen(true);
                 }}
-                className="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3 rounded-2xl shadow-md transition active:scale-98 flex items-center justify-center gap-2 text-xs"
+                className="w-full bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 font-semibold py-3.5 rounded-xl shadow-md transition active:scale-[0.98] flex items-center justify-center gap-2 text-xs border border-ink-900 hover:border-rose-600"
               >
                 <ShoppingCart className="w-4 h-4" />
                 <span>
@@ -758,9 +761,9 @@ export default function HomePage() {
                   setSelectedProduct(null);
                   setIsCheckoutModalOpen(true);
                 }}
-                className="w-full bg-stone-900 hover:bg-stone-800 text-white font-semibold py-3 rounded-2xl shadow-sm transition active:scale-98 flex items-center justify-center gap-2 text-xs"
+                className="w-full bg-rose-500 hover:bg-rose-600 text-ink-900 font-bold py-3.5 rounded-xl shadow-xs transition active:scale-[0.98] flex items-center justify-center gap-2 text-xs border border-rose-600"
               >
-                <ArrowRight className="w-4 h-4 text-emerald-400" />
+                <ArrowRight className="w-4 h-4 text-ink-900" />
                 <span>Comprar Ahora</span>
               </button>
             </div>
@@ -771,23 +774,23 @@ export default function HomePage() {
       {/* DRAWER LATERAL: Carrito de Compras */}
       {isCartOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+          <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 border-l border-warm-100">
             {/* Header del Carrito */}
-            <div className="p-4 sm:p-5 border-b border-stone-200/80 flex items-center justify-between">
+            <div className="p-4 sm:p-5 border-b border-warm-100 flex items-center justify-between bg-rose-50">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center border border-warm-100">
                   <ShoppingBag className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm sm:text-base text-stone-900">Tu Carrito Floral</h3>
-                  <p className="text-[11px] text-stone-500">
-                    {totalCartItems} {totalCartItems === 1 ? 'producto agregado' : 'productos agregados'}
+                  <h3 className="font-bold text-sm sm:text-base text-ink-900 tracking-tight">Tu Carrito Floral</h3>
+                  <p className="text-[11px] text-warm-500">
+                    {totalCartItems} {totalCartItems === 1 ? 'producto seleccionado' : 'productos seleccionados'}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsCartOpen(false)}
-                className="p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-xl transition"
+                className="p-2 text-warm-500 hover:text-ink-900 hover:bg-rose-100 rounded-xl transition"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -797,20 +800,20 @@ export default function HomePage() {
             <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
               {cart.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center py-12 space-y-3">
-                  <div className="w-16 h-16 rounded-full bg-stone-100 flex items-center justify-center text-stone-400">
-                    <Flower2 className="w-8 h-8" />
+                  <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 border border-warm-100">
+                    <Flower2 className="w-8 h-8 stroke-1" />
                   </div>
                   <div>
-                    <p className="font-semibold text-stone-800 text-sm">Tu carrito está vacío</p>
-                    <p className="text-xs text-stone-500 mt-1 max-w-xs">
+                    <p className="font-bold text-ink-900 text-sm">Tu carrito está vacío</p>
+                    <p className="text-xs text-warm-500 mt-1 max-w-xs">
                       Explora nuestros ramos, boxes y detalles florales para sorprender a quien más quieres.
                     </p>
                   </div>
                   <button
                     onClick={() => setIsCartOpen(false)}
-                    className="px-5 py-2.5 rounded-xl bg-stone-900 text-white text-xs font-semibold shadow hover:bg-stone-800 transition"
+                    className="px-5 py-2.5 rounded-xl bg-ink-900 hover:bg-rose-600 text-white text-xs font-semibold shadow hover:text-ink-900 transition active:scale-[0.98]"
                   >
-                    Ver Catálogo Floral
+                    Ver Colección Floral
                   </button>
                 </div>
               ) : (
@@ -820,37 +823,37 @@ export default function HomePage() {
                   return (
                     <div
                       key={item.product.id}
-                      className="bg-stone-50/80 border border-stone-200/80 rounded-2xl p-3 flex gap-3 items-center hover:bg-white transition"
+                      className="bg-rose-50 border border-warm-100 rounded-2xl p-3 flex gap-3 items-center hover:border-rose-500/60 transition"
                     >
                       <img
                         src={item.product.image_url}
                         alt={item.product.name}
-                        className="w-16 h-16 rounded-xl object-cover border border-stone-200 shadow-2xs shrink-0"
+                        className="w-16 h-16 rounded-xl object-cover border border-warm-100 shadow-2xs shrink-0"
                       />
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-xs text-stone-900 truncate">
+                        <h4 className="font-bold text-xs text-ink-900 truncate tracking-tight">
                           {item.product.name}
                         </h4>
-                        <p className="text-[11px] text-stone-500 font-mono mt-0.5">
+                        <p className="text-[11px] text-warm-500 font-mono mt-0.5">
                           S/ {finalPrice.toFixed(2)} c/u
                         </p>
                         <div className="flex items-center gap-2 mt-2">
-                          <div className="flex items-center border border-stone-200 bg-white rounded-lg">
+                          <div className="flex items-center border border-warm-100 bg-white rounded-lg">
                             <button
                               type="button"
                               onClick={() => updateCartQuantity(item.product.id, -1)}
-                              className="p-1 hover:bg-stone-100 text-stone-600 rounded-l-lg"
+                              className="p-1 hover:bg-rose-100 text-ink-900 rounded-l-lg"
                               title="Disminuir"
                             >
                               <Minus className="w-3 h-3" />
                             </button>
-                            <span className="text-xs font-bold font-mono px-2 text-stone-800">
+                            <span className="text-xs font-bold font-mono px-2 text-ink-900">
                               {item.quantity}
                             </span>
                             <button
                               type="button"
                               onClick={() => updateCartQuantity(item.product.id, 1)}
-                              className="p-1 hover:bg-stone-100 text-stone-600 rounded-r-lg"
+                              className="p-1 hover:bg-rose-100 text-ink-900 rounded-r-lg"
                               title="Aumentar"
                             >
                               <Plus className="w-3 h-3" />
@@ -859,7 +862,7 @@ export default function HomePage() {
                           <button
                             type="button"
                             onClick={() => removeFromCart(item.product.id)}
-                            className="text-stone-400 hover:text-rose-600 p-1 transition"
+                            className="text-warm-500 hover:text-accent-carmine p-1 transition"
                             title="Eliminar del carrito"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -867,7 +870,7 @@ export default function HomePage() {
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="font-bold font-mono text-sm text-stone-900 block">
+                        <span className="font-bold font-mono text-sm text-ink-900 block">
                           S/ {itemTotal.toFixed(2)}
                         </span>
                       </div>
@@ -879,21 +882,21 @@ export default function HomePage() {
 
             {/* Footer con Subtotal y Checkout */}
             {cart.length > 0 && (
-              <div className="p-4 sm:p-5 border-t border-stone-200/80 bg-stone-50/50 space-y-3">
+              <div className="p-4 sm:p-5 border-t border-warm-100 bg-rose-50 space-y-3">
                 <div className="space-y-1.5">
-                  <div className="flex justify-between items-center text-xs text-stone-500">
+                  <div className="flex justify-between items-center text-xs text-warm-500">
                     <span>Subtotal de arreglos:</span>
-                    <span className="font-mono font-semibold text-stone-800">
+                    <span className="font-mono font-semibold text-ink-900">
                       S/ {cartSubtotal.toFixed(2)}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center text-xs text-stone-500">
+                  <div className="flex justify-between items-center text-xs text-warm-500">
                     <span>Envío:</span>
-                    <span className="text-emerald-600 font-semibold">Coordinado por WhatsApp</span>
+                    <span className="text-ink-900 font-semibold">Coordinado por WhatsApp</span>
                   </div>
-                  <div className="flex justify-between items-baseline pt-2 border-t border-stone-200 text-sm">
-                    <span className="font-bold text-stone-900">Total a pagar:</span>
-                    <span className="font-bold font-mono text-lg text-rose-600">
+                  <div className="flex justify-between items-baseline pt-2 border-t border-warm-100 text-sm">
+                    <span className="font-bold text-ink-900">Total a pagar:</span>
+                    <span className="font-bold font-mono text-lg text-ink-900">
                       S/ {cartSubtotal.toFixed(2)}
                     </span>
                   </div>
@@ -905,15 +908,15 @@ export default function HomePage() {
                       setIsCartOpen(false);
                       setIsCheckoutModalOpen(true);
                     }}
-                    className="w-full bg-gradient-to-r from-stone-900 to-stone-800 hover:from-stone-800 hover:to-stone-700 text-white font-semibold py-3.5 rounded-2xl shadow-lg transition active:scale-98 flex items-center justify-center gap-2 text-xs sm:text-sm"
+                    className="w-full bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 font-semibold py-3.5 rounded-xl shadow-md transition active:scale-[0.98] flex items-center justify-center gap-2 text-xs sm:text-sm border border-ink-900 hover:border-rose-600"
                   >
                     <span>Continuar compra</span>
-                    <ArrowRight className="w-4 h-4 text-emerald-400" />
+                    <ArrowRight className="w-4 h-4 text-rose-500" />
                   </button>
 
                   <button
                     onClick={clearCart}
-                    className="w-full text-center text-[11px] text-stone-400 hover:text-stone-600 py-1 transition"
+                    className="w-full text-center text-[11px] text-warm-500 hover:text-ink-900 py-1 transition"
                   >
                     Vaciar carrito
                   </button>
@@ -926,30 +929,30 @@ export default function HomePage() {
 
       {/* MODAL: Checkout Unificado Multi-producto */}
       {isCheckoutModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-white border border-stone-200 max-w-xl w-full rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[94vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-white border border-warm-100 max-w-xl w-full rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[94vh] overflow-y-auto">
             {orderSuccessData ? (
               /* PANTALLA DE ÉXITO DE COMPRA */
               <div className="text-center space-y-4 py-4 animate-in zoom-in-95 duration-200">
-                <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
+                <div className="w-14 h-14 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto shadow-xs border border-rose-500">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
                 <div>
-                  <h3 className="text-lg sm:text-xl font-bold text-stone-900">
+                  <h3 className="text-lg sm:text-xl font-bold text-ink-900 tracking-tight">
                     ¡Tu Pedido ha sido Registrado con Éxito! 🌸
                   </h3>
-                  <p className="text-xs text-stone-500 mt-1">
+                  <p className="text-xs text-warm-500 mt-1">
                     Hemos reservado tus arreglos florales frescos en nuestro sistema.
                   </p>
                 </div>
 
                 {/* Tarjeta de Código de Rastreo */}
-                <div className="bg-stone-50 border border-stone-200/80 rounded-2xl p-4 max-w-sm mx-auto space-y-2">
-                  <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider block">
+                <div className="bg-rose-50 border border-warm-100 rounded-2xl p-4 max-w-sm mx-auto space-y-2">
+                  <span className="text-[11px] font-semibold text-warm-500 uppercase tracking-wider block">
                     Tu Código de Rastreo en Vivo
                   </span>
                   <div className="flex items-center justify-center gap-2">
-                    <span className="text-xl font-bold font-mono text-rose-600">
+                    <span className="text-xl font-bold font-mono text-ink-900">
                       {orderSuccessData.trackingCode}
                     </span>
                     <button
@@ -957,13 +960,13 @@ export default function HomePage() {
                         navigator.clipboard.writeText(orderSuccessData.trackingCode);
                         alert('¡Código de rastreo copiado!');
                       }}
-                      className="p-1.5 rounded-lg bg-white border border-stone-200 hover:bg-stone-100 text-stone-600 transition"
+                      className="p-1.5 rounded-lg bg-white border border-warm-100 hover:bg-rose-100 text-warm-500 transition"
                       title="Copiar código"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
                   </div>
-                  <p className="text-[11px] text-stone-400">
+                  <p className="text-[11px] text-warm-500">
                     Total del pedido: S/ {orderSuccessData.total.toFixed(2)}
                   </p>
                 </div>
@@ -974,10 +977,10 @@ export default function HomePage() {
                     href={orderSuccessData.whatsappUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-2xl shadow-lg shadow-emerald-950/20 transition active:scale-98 flex items-center justify-center gap-2 text-xs sm:text-sm"
+                    className="w-full bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 font-semibold py-3.5 rounded-xl shadow-lg transition active:scale-[0.98] flex items-center justify-center gap-2 text-xs sm:text-sm border border-ink-900 hover:border-rose-600"
                   >
-                    <MessageCircle className="w-5 h-5 fill-white/20" />
-                    <span>Enviar Detalles y Voucher por WhatsApp</span>
+                    <MessageCircle className="w-5 h-5 fill-current opacity-80" />
+                    <span>Enviar Detalles y Comprobante por WhatsApp</span>
                   </a>
 
                   <button
@@ -990,7 +993,7 @@ export default function HomePage() {
                       setIsTrackingModalOpen(true);
                       lookupTrackingOrder(code);
                     }}
-                    className="w-full py-2.5 rounded-xl border border-stone-200 text-stone-700 hover:bg-stone-50 text-xs font-semibold transition"
+                    className="w-full py-2.5 rounded-xl border border-warm-100 bg-rose-100 hover:bg-rose-50 text-ink-900 text-xs font-semibold transition"
                   >
                     Ver Rastreo en Vivo
                   </button>
@@ -1000,14 +1003,14 @@ export default function HomePage() {
               /* FORMULARIO DE FINALIZACIÓN DE COMPRA */
               <form onSubmit={handleCheckoutSubmit} className="space-y-4">
                 {/* Header */}
-                <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+                <div className="flex items-center justify-between border-b border-warm-100 pb-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-stone-900 text-white flex items-center justify-center shadow-xs">
-                      <CreditCard className="w-4 h-4" />
+                    <div className="w-9 h-9 rounded-xl bg-ink-900 text-white flex items-center justify-center shadow-xs">
+                      <CreditCard className="w-4 h-4 text-rose-500" />
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-stone-900">Finalizar Compra</h3>
-                      <p className="text-xs text-stone-500">
+                      <h3 className="text-base font-bold text-ink-900 tracking-tight">Finalizar Compra</h3>
+                      <p className="text-xs text-warm-500">
                         {cart.length} {cart.length === 1 ? 'arreglo floral' : 'arreglos florales'} en tu pedido
                       </p>
                     </div>
@@ -1015,27 +1018,27 @@ export default function HomePage() {
                   <button
                     type="button"
                     onClick={() => setIsCheckoutModalOpen(false)}
-                    className="p-1.5 text-stone-400 hover:text-stone-700 rounded-xl hover:bg-stone-100 transition"
+                    className="p-1.5 text-warm-500 hover:text-ink-900 rounded-xl hover:bg-rose-100 transition"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
                 {/* Resumen Compacto de Productos */}
-                <div className="bg-stone-50 rounded-2xl p-3 border border-stone-200/80 space-y-2">
+                <div className="bg-rose-50 rounded-2xl p-3 border border-warm-100 space-y-2">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="font-semibold text-stone-700">Resumen del Pedido:</span>
-                    <span className="font-mono font-bold text-rose-600 text-sm">
+                    <span className="font-semibold text-ink-900">Resumen del Pedido:</span>
+                    <span className="font-mono font-bold text-ink-900 text-sm">
                       Total: S/ {cartSubtotal.toFixed(2)}
                     </span>
                   </div>
-                  <div className="max-h-24 overflow-y-auto space-y-1 pr-1 text-[11px] text-stone-600 divide-y divide-stone-200/50">
+                  <div className="max-h-24 overflow-y-auto space-y-1 pr-1 text-[11px] text-warm-500 divide-y divide-warm-100">
                     {cart.map((item) => (
                       <div key={item.product.id} className="pt-1 first:pt-0 flex justify-between">
                         <span className="truncate max-w-[240px]">
                           • {item.product.name} (x{item.quantity})
                         </span>
-                        <span className="font-mono font-medium">
+                        <span className="font-mono font-medium text-ink-900">
                           S/{' '}
                           {(
                             (item.product.promotional_price || item.product.price) * item.quantity
@@ -1053,7 +1056,7 @@ export default function HomePage() {
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
-                      <label className="block text-xs font-semibold text-stone-700 mb-1">
+                      <label className="block text-xs font-semibold text-ink-900 mb-1">
                         Tu Nombre Completo *
                       </label>
                       <input
@@ -1062,11 +1065,11 @@ export default function HomePage() {
                         value={buyerName}
                         onChange={(e) => setBuyerName(e.target.value)}
                         placeholder="Ej. Carlos Mendoza"
-                        className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs outline-none focus:border-stone-900 bg-white"
+                        className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-stone-700 mb-1">
+                      <label className="block text-xs font-semibold text-ink-900 mb-1">
                         Tu WhatsApp / Celular *
                       </label>
                       <input
@@ -1075,20 +1078,20 @@ export default function HomePage() {
                         value={buyerPhone}
                         onChange={(e) => setBuyerPhone(e.target.value)}
                         placeholder="Ej. 987654321"
-                        className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs outline-none focus:border-stone-900 bg-white font-mono"
+                        className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900 font-mono"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* 2. Datos de Entrega */}
-                <div className="space-y-2 pt-1 border-t border-stone-100">
-                  <span className="text-[11px] font-bold text-sky-600 uppercase tracking-wider block">
+                <div className="space-y-2 pt-1 border-t border-warm-100">
+                  <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider block">
                     2. Datos del Destinatario y Entrega
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
-                      <label className="block text-xs font-semibold text-stone-700 mb-1">
+                      <label className="block text-xs font-semibold text-ink-900 mb-1">
                         Nombre de Quien Recibe *
                       </label>
                       <input
@@ -1097,11 +1100,11 @@ export default function HomePage() {
                         value={recipientName}
                         onChange={(e) => setRecipientName(e.target.value)}
                         placeholder="Ej. María López"
-                        className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs outline-none focus:border-stone-900 bg-white"
+                        className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-stone-700 mb-1">
+                      <label className="block text-xs font-semibold text-ink-900 mb-1">
                         Fecha de Entrega *
                       </label>
                       <input
@@ -1109,7 +1112,7 @@ export default function HomePage() {
                         required
                         value={checkoutDeliveryDate}
                         onChange={(e) => setCheckoutDeliveryDate(e.target.value)}
-                        className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs outline-none focus:border-stone-900 bg-white"
+                        className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900"
                       />
                       <div className="flex gap-1.5 mt-1">
                         <button
@@ -1118,7 +1121,7 @@ export default function HomePage() {
                             const today = new Date().toISOString().split('T')[0];
                             setCheckoutDeliveryDate(today);
                           }}
-                          className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium transition"
+                          className="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 hover:bg-rose-50 text-ink-900 font-medium border border-warm-100 transition"
                         >
                           Hoy mismo
                         </button>
@@ -1129,7 +1132,7 @@ export default function HomePage() {
                             tom.setDate(tom.getDate() + 1);
                             setCheckoutDeliveryDate(tom.toISOString().split('T')[0]);
                           }}
-                          className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium transition"
+                          className="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 hover:bg-rose-50 text-ink-900 font-medium border border-warm-100 transition"
                         >
                           Mañana
                         </button>
@@ -1138,7 +1141,7 @@ export default function HomePage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-stone-700 mb-1">
+                    <label className="block text-xs font-semibold text-ink-900 mb-1">
                       Dirección y Distrito de Entrega *
                     </label>
                     <input
@@ -1147,12 +1150,12 @@ export default function HomePage() {
                       value={deliveryAddress}
                       onChange={(e) => setDeliveryAddress(e.target.value)}
                       placeholder="Ej. Av. Larco 450, Miraflores (Dpto 402)"
-                      className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs outline-none focus:border-stone-900 bg-white"
+                      className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-stone-700 mb-1">
+                    <label className="block text-xs font-semibold text-ink-900 mb-1">
                       Dedicatoria para la Tarjeta (Opcional)
                     </label>
                     <textarea
@@ -1160,17 +1163,17 @@ export default function HomePage() {
                       value={checkoutDedication}
                       onChange={(e) => setCheckoutDedication(e.target.value)}
                       placeholder="Mensaje de amor, felicitación o cariño para adjuntar en la tarjeta..."
-                      className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs outline-none focus:border-stone-900 resize-none bg-white placeholder-stone-400"
+                      className="w-full border border-warm-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 resize-none bg-white text-ink-900 placeholder-warm-300"
                     />
-                    <p className="text-[10px] text-stone-500">
+                    <p className="text-[10px] text-warm-500">
                       Incluye tarjeta de dedicatoria impresa de alta calidad de cortesía.
                     </p>
                   </div>
                 </div>
 
                 {/* 3. Selección de Método de Pago con QR de Yape integrado */}
-                <div className="space-y-2 pt-1 border-t border-stone-100">
-                  <span className="text-[11px] font-bold text-purple-700 uppercase tracking-wider block">
+                <div className="space-y-2 pt-1 border-t border-warm-100">
+                  <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider block">
                     3. Método de Pago
                   </span>
                   <div className="grid grid-cols-3 gap-2">
@@ -1185,43 +1188,43 @@ export default function HomePage() {
                         onClick={() => setPaymentMethod(m.id)}
                         className={`p-2.5 rounded-2xl border text-left transition ${
                           paymentMethod === m.id
-                            ? 'border-purple-600 bg-purple-50/80 ring-2 ring-purple-600/20'
-                            : 'border-stone-200 hover:bg-stone-50'
+                            ? 'border-rose-600 bg-rose-100 ring-2 ring-rose-500/40'
+                            : 'border-warm-100 hover:bg-rose-50'
                         }`}
                       >
-                        <p className="font-bold text-xs text-stone-900">{m.label}</p>
-                        <p className="text-[10px] text-stone-500">{m.desc}</p>
+                        <p className="font-bold text-xs text-ink-900">{m.label}</p>
+                        <p className="text-[10px] text-warm-500">{m.desc}</p>
                       </button>
                     ))}
                   </div>
 
                   {/* QR de Yape interactivo si el cliente selecciona Yape / Plin */}
                   {(paymentMethod === 'yape' || paymentMethod === 'plin') && (
-                    <div className="bg-purple-50/80 border border-purple-200 rounded-2xl p-3.5 space-y-2.5 animate-in fade-in duration-200">
+                    <div className="bg-rose-100 border border-rose-500 rounded-2xl p-3.5 space-y-2.5 animate-in fade-in duration-200">
                       <div className="flex items-center gap-3">
                         <img
                           src={storeSettings?.yape_qr_url || '/images/qr-yape.png'}
                           alt="QR Yape Petalia"
-                          className="w-20 h-20 rounded-xl object-contain bg-white p-1 border border-purple-200 shadow-2xs shrink-0"
+                          className="w-20 h-20 rounded-xl object-contain bg-white p-1 border border-warm-100 shadow-2xs shrink-0"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = '/images/qr-yape.png';
                           }}
                         />
                         <div className="space-y-1">
-                          <p className="text-xs font-bold text-purple-950">
+                          <p className="text-xs font-bold text-ink-900">
                             Paga S/ {cartSubtotal.toFixed(2)} escaneando el QR
                           </p>
-                          <p className="text-[11px] text-purple-800">
-                            Número: <span className="font-mono font-bold">924 257 784</span> (PETALIA)
+                          <p className="text-[11px] text-warm-500">
+                            Número: <span className="font-mono font-bold text-ink-900">924 257 784</span> (PETALIA)
                           </p>
                           <button
                             type="button"
                             onClick={handleCopyYapePhone}
-                            className="inline-flex items-center gap-1 bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-1 rounded-lg text-[10px] font-semibold transition"
+                            className="inline-flex items-center gap-1 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition active:scale-[0.98]"
                           >
                             {copiedYapePhone ? (
                               <>
-                                <Check className="w-3 h-3" />
+                                <Check className="w-3 h-3 text-rose-500" />
                                 <span>¡Número Copiado!</span>
                               </>
                             ) : (
@@ -1233,25 +1236,25 @@ export default function HomePage() {
                           </button>
                         </div>
                       </div>
-                      <p className="text-[10px] text-purple-700">
-                        Al confirmar tu orden, se abrirá WhatsApp con el resumen de tu compra para que puedas adjuntar la constancia de pago.
+                      <p className="text-[10px] text-warm-500">
+                        Al confirmar tu orden, se abrirá WhatsApp con el resumen de tu compra para adjuntar la constancia de pago.
                       </p>
                     </div>
                   )}
 
                   {paymentMethod === 'transferencia' && (
-                    <div className="bg-blue-50/80 border border-blue-200 rounded-2xl p-3 text-xs text-blue-900 space-y-1">
-                      <p className="font-bold">Cuentas bancarias de PETALIA:</p>
-                      <p className="text-[11px] text-blue-800">
+                    <div className="bg-rose-100 border border-warm-100 rounded-2xl p-3 text-xs text-ink-900 space-y-1">
+                      <p className="font-bold">Cuentas bancarias oficiales de PETALIA:</p>
+                      <p className="text-[11px] text-warm-500">
                         • BCP / BBVA / Interbank (coordinación inmediata de cuenta al confirmar por WhatsApp).
                       </p>
                     </div>
                   )}
 
                   {paymentMethod === 'efectivo' && (
-                    <div className="bg-emerald-50/80 border border-emerald-200 rounded-2xl p-3 text-xs text-emerald-900 space-y-1">
+                    <div className="bg-rose-100 border border-warm-100 rounded-2xl p-3 text-xs text-ink-900 space-y-1">
                       <p className="font-bold">Pago en Efectivo:</p>
-                      <p className="text-[11px] text-emerald-800">
+                      <p className="text-[11px] text-warm-500">
                         Se abona al momento de la entrega previa confirmación telefónica con nuestro chofer.
                       </p>
                     </div>
@@ -1263,7 +1266,7 @@ export default function HomePage() {
                   <button
                     type="submit"
                     disabled={isSubmittingOrder}
-                    className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-3.5 rounded-2xl shadow-lg shadow-emerald-700/20 transition active:scale-98 flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50"
+                    className="w-full bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 font-semibold py-3.5 rounded-xl shadow-lg border border-ink-900 hover:border-rose-600 transition active:scale-[0.98] flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50"
                   >
                     {isSubmittingOrder ? (
                       <>
@@ -1272,7 +1275,7 @@ export default function HomePage() {
                       </>
                     ) : (
                       <>
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle2 className="w-4 h-4 text-rose-500" />
                         <span>Confirmar Pedido (S/ {cartSubtotal.toFixed(2)})</span>
                       </>
                     )}
@@ -1291,10 +1294,10 @@ export default function HomePage() {
         )}`}
         target="_blank"
         rel="noreferrer"
-        className="fixed bottom-24 right-5 z-40 bg-emerald-600 hover:bg-emerald-500 text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition transform hover:scale-105 active:scale-95 group shadow-emerald-950/20 border border-emerald-500/40"
+        className="fixed bottom-24 right-5 z-40 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 p-3.5 rounded-full shadow-2xl flex items-center justify-center transition transform hover:scale-105 active:scale-95 group border border-rose-600/60"
         title="Consultar al WhatsApp de PETALIA"
       >
-        <MessageCircle className="w-6 h-6 fill-white/20" />
+        <MessageCircle className="w-6 h-6 fill-current opacity-90" />
         <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out text-xs font-semibold pl-0 group-hover:pl-2">
           WhatsApp Ventas
         </span>
@@ -1304,12 +1307,12 @@ export default function HomePage() {
       {totalCartItems > 0 && (
         <button
           onClick={() => setIsCartOpen(true)}
-          className="fixed bottom-6 left-5 z-40 bg-stone-900 hover:bg-stone-800 text-white px-4 py-3 rounded-full shadow-2xl flex items-center gap-2.5 transition transform hover:scale-105 active:scale-95 border border-stone-700"
+          className="fixed bottom-6 left-5 z-40 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 px-4 py-3 rounded-full shadow-2xl flex items-center gap-2.5 transition transform hover:scale-105 active:scale-95 border border-rose-600/60"
           title="Abrir Carrito de Compras"
         >
           <div className="relative">
-            <ShoppingCart className="w-4 h-4 text-rose-400" />
-            <span className="absolute -top-2 -right-2 bg-rose-600 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full">
+            <ShoppingCart className="w-4 h-4 text-rose-500" />
+            <span className="absolute -top-2 -right-2 bg-accent-carmine text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full">
               {totalCartItems}
             </span>
           </div>
@@ -1324,24 +1327,24 @@ export default function HomePage() {
 
       {/* MODAL: Rastreo de Pedido en Tiempo Real */}
       {isTrackingModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-stone-200 max-w-lg w-full rounded-3xl p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-warm-100 max-w-lg w-full rounded-3xl p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
             {/* Header del Modal */}
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+            <div className="flex items-center justify-between border-b border-warm-100 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shadow-xs">
+                <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center shadow-2xs border border-warm-100">
                   <Truck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-stone-900">Rastrea tu Pedido</h3>
-                  <p className="text-xs text-stone-500">
+                  <h3 className="text-base font-bold text-ink-900 tracking-tight">Rastrea tu Pedido</h3>
+                  <p className="text-xs text-warm-500">
                     Sigue en vivo la preparación y despacho de tus flores
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsTrackingModalOpen(false)}
-                className="p-1.5 text-stone-400 hover:text-stone-800 rounded-xl hover:bg-stone-100 transition"
+                className="p-1.5 text-warm-500 hover:text-ink-900 rounded-xl hover:bg-rose-100 transition"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1356,19 +1359,19 @@ export default function HomePage() {
               className="flex gap-2"
             >
               <div className="relative flex-1">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-warm-500" />
                 <input
                   type="text"
                   value={trackingInput}
                   onChange={(e) => setTrackingInput(e.target.value.toUpperCase())}
                   placeholder="Ingresa tu código (ej: PET-8492)"
-                  className="w-full bg-stone-50 border border-stone-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-stone-900 font-mono uppercase placeholder:font-sans focus:outline-none focus:border-stone-800 focus:bg-white transition"
+                  className="w-full bg-rose-50 border border-warm-100 rounded-xl pl-10 pr-4 py-2.5 text-xs text-ink-900 font-mono uppercase placeholder:font-sans focus:outline-none focus:border-rose-600 focus:bg-white transition"
                 />
               </div>
               <button
                 type="submit"
                 disabled={trackingLoading || !trackingInput.trim()}
-                className="px-4 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold shadow transition disabled:opacity-50 flex items-center gap-1.5"
+                className="px-4 py-2.5 rounded-xl bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 text-xs font-semibold shadow transition disabled:opacity-50 flex items-center gap-1.5 active:scale-[0.98]"
               >
                 {trackingLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -1380,9 +1383,9 @@ export default function HomePage() {
 
             {/* Mensaje de Error */}
             {trackingError && (
-              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-xs text-rose-700 space-y-1">
-                <p className="font-semibold">No se encontró el pedido</p>
-                <p className="text-[11px]">{trackingError}</p>
+              <div className="bg-rose-100 border border-accent-carmine/30 rounded-2xl p-4 text-xs text-accent-carmine space-y-1">
+                <p className="font-bold">No se encontró el pedido</p>
+                <p className="text-[11px] text-warm-500">{trackingError}</p>
                 <div className="pt-2">
                   <a
                     href={`https://wa.me/${storeSettings?.whatsapp_number || WHATSAPP_NUMBER}?text=${encodeURIComponent(
@@ -1390,9 +1393,9 @@ export default function HomePage() {
                     )}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:underline text-[11px]"
+                    className="inline-flex items-center gap-1 font-semibold text-ink-900 hover:underline text-[11px]"
                   >
-                    <MessageCircle className="w-3.5 h-3.5" />
+                    <MessageCircle className="w-3.5 h-3.5 text-rose-600" />
                     <span>Consultar por WhatsApp con una asesora</span>
                   </a>
                 </div>
@@ -1403,21 +1406,21 @@ export default function HomePage() {
             {trackingOrder && (
               <div className="space-y-5 animate-in fade-in duration-200">
                 {/* Código y Estado Destacado */}
-                <div className="bg-stone-50 border border-stone-200/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="bg-rose-50 border border-warm-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-stone-400">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-warm-500">
                       Código de Seguimiento
                     </span>
-                    <p className="text-lg font-bold font-mono text-stone-900">
+                    <p className="text-lg font-bold font-mono text-ink-900">
                       {trackingOrder.tracking_code || 'PET-ORDEN'}
                     </p>
-                    <p className="text-xs text-stone-500 mt-0.5">
+                    <p className="text-xs text-warm-500 mt-0.5">
                       Fecha programada: {formatLocalDate(trackingOrder.delivery_date)}
                     </p>
                   </div>
 
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-100/80 text-rose-800 border border-rose-200 self-start sm:self-auto">
-                    <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-100 text-ink-900 border border-rose-500 self-start sm:self-auto">
+                    <span className="w-2 h-2 rounded-full bg-rose-600 animate-rose-pulse" />
                     <span className="capitalize">
                       {trackingOrder.status === 'en_preparacion' ? 'En Preparación' : trackingOrder.status}
                     </span>
@@ -1425,8 +1428,8 @@ export default function HomePage() {
                 </div>
 
                 {/* LÍNEA DE TIEMPO VISUAL (5 ETAPAS) */}
-                <div className="bg-white border border-stone-200/80 rounded-2xl p-4 space-y-4 shadow-xs">
-                  <h4 className="text-xs font-bold text-stone-800 uppercase tracking-wider">
+                <div className="bg-white border border-warm-100 rounded-2xl p-4 space-y-4 shadow-xs">
+                  <h4 className="text-xs font-bold text-ink-900 uppercase tracking-wider">
                     Línea de Tiempo del Arreglo
                   </h4>
 
@@ -1451,7 +1454,7 @@ export default function HomePage() {
                     ];
 
                     return (
-                      <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2.5 before:bottom-2.5 before:w-0.5 before:bg-stone-200">
+                      <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2.5 before:bottom-2.5 before:w-0.5 before:bg-warm-100">
                         {stages.map((st) => {
                           const isCompleted = currentRank > st.rank;
                           const isCurrent = currentRank === st.rank;
@@ -1461,10 +1464,10 @@ export default function HomePage() {
                               <div
                                 className={`absolute -left-6 top-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition ${
                                   isCompleted
-                                    ? 'bg-emerald-500 text-white ring-4 ring-emerald-50'
+                                    ? 'bg-ink-900 text-white ring-4 ring-rose-100'
                                     : isCurrent
-                                    ? 'bg-rose-600 text-white ring-4 ring-rose-100 animate-pulse'
-                                    : 'bg-stone-200 text-stone-500'
+                                    ? 'bg-rose-600 text-white ring-4 ring-rose-100 animate-rose-pulse'
+                                    : 'bg-warm-100 text-warm-500'
                                 }`}
                               >
                                 {isCompleted ? (
@@ -1480,13 +1483,13 @@ export default function HomePage() {
                                     isCurrent
                                       ? 'text-rose-600'
                                       : isCompleted
-                                      ? 'text-stone-900'
-                                      : 'text-stone-400'
+                                      ? 'text-ink-900'
+                                      : 'text-warm-500'
                                   }`}
                                 >
                                   {st.label}
                                 </p>
-                                <p className="text-[11px] text-stone-500 mt-1">{st.desc}</p>
+                                <p className="text-[11px] text-warm-500 mt-1">{st.desc}</p>
                               </div>
                             </div>
                           );
@@ -1497,26 +1500,26 @@ export default function HomePage() {
                 </div>
 
                 {/* Resumen del Arreglo y Destinatario */}
-                <div className="bg-stone-50 rounded-2xl p-4 border border-stone-200/80 space-y-2 text-xs">
+                <div className="bg-rose-50 rounded-2xl p-4 border border-warm-100 space-y-2 text-xs">
                   <div className="flex justify-between items-baseline">
-                    <span className="text-stone-500">Destinatario:</span>
-                    <span className="font-semibold text-stone-900">
+                    <span className="text-warm-500">Destinatario:</span>
+                    <span className="font-semibold text-ink-900">
                       {trackingOrder.recipient_name?.split('[Comprador:')[0].split('(Cel:')[0].trim() || 'Cliente'}
                     </span>
                   </div>
 
                   {trackingOrder.delivery_address && (
                     <div className="flex justify-between items-baseline">
-                      <span className="text-stone-500">Destino:</span>
-                      <span className="font-medium text-stone-800 text-right truncate max-w-[200px]">
+                      <span className="text-warm-500">Destino:</span>
+                      <span className="font-medium text-ink-900 text-right truncate max-w-[200px]">
                         {trackingOrder.delivery_address}
                       </span>
                     </div>
                   )}
 
-                  <div className="flex justify-between items-baseline pt-1 border-t border-stone-200/60">
-                    <span className="text-stone-500">Total del pedido:</span>
-                    <span className="font-bold text-stone-900 font-mono text-sm">
+                  <div className="flex justify-between items-baseline pt-1 border-t border-warm-100">
+                    <span className="text-warm-500">Total del pedido:</span>
+                    <span className="font-bold text-ink-900 font-mono text-sm">
                       S/ {Number(trackingOrder.total_amount).toFixed(2)}
                     </span>
                   </div>
@@ -1529,9 +1532,9 @@ export default function HomePage() {
                   )}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-2xl shadow-md transition flex items-center justify-center gap-2 text-xs"
+                  className="w-full bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 font-semibold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-xs active:scale-[0.98] border border-ink-900 hover:border-rose-600"
                 >
-                  <MessageCircle className="w-4 h-4 fill-white/20" />
+                  <MessageCircle className="w-4 h-4 fill-current opacity-80" />
                   <span>Consultar por WhatsApp</span>
                 </a>
               </div>
@@ -1540,16 +1543,16 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Footer Minimalista con Redes Sociales Conectadas */}
-      <footer className="mt-16 border-t border-stone-200 bg-white py-10 px-4 text-center text-xs text-stone-500 space-y-4">
+      {/* Footer Minimalista de Alta Gama */}
+      <footer className="mt-16 border-t border-warm-100 bg-white py-12 px-4 text-center text-xs text-warm-500 space-y-4">
         {/* Redes Sociales Dinámicas */}
-        <div className="flex items-center justify-center gap-4 text-stone-600">
+        <div className="flex items-center justify-center gap-4">
           {storeSettings?.instagram_url && (
             <a
               href={storeSettings.instagram_url}
               target="_blank"
               rel="noreferrer"
-              className="w-9 h-9 rounded-full bg-stone-100 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center transition"
+              className="w-9 h-9 rounded-full bg-rose-100 hover:bg-rose-500 text-warm-500 hover:text-ink-900 border border-warm-100 flex items-center justify-center transition active:scale-[0.98]"
               title="Instagram de PETALIA"
             >
               <svg className="w-4 h-4 fill-currentColor" viewBox="0 0 24 24">
@@ -1563,7 +1566,7 @@ export default function HomePage() {
               href={storeSettings.facebook_url}
               target="_blank"
               rel="noreferrer"
-              className="w-9 h-9 rounded-full bg-stone-100 hover:bg-blue-50 hover:text-blue-600 flex items-center justify-center transition"
+              className="w-9 h-9 rounded-full bg-rose-100 hover:bg-rose-500 text-warm-500 hover:text-ink-900 border border-warm-100 flex items-center justify-center transition active:scale-[0.98]"
               title="Facebook de PETALIA"
             >
               <svg className="w-4 h-4 fill-currentColor" viewBox="0 0 24 24">
@@ -1577,7 +1580,7 @@ export default function HomePage() {
               href={storeSettings.tiktok_url}
               target="_blank"
               rel="noreferrer"
-              className="w-9 h-9 rounded-full bg-stone-100 hover:bg-stone-900 hover:text-white flex items-center justify-center transition"
+              className="w-9 h-9 rounded-full bg-rose-100 hover:bg-ink-900 text-warm-500 hover:text-white border border-warm-100 flex items-center justify-center transition active:scale-[0.98]"
               title="TikTok de PETALIA"
             >
               <svg className="w-4 h-4 fill-currentColor" viewBox="0 0 24 24">
@@ -1590,7 +1593,7 @@ export default function HomePage() {
             href={`https://wa.me/${storeSettings?.whatsapp_number || WHATSAPP_NUMBER}`}
             target="_blank"
             rel="noreferrer"
-            className="w-9 h-9 rounded-full bg-stone-100 hover:bg-emerald-50 hover:text-emerald-600 flex items-center justify-center transition"
+            className="w-9 h-9 rounded-full bg-rose-100 hover:bg-rose-500 text-warm-500 hover:text-ink-900 border border-warm-100 flex items-center justify-center transition active:scale-[0.98]"
             title="WhatsApp de PETALIA"
           >
             <MessageCircle className="w-4 h-4 fill-currentColor" />
@@ -1598,11 +1601,11 @@ export default function HomePage() {
         </div>
 
         <div className="flex items-center justify-center gap-2">
-          <span className="font-bold tracking-tight text-stone-800 text-sm">PETALIA</span>
+          <span className="font-bold tracking-tight text-ink-900 text-sm">PETALIA</span>
           <span>•</span>
-          <span>Diseño Floral & Decoraciones</span>
+          <span className="text-warm-500">Diseño Floral & Decoraciones</span>
         </div>
-        <p className="text-[11px] text-stone-400">
+        <p className="text-[11px] text-warm-500">
           Florería en Lima, Perú • Pedidos y delivery coordinados por WhatsApp: +{storeSettings?.whatsapp_number || WHATSAPP_NUMBER}
         </p>
       </footer>
