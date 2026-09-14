@@ -10,6 +10,7 @@ interface FooterProps {
   instagramUrl?: string;
   facebookUrl?: string;
   tiktokUrl?: string;
+  logoUrl?: string;
 }
 
 export default function Footer({
@@ -18,6 +19,7 @@ export default function Footer({
   instagramUrl = 'https://instagram.com/petalia.pe',
   facebookUrl = 'https://facebook.com/petalia.pe',
   tiktokUrl = 'https://tiktok.com/@petalia.pe',
+  logoUrl,
 }: FooterProps) {
   const handleScrollTo = (id: string) => {
     const el = document.getElementById(id);
@@ -38,8 +40,18 @@ export default function Footer({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 md:gap-8">
           {/* COLUMNA 1 — Marca y Propuesta de Valor */}
           <div className="lg:col-span-4 flex flex-col gap-4">
-            <Link href="/" className="inline-block group">
-              <span className="font-serif italic text-4xl md:text-5xl font-normal text-[var(--rose-600)] tracking-wide select-none group-hover:opacity-90 transition-opacity">
+            <Link href="/" className="inline-flex items-center gap-3 group">
+              <div className="relative shrink-0">
+                <img
+                  src={logoUrl || '/images/logo.jpg'}
+                  alt="PETALIA Isotipo Floral"
+                  className="w-10 h-10 md:w-11 md:h-11 object-contain rounded-xl border border-rose-200/80 shadow-2xs group-hover:scale-105 transition-transform duration-200"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/images/logo.jpg';
+                  }}
+                />
+              </div>
+              <span className="font-serif italic text-3xl md:text-4xl font-normal text-[var(--rose-600)] leading-none tracking-wide select-none group-hover:opacity-90 transition-opacity">
                 Petalia
               </span>
             </Link>

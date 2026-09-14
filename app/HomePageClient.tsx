@@ -2622,6 +2622,7 @@ export default function HomePage() {
         instagramUrl={storeSettings?.instagram_url || 'https://instagram.com/petalia.pe'}
         facebookUrl={storeSettings?.facebook_url || 'https://facebook.com/petalia.pe'}
         tiktokUrl={storeSettings?.tiktok_url || 'https://tiktok.com/@petalia.pe'}
+        logoUrl={storeSettings?.logo_url}
       />
     </div>
   );
