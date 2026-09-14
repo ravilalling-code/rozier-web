@@ -3,12 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Product, Category, Order, OrderStatus, StoreSettings, CartItem, DeliveryZone, AddOnItem, CategoryBanner, Campaign, HeroSlide } from '@/lib/types';
+import { Product, Category, Order, OrderStatus, StoreSettings, CartItem, DeliveryZone, AddOnItem, CategoryBanner, Campaign, HeroSlide, SpecialAddon } from '@/lib/types';
 import { getCategories } from '@/lib/categories';
 import { getStoreSettings } from '@/lib/settings';
 import { getCategoryBanners, DEFAULT_CATEGORY_BANNERS } from '@/lib/banners';
 import { getActiveCampaign, DEFAULT_CAMPAIGN } from '@/lib/campaigns';
 import { getHeroSlides, DEFAULT_HERO_SLIDES } from '@/lib/heroSlides';
+import { getSpecialAddons, DEFAULT_SPECIAL_ADDONS } from '@/lib/addons';
 import StoreHeader from '@/components/StoreHeader';
 import HeroSlider from '@/components/HeroSlider';
 import TrustBar from '@/components/TrustBar';
@@ -57,13 +58,7 @@ import ChatBot from '@/components/ChatBot';
 
 const WHATSAPP_NUMBER = '51924257784';
 
-// Complementos rápidos para Cross-Selling en el carrito
-const QUICK_ADDONS = [
-  { id: 'addon-chocolates', name: 'Chocolates Ferrero Rocher', price: 25, icon: '🍫', desc: 'Caja x8 bombones finos' },
-  { id: 'addon-globo', name: 'Globo Metálico Ocasión', price: 12, icon: '🎈', desc: 'Con helio de larga duración' },
-  { id: 'addon-peluche', name: 'Peluche Premium', price: 35, icon: '🧸', desc: 'Suave felpa 25cm' },
-  { id: 'addon-tarjeta', name: 'Tarjeta Caligráfica', price: 8, icon: '💌', desc: 'Dedicatoria hecha a mano' },
-];
+// Toques especiales gestionados dinámicamente desde public.special_addons
 
 // Distritos estándar de Lima con tarifas de flete
 const DEFAULT_ZONES: DeliveryZone[] = [
@@ -183,6 +178,9 @@ export default function HomePage() {
   // Slides dinámicos del Hero Principal
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(DEFAULT_HERO_SLIDES);
 
+  // Toques Especiales (Complementos y cross-selling) dinámicos desde public.special_addons
+  const [specialAddons, setSpecialAddons] = useState<SpecialAddon[]>(DEFAULT_SPECIAL_ADDONS);
+
   // Ajustes de la tienda (Redes sociales y WhatsApp)
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
 
@@ -255,6 +253,10 @@ export default function HomePage() {
         }
         if (slidesData && slidesData.length > 0) {
           setHeroSlides(slidesData);
+        }
+        const addonsData = await getSpecialAddons();
+        if (addonsData && addonsData.length > 0) {
+          setSpecialAddons(addonsData);
         }
         if (!zonesRes.error && zonesRes.data && zonesRes.data.length > 0) {
           setDeliveryZones(zonesRes.data as DeliveryZone[]);
@@ -360,6 +362,21 @@ export default function HomePage() {
       )
       .subscribe();
 
+    // Canal dedicado para sincronización en tiempo real de Toques Especiales (Special Addons)
+    const specialAddonsChannel = supabase
+      .channel('special_addons_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'special_addons' },
+        async () => {
+          const freshAddons = await getSpecialAddons();
+          if (freshAddons && freshAddons.length > 0) {
+            setSpecialAddons(freshAddons);
+          }
+        }
+      )
+      .subscribe();
+
     // Soportar lectura directa por URL (?track=CODIGO)
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -375,6 +392,7 @@ export default function HomePage() {
     return () => {
       supabase.removeChannel(realtimeChannel);
       supabase.removeChannel(heroSlidesChannel);
+      supabase.removeChannel(specialAddonsChannel);
     };
   }, []);
 
@@ -458,8 +476,8 @@ export default function HomePage() {
   }, 0);
 
   const addOnsSubtotal = Object.entries(selectedAddOns).reduce((sum, [id, qty]) => {
-    const item = QUICK_ADDONS.find((a) => a.id === id);
-    return sum + (item ? item.price * qty : 0);
+    const item = specialAddons.find((a) => a.id === id);
+    return sum + (item ? Number(item.price) * qty : 0);
   }, 0);
   const totalAddonsCount = Object.values(selectedAddOns).reduce((sum, q) => sum + q, 0);
 
@@ -599,8 +617,8 @@ export default function HomePage() {
       // 2. Resumen consolidado de productos y complementos
       const extraItemsList = Object.entries(selectedAddOns)
         .map(([id, qty]) => {
-          const item = QUICK_ADDONS.find((a) => a.id === id);
-          return item ? { name: item.name, price: item.price, quantity: qty } : null;
+          const item = specialAddons.find((a) => a.id === id);
+          return item ? { name: item.name, price: Number(item.price), quantity: qty } : null;
         })
         .filter(Boolean) as Array<{ name: string; price: number; quantity: number }>;
 
@@ -1462,6 +1480,63 @@ export default function HomePage() {
               </div>
             </div>
 
+            {/* Toques Especiales dentro del Modal de Arreglo */}
+            {specialAddons.length > 0 && (
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-ink-900 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Añade un toque especial:</span>
+                  </span>
+                  <span className="text-[10px] text-warm-500">Cross-selling</span>
+                </div>
+                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+                  {specialAddons.map((addon) => {
+                    const qty = selectedAddOns[addon.id] || 0;
+                    const isSelected = qty > 0;
+                    return (
+                      <div
+                        key={addon.id}
+                        onClick={() => toggleAddOn(addon.id)}
+                        className={`shrink-0 w-32 p-2 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
+                          isSelected
+                            ? 'bg-rose-100 border-rose-500 shadow-xs ring-1 ring-rose-500/40'
+                            : 'bg-rose-50/60 border-warm-100 hover:border-rose-400'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg overflow-hidden bg-white shrink-0 border border-warm-100">
+                            <img
+                              src={addon.image_url}
+                              alt={addon.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src =
+                                  'https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=200&q=80';
+                              }}
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-[11px] text-ink-900 leading-tight truncate">
+                              {addon.name}
+                            </p>
+                            <span className="text-[10px] font-bold text-ink-900 tabular-nums">
+                              +S/ {Number(addon.price).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <span className="mt-1.5 text-[9px] font-bold text-center bg-rose-600 text-white rounded-md py-0.5">
+                            Seleccionado (x{qty})
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Botones de Acción */}
             <div className="space-y-2 pt-2">
               <button
@@ -1621,13 +1696,13 @@ export default function HomePage() {
                   <span className="text-[10px] text-warm-500 font-medium">Add-ons rápidos</span>
                 </div>
                 <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
-                  {QUICK_ADDONS.map((addon) => {
+                  {specialAddons.map((addon) => {
                     const qty = selectedAddOns[addon.id] || 0;
                     const isSelected = qty > 0;
                     return (
                       <div
                         key={addon.id}
-                        className={`shrink-0 w-36 sm:w-40 p-2.5 rounded-xl border card-editorial transition-all duration-200 flex flex-col justify-between ${
+                        className={`shrink-0 w-38 sm:w-44 p-2.5 rounded-xl border card-editorial transition-all duration-200 flex flex-col justify-between ${
                           isSelected
                             ? 'bg-rose-100 border-rose-500 shadow-xs ring-1 ring-rose-500/40'
                             : 'bg-rose-50 border-warm-100 hover:border-rose-400'
@@ -1635,24 +1710,34 @@ export default function HomePage() {
                       >
                         <div>
                           <div className="flex items-center justify-between">
-                            <span className="text-xl">{addon.icon}</span>
+                            <div className="w-10 h-10 rounded-lg overflow-hidden bg-white shrink-0 border border-warm-100 shadow-2xs">
+                              <img
+                                src={addon.image_url}
+                                alt={addon.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src =
+                                    'https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=200&q=80';
+                                }}
+                              />
+                            </div>
                             {isSelected && (
-                              <span className="text-[10px] font-bold tabular-nums bg-ink-900 text-white px-1.5 py-0.2 rounded-md">
+                              <span className="text-[10px] font-bold tabular-nums bg-ink-900 text-white px-1.5 py-0.5 rounded-md">
                                 x{qty}
                               </span>
                             )}
                           </div>
-                          <p className="font-bold text-xs text-ink-900 mt-1 leading-tight line-clamp-1">
+                          <p className="font-bold text-xs text-ink-900 mt-1.5 leading-tight line-clamp-1">
                             {addon.name}
                           </p>
-                          <p className="text-[10px] text-warm-500 line-clamp-1 mt-0.5">
-                            {addon.desc}
+                          <p className="text-[10px] text-rose-600 font-semibold line-clamp-1 mt-0.5">
+                            {addon.category}
                           </p>
                         </div>
 
-                        <div className="flex items-center justify-between mt-2 pt-1 border-t border-warm-100/60">
+                        <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-warm-100/60">
                           <span className="tabular-nums font-bold text-xs text-ink-900">
-                            S/ {addon.price.toFixed(2)}
+                            S/ {Number(addon.price).toFixed(2)}
                           </span>
                           <div className="flex items-center gap-1">
                             {isSelected ? (
@@ -1678,7 +1763,7 @@ export default function HomePage() {
                               <button
                                 type="button"
                                 onClick={() => toggleAddOn(addon.id)}
-                                className="btn-tactile w-6 h-6 rounded-md bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 flex items-center justify-center shadow-xs"
+                                className="btn-tactile w-6 h-6 rounded-md bg-ink-900 hover:bg-rose-600 text-white flex items-center justify-center shadow-xs"
                                 title="Añadir al pedido"
                               >
                                 <Plus className="w-3.5 h-3.5" />
@@ -1870,15 +1955,15 @@ export default function HomePage() {
                       </div>
                     ))}
                     {Object.entries(selectedAddOns).map(([id, qty]) => {
-                      const item = QUICK_ADDONS.find((a) => a.id === id);
+                      const item = specialAddons.find((a) => a.id === id);
                       if (!item) return null;
                       return (
                         <div key={id} className="pt-1 flex justify-between text-rose-600 font-medium">
                           <span className="truncate max-w-[240px]">
-                            • {item.icon} {item.name} (x{qty})
+                            • {item.name} (x{qty})
                           </span>
                           <span className="tabular-nums">
-                            S/ {(item.price * qty).toFixed(2)}
+                            S/ {(Number(item.price) * qty).toFixed(2)}
                           </span>
                         </div>
                       );

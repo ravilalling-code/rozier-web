@@ -18,6 +18,7 @@ import {
   Share2,
   Heart,
   Layers,
+  Gift,
 } from 'lucide-react';
 
 const navigationItems = [
@@ -26,6 +27,12 @@ const navigationItems = [
     href: '/admin/products',
     icon: Package,
     description: 'Precios, stock y fotos',
+  },
+  {
+    name: 'Toques Especiales',
+    href: '/admin/addons',
+    icon: Gift,
+    description: 'Chocolates, peluches y cross-selling',
   },
   {
     name: 'Hero Slider (Portada)',

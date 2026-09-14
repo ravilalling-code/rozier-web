@@ -54,6 +54,18 @@ export interface AddOnItem {
   image?: string;
 }
 
+export interface SpecialAddon {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  image_url: string;
+  is_active: boolean;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Order {
   id: string;
   customer_id: string | null;
