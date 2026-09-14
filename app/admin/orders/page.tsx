@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Order, OrderStatus, OCRResult } from '@/lib/types';
 import { formatLocalDate, formatLocalDateTime, generateTrackingCode } from '@/lib/format';
@@ -35,6 +35,21 @@ import {
   Download,
 } from 'lucide-react';
 
+export function normalizeStatusForDB(status: string): string {
+  const s = (status || '').toLowerCase().trim().replace(/\s+/g, '_');
+  if (s === 'en_despacho') return 'en_ruta';
+  if (s === 'preparando') return 'en_preparacion';
+  return s;
+}
+
+export function normalizeStatusForUI(status: string): string {
+  const s = (status || '').toLowerCase().trim().replace(/\s+/g, '_');
+  if (s === 'en_ruta') return 'en_despacho';
+  if (s === 'en_taller') return 'en_preparacion';
+  if (s === 'preparando') return 'en_preparacion';
+  return s;
+}
+
 const STATUS_CONFIG: Record<
   string,
   { label: string; bg: string; text: string; border: string; icon: any }
@@ -60,7 +75,21 @@ const STATUS_CONFIG: Record<
     border: 'border-purple-800/60',
     icon: Hammer,
   },
+  en_taller: {
+    label: 'En Preparación',
+    bg: 'bg-purple-950/50',
+    text: 'text-purple-400',
+    border: 'border-purple-800/60',
+    icon: Hammer,
+  },
   en_despacho: {
+    label: 'En Despacho',
+    bg: 'bg-indigo-950/50',
+    text: 'text-indigo-400',
+    border: 'border-indigo-800/60',
+    icon: Truck,
+  },
+  en_ruta: {
     label: 'En Despacho',
     bg: 'bg-indigo-950/50',
     text: 'text-indigo-400',
@@ -142,7 +171,10 @@ export default function AdminOrdersPage() {
   const [editOperationNumber, setEditOperationNumber] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [editLoading, setEditLoading] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  // Referencia para pedidos con actualización en curso: evita que Realtime o Polling sobreescriban el estado visual optimista
+  const updatingOrdersRef = useRef<Map<string, { status: string; timestamp: number }>>(new Map());
 
   // Cargar Pedidos de Supabase
   const fetchOrders = useCallback(async (isManual = false) => {
@@ -156,7 +188,18 @@ export default function AdminOrdersPage() {
       if (error) {
         console.error('Error al consultar orders en Supabase:', error);
       } else if (data) {
-        setOrders(data as Order[]);
+        // Preservar estados optimistas en curso para evitar rebotes visuales
+        const merged = (data as Order[]).map((order) => {
+          const inFlight = updatingOrdersRef.current.get(order.id);
+          if (inFlight) {
+            return {
+              ...order,
+              status: inFlight.status as OrderStatus,
+            };
+          }
+          return order;
+        });
+        setOrders(merged);
       }
     } catch (err: any) {
       console.error('Error fetching orders:', err);
@@ -175,14 +218,31 @@ export default function AdminOrdersPage() {
       fetchOrders();
     }, 12000);
 
-    // Suscripción Realtime en Supabase a la tabla orders
+    // Suscripción Realtime en Supabase a la tabla orders con protección contra rebotes
     const channel = supabase
       .channel('admin-orders-realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
-        (payload) => {
+        (payload: any) => {
           console.log('⚡ Cambio en tiempo real en orders:', payload);
+          const newRow = payload.new;
+          if (newRow && newRow.id) {
+            const inFlight = updatingOrdersRef.current.get(newRow.id);
+            if (inFlight) {
+              const incomingStatus = (newRow.status || '').toLowerCase();
+              const targetStatus = inFlight.status.toLowerCase();
+              const dbTarget = normalizeStatusForDB(targetStatus);
+              // Si el realtime trae el estado nuevo ya confirmado en BD, liberamos el bloqueo
+              if (incomingStatus === dbTarget || incomingStatus === targetStatus) {
+                updatingOrdersRef.current.delete(newRow.id);
+              } else {
+                // Si el evento trae un estado viejo, descartamos el payload para no rebotar
+                console.log(`🛡️ Descartando evento Realtime con estado viejo para pedido ${newRow.id} (recibido: ${incomingStatus}, en curso: ${targetStatus})`);
+                return;
+              }
+            }
+          }
           fetchOrders();
         }
       )
@@ -478,9 +538,9 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
+  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+    setToast({ text: msg, type });
+    setTimeout(() => setToast(null), 3800);
   };
 
   // Abrir modal de edición con los datos actuales del pedido
@@ -534,16 +594,19 @@ export default function AdminOrdersPage() {
         : `[Comprador: ${editCustomerName.trim()}] `;
       const newDedication = `${arrangementTag}${buyerTag}${editDedication.trim()}`;
 
+      const dbEditStatus = normalizeStatusForDB(editStatus);
       const updatedPayload: Record<string, any> = {
         total_amount: numAmount,
         payment_method: editPaymentMethod.toLowerCase(),
-        status: editStatus,
+        status: dbEditStatus,
         operation_number: editOperationNumber.trim() || null,
         delivery_date: editDeliveryDate || editingOrder.delivery_date,
         recipient_name: editRecipientName.trim() || 'Cliente',
         delivery_address: editDeliveryAddress.trim() || null,
         dedication_message: newDedication,
       };
+
+      updatingOrdersRef.current.set(editingOrder.id, { status: normalizeStatusForUI(editStatus), timestamp: Date.now() });
 
       const { data, error } = await supabase
         .from('orders')
@@ -552,7 +615,10 @@ export default function AdminOrdersPage() {
         .select('*, customer:customers(*)')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        updatingOrdersRef.current.delete(editingOrder.id);
+        throw error;
+      }
 
       const savedOrder = data as Order;
       setOrders((prev) =>
@@ -561,6 +627,10 @@ export default function AdminOrdersPage() {
       if (selectedOrderDetails?.id === editingOrder.id) {
         setSelectedOrderDetails(savedOrder);
       }
+
+      setTimeout(() => {
+        updatingOrdersRef.current.delete(editingOrder.id);
+      }, 2500);
 
       setEditingOrder(null);
       showToast('¡Pedido actualizado con éxito!');
@@ -670,6 +740,11 @@ export default function AdminOrdersPage() {
         status: (updateData.status as OrderStatus) || 'en_preparacion',
       };
 
+      updatingOrdersRef.current.set(validatingOrder.id, {
+        status: normalizeStatusForUI(updatedOrder.status),
+        timestamp: Date.now(),
+      });
+
       setOrders((prev) =>
         prev.map((o) => (o.id === validatingOrder.id ? updatedOrder : o))
       );
@@ -678,10 +753,16 @@ export default function AdminOrdersPage() {
         setSelectedOrderDetails(updatedOrder);
       }
 
+      setTimeout(() => {
+        updatingOrdersRef.current.delete(validatingOrder.id);
+      }, 2500);
+
       const orderToNotify = updatedOrder;
       setValidatingOrder(null);
       setValVoucherFile(null);
       setValVoucherPreview(null);
+
+      showToast('Pago validado y orden pasada a preparación', 'success');
 
       // Abrir o sugerir confirmación inmediata por WhatsApp
       if (
@@ -693,57 +774,51 @@ export default function AdminOrdersPage() {
       }
     } catch (err: any) {
       console.error('Error al validar comprobante:', err);
-      alert('Error al validar el pago: ' + (err.message || err));
+      showToast('Error al validar el pago: ' + (err.message || err), 'error');
     } finally {
       setValLoading(false);
     }
   };
 
-  // Actualizar estado rápido del pedido con validación estricta y sincronización dual
+  // Actualizar estado rápido del pedido con validación estricta, bloqueo de rebotes y sincronización dual
   const handleUpdateStatus = async (orderId: string, nextStatus: string) => {
-    // Normalizar estrictamente a minúsculas para cumplir con el check constraint "orders_status_check"
     const raw = (nextStatus || '').toString().toLowerCase().trim().replace(/\s+/g, '_');
-    const validStatusMap: Record<string, OrderStatus> = {
-      pendiente: 'pendiente',
-      confirmado: 'confirmado',
-      en_preparacion: 'en_preparacion',
-      en_despacho: 'en_despacho',
-      entregado: 'entregado',
-      cancelado: 'cancelado',
-    };
-    const normalizedStatus: OrderStatus = validStatusMap[raw] || 'pendiente';
+    const uiStatus = normalizeStatusForUI(raw);
+    const dbStatus = normalizeStatusForDB(raw);
 
     // Guardar estado previo para rollback en caso de fallo
     const previousOrder = orders.find((o) => o.id === orderId);
-    const previousStatus = (previousOrder?.status || 'pendiente').toLowerCase() as OrderStatus;
+    const previousStatus = normalizeStatusForUI(previousOrder?.status || 'pendiente');
 
-    if (previousStatus === normalizedStatus && previousOrder) return;
+    if (previousStatus === uiStatus && previousOrder) return;
 
     // Generar tracking_code si no tenía y pasa a confirmado/preparación/despacho
     let trackingToSave = previousOrder?.tracking_code;
     if (
       !trackingToSave &&
-      ['confirmado', 'en_preparacion', 'en_despacho'].includes(normalizedStatus)
+      ['confirmado', 'en_preparacion', 'en_despacho'].includes(uiStatus)
     ) {
       trackingToSave = generateTrackingCode();
     }
 
-    // 1. Actualización optimista inmediata en la interfaz
+    // 1. Registrar bloqueo en updatingOrdersRef para blindar contra Realtime o Polling
+    updatingOrdersRef.current.set(orderId, { status: uiStatus, timestamp: Date.now() });
+
+    // 2. Actualización optimista inmediata en la interfaz
     setOrders((prev) =>
       prev.map((o) =>
-        o.id === orderId ? { ...o, status: normalizedStatus, tracking_code: trackingToSave || o.tracking_code } : o
+        o.id === orderId ? { ...o, status: uiStatus as OrderStatus, tracking_code: trackingToSave || o.tracking_code } : o
       )
     );
     if (selectedOrderDetails?.id === orderId) {
       setSelectedOrderDetails((prev) =>
-        prev ? { ...prev, status: normalizedStatus, tracking_code: trackingToSave || prev.tracking_code } : null
+        prev ? { ...prev, status: uiStatus as OrderStatus, tracking_code: trackingToSave || prev.tracking_code } : null
       );
     }
 
     try {
-      // 2. Intentar actualizar directamente en Supabase con .select() para confirmar persistencia
-      console.log(`📡 [Orders] Actualizando pedido ${orderId} a estado "${normalizedStatus}"...`);
-      const updatePayload: Record<string, any> = { status: normalizedStatus };
+      console.log(`📡 [Orders] Actualizando pedido ${orderId} a estado DB "${dbStatus}" (UI: "${uiStatus}")...`);
+      const updatePayload: Record<string, any> = { status: dbStatus };
       if (trackingToSave) updatePayload.tracking_code = trackingToSave;
 
       let { data, error } = await supabase
@@ -752,9 +827,9 @@ export default function AdminOrdersPage() {
         .eq('id', orderId)
         .select();
 
-      // Fallback a 'en_taller' si constraint orders_status_check aún no incluye 'en_preparacion'
-      if (error && error.message?.includes('orders_status_check') && normalizedStatus === 'en_preparacion') {
-        console.warn('⚠️ Base de datos tiene constraint antiguo. Intentando fallback con "en_taller"...');
+      // Fallback a 'en_taller' si constraint orders_status_check aún requiere 'en_taller'
+      if (error && error.message?.includes('orders_status_check') && dbStatus === 'en_preparacion') {
+        console.warn('⚠️ Base de datos requiere "en_taller". Intentando fallback...');
         updatePayload.status = 'en_taller';
         const retryDirect = await supabase
           .from('orders')
@@ -765,50 +840,45 @@ export default function AdminOrdersPage() {
         error = retryDirect.error;
       }
 
-      if (error) {
-        console.error('❌ Error devuelto por Supabase en update directo:', error);
+      if (error || !data || data.length === 0) {
+        if (error) console.error('Error al actualizar estado:', error);
 
-        // Fallback inmediato a ruta API del servidor
+        // Fallback inmediato a ruta API del servidor con Service Role
         console.log('🔄 Intentando fallback mediante ruta API /api/admin/orders/status...');
         const apiRes = await fetch('/api/admin/orders/status', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId, status: normalizedStatus, trackingCode: trackingToSave }),
+          body: JSON.stringify({ orderId, status: dbStatus, trackingCode: trackingToSave }),
         });
         const apiData = await apiRes.json();
 
         if (!apiRes.ok || !apiData.success) {
-          throw new Error(apiData.error || error.message || 'Error al persistir el estado');
+          throw new Error(apiData.error || error?.message || 'Error al persistir el estado en la base de datos');
         } else {
           console.log('✅ Fallback API exitoso:', apiData.order);
         }
-      } else if (!data || data.length === 0) {
-        console.warn('⚠️ Supabase no reportó filas actualizadas directamente. Invocando API...');
-        const apiRes = await fetch('/api/admin/orders/status', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId, status: normalizedStatus, trackingCode: trackingToSave }),
-        });
-        const apiData = await apiRes.json();
-
-        if (!apiRes.ok || !apiData.success) {
-          throw new Error('No se pudo modificar el pedido en la base de datos (0 filas afectadas)');
-        }
       } else {
-        console.log(`✅ Estado actualizado con éxito a "${normalizedStatus}" en Supabase:`, data[0]);
+        console.log(`✅ Estado actualizado con éxito a "${dbStatus}" en Supabase:`, data[0]);
       }
+
+      showToast(`Estado actualizado a ${STATUS_CONFIG[uiStatus]?.label || uiStatus}`, 'success');
+
+      // Mantener bloqueo durante 2.5s para amortiguar carreras con Realtime o Polling
+      setTimeout(() => {
+        updatingOrdersRef.current.delete(orderId);
+      }, 2500);
     } catch (err: any) {
-      console.error('❌ Error crítico al actualizar estado del pedido:', err);
+      console.error('Error al actualizar estado:', err);
+      updatingOrdersRef.current.delete(orderId);
+
       // Revertir el estado local
       setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, status: previousStatus } : o))
+        prev.map((o) => (o.id === orderId ? { ...o, status: previousStatus as OrderStatus } : o))
       );
       if (selectedOrderDetails?.id === orderId) {
-        setSelectedOrderDetails((prev) => (prev ? { ...prev, status: previousStatus } : null));
+        setSelectedOrderDetails((prev) => (prev ? { ...prev, status: previousStatus as OrderStatus } : null));
       }
-      alert(
-        `Error al guardar el nuevo estado:\n${err?.message || err}\n\nEl pedido se restauró a "${previousStatus}".`
-      );
+      showToast(`Error al actualizar estado: ${err?.message || 'Fallo de conexión'}`, 'error');
     }
   };
 
@@ -870,7 +940,7 @@ export default function AdminOrdersPage() {
 
   // Filtrado de pedidos
   const filteredOrders = orders.filter((order) => {
-    const rawSt = (order.status || 'pendiente').toLowerCase();
+    const rawSt = normalizeStatusForUI(order.status || 'pendiente');
     const matchesStatus =
       statusFilter === 'todos' ||
       rawSt === statusFilter.toLowerCase();
@@ -1047,7 +1117,7 @@ export default function AdminOrdersPage() {
             </button>
             {(['pendiente', 'confirmado', 'en_preparacion', 'en_despacho', 'entregado'] as OrderStatus[]).map((st) => {
               const count = orders.filter((o) => {
-                const s = (o.status || '').toLowerCase();
+                const s = normalizeStatusForUI((o.status || '').toLowerCase());
                 return s === st;
               }).length;
               const cfg = STATUS_CONFIG[st] || STATUS_CONFIG.pendiente;
@@ -1090,7 +1160,7 @@ export default function AdminOrdersPage() {
       ) : (
         <div className="space-y-3">
           {filteredOrders.map((order) => {
-            const currentStatus = (order.status || 'pendiente').toLowerCase() as OrderStatus;
+            const currentStatus = normalizeStatusForUI(order.status || 'pendiente') as OrderStatus;
             const statusCfg = STATUS_CONFIG[currentStatus] || STATUS_CONFIG.pendiente;
             const StatusIcon = statusCfg.icon;
             const { phone, clientName, cleanRecipient, matchedArrangement, cleanDedication } = getOrderDetailsHelpers(order);
@@ -1866,7 +1936,7 @@ export default function AdminOrdersPage() {
                 <span className="text-neutral-500 font-medium">Estado Actual del Pedido:</span>
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   {(() => {
-                    const mStatus = (selectedOrderDetails.status || 'pendiente').toLowerCase() as OrderStatus;
+                    const mStatus = normalizeStatusForUI(selectedOrderDetails.status || 'pendiente');
                     const mCfg = STATUS_CONFIG[mStatus] || STATUS_CONFIG.pendiente;
                     const MIcon = mCfg.icon;
                     return (
@@ -1877,7 +1947,7 @@ export default function AdminOrdersPage() {
                     );
                   })()}
                   <select
-                    value={(selectedOrderDetails.status || 'pendiente').toLowerCase()}
+                    value={normalizeStatusForUI(selectedOrderDetails.status || 'pendiente')}
                     onChange={(e) => handleUpdateStatus(selectedOrderDetails.id, e.target.value)}
                     className="bg-neutral-800 text-neutral-200 text-xs rounded-xl px-3 py-1.5 border border-neutral-700 focus:outline-none focus:border-rose-500 transition cursor-pointer font-medium"
                   >
@@ -2339,11 +2409,21 @@ export default function AdminOrdersPage() {
       )}
 
       {/* TOAST FLOTANTE */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 animate-bounce">
-          <div className="bg-emerald-950/95 border border-emerald-500/80 text-emerald-200 px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-md">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-            <span className="text-xs font-medium">{toastMessage}</span>
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-5 duration-300">
+          <div
+            className={`px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-md border ${
+              toast.type === 'error'
+                ? 'bg-rose-950/95 border-rose-500/80 text-rose-200'
+                : 'bg-emerald-950/95 border-emerald-500/80 text-emerald-200'
+            }`}
+          >
+            {toast.type === 'error' ? (
+              <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+            )}
+            <span className="text-xs font-medium">{toast.text}</span>
           </div>
         </div>
       )}

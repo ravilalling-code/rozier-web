@@ -35,9 +35,9 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    console.log(`🔄 Actualizando estado del pedido ${orderId} a "${cleanStatus}"...`);
-
-    const updatePayload: Record<string, any> = { status: cleanStatus };
+    // Si se envía 'en_despacho', mapear a 'en_ruta' para cumplir con el check constraint de Postgres
+    const dbStatus = cleanStatus === 'en_despacho' ? 'en_ruta' : cleanStatus;
+    const updatePayload: Record<string, any> = { status: dbStatus };
     if (voucherUrl !== undefined) updatePayload.voucher_url = voucherUrl;
     if (paymentMethod !== undefined) updatePayload.payment_method = paymentMethod;
     if (trackingCode !== undefined) updatePayload.tracking_code = trackingCode;

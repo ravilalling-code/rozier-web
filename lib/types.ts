@@ -30,7 +30,9 @@ export type OrderStatus =
   | 'pendiente'
   | 'confirmado'
   | 'en_preparacion'
+  | 'en_taller'
   | 'en_despacho'
+  | 'en_ruta'
   | 'entregado'
   | 'cancelado';
 
