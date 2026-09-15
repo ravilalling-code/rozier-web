@@ -78,7 +78,7 @@ export default function TopOccasions({ onSelectOccasion }: TopOccasionsProps) {
   };
 
   return (
-    <section id="ocasiones" className="py-12 md:py-16 max-w-6xl mx-auto px-4 space-y-8">
+    <section id="ocasiones" className="py-12 md:py-16 max-w-6xl mx-auto px-4 space-y-8 w-full overflow-hidden">
       {/* Encabezado Editorial Centrado flanqueado por Controles Prev/Next */}
       <div className="flex items-center justify-between gap-4">
         {/* Botón Circular Anterior */}

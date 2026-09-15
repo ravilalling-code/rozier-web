@@ -51,7 +51,7 @@ export default function CampaignSection({ campaign, onCtaClick }: CampaignSectio
   const mainImage = images[0] || campaign.banner_url || '/images/logo.jpg';
 
   return (
-    <section className="bg-gradient-to-br from-amber-500/10 via-rose-500/10 to-transparent rounded-3xl p-5 sm:p-8 border border-amber-200/70 shadow-xs space-y-6">
+    <section className="bg-gradient-to-br from-amber-500/10 via-rose-500/10 to-transparent rounded-3xl p-5 sm:p-8 border border-amber-200/70 shadow-xs space-y-6 w-full max-w-full overflow-hidden">
       {/* Header Exterior de la Campaña */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">

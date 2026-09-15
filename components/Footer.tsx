@@ -30,7 +30,7 @@ export default function Footer({
 
   return (
     <footer
-      className="bg-[#FBF4F6] py-14 md:py-18 px-6 md:px-12 lg:px-16 relative overflow-hidden"
+      className="bg-[#FBF4F6] py-14 md:py-18 px-6 md:px-12 lg:px-16 relative overflow-hidden w-full max-w-full"
       style={{
         backgroundImage: 'radial-gradient(#F0D5DC 1px, transparent 1px)',
         backgroundSize: '16px 16px',

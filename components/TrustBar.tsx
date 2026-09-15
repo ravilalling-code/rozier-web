@@ -37,7 +37,7 @@ const TRUST_ITEMS = [
 
 export default function TrustBar() {
   return (
-    <section className="border-t border-rose-100/80 bg-white py-6 md:py-8 shadow-xs relative z-10">
+    <section className="border-t border-rose-100/80 bg-white py-6 md:py-8 shadow-xs relative z-10 w-full overflow-hidden">
       <div className="max-w-6xl mx-auto px-4">
         {/* Desktop: 6 columnas con separadores delgados / Mobile: carrusel táctil horizontal con snap */}
         <div className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory gap-4 lg:grid lg:grid-cols-6 lg:gap-0 lg:divide-x lg:divide-rose-100">

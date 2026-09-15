@@ -80,19 +80,38 @@ export default function StoreHeader({
   return (
     <>
       <header
-        className={`fixed top-0 w-full z-50 h-20 flex items-center justify-between px-6 md:px-12 transition-all duration-300 ease-out ${
+        className={`fixed top-0 w-full max-w-full z-50 h-20 flex items-center justify-between px-4 sm:px-6 md:px-12 transition-all duration-300 ease-out ${
           isScrolled
             ? 'bg-[#F6E2E6]/95 backdrop-blur-md shadow-sm border-b border-rose-200/80 text-[#2A2422]'
             : 'bg-transparent text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]'
         }`}
       >
-        {/* IDENTIDAD: Isotipo floral + Wordmark PETALIA + Micro Tagline */}
-        <Link href="/" className="flex items-center gap-3 group shrink-0">
+        {/* EXTREMO IZQUIERDO MOBILE: Botón Hamburguesa (<lg) */}
+        <div className="flex lg:hidden items-center shrink-0 w-10">
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Menú principal"
+            className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+              isScrolled
+                ? 'hover:bg-rose-200/60 text-[#2A2422]'
+                : 'hover:bg-white/20 text-white'
+            }`}
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* IDENTIDAD: Isotipo floral + Wordmark PETALIA (Centrado en mobile, izquierda en desktop) */}
+        <Link
+          href="/"
+          className="flex items-center gap-2 sm:gap-3 group shrink-0 lg:mr-auto justify-center"
+        >
           <div className="relative">
             <img
               src={logoUrl}
               alt="PETALIA"
-              className={`h-11 md:h-12 w-auto object-contain rounded-xl transition-all duration-300 shadow-xs border ${
+              className={`h-10 sm:h-11 md:h-12 w-auto object-contain rounded-xl transition-all duration-300 shadow-xs border ${
                 isScrolled ? 'border-rose-200/80 shadow-2xs' : 'border-white/30 drop-shadow-md'
               }`}
               onError={(e) => {
@@ -100,16 +119,16 @@ export default function StoreHeader({
               }}
             />
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
             <span
-              className={`font-serif tracking-[0.2em] font-normal text-xl md:text-2xl transition-colors ${
+              className={`font-serif tracking-[0.2em] font-normal text-lg sm:text-xl md:text-2xl transition-colors ${
                 isScrolled ? 'text-[#2A2422]' : 'text-white'
               }`}
             >
               PETALIA
             </span>
             <span
-              className={`text-[9px] uppercase tracking-[0.25em] font-medium -mt-1 font-sans transition-colors ${
+              className={`text-[8px] sm:text-[9px] uppercase tracking-[0.25em] font-medium -mt-1 font-sans transition-colors ${
                 isScrolled ? 'text-[#685D5A]' : 'text-white/85'
               }`}
             >
@@ -119,7 +138,7 @@ export default function StoreHeader({
         </Link>
 
         {/* NAVEGACIÓN DESKTOP */}
-        <nav className="hidden lg:flex items-center gap-8 font-semibold text-xs tracking-wider uppercase">
+        <nav className="hidden lg:flex items-center gap-8 font-semibold text-xs tracking-wider uppercase mx-auto">
           {/* Submenú COLECCIONES */}
           <div
             ref={collectionRef}
@@ -271,10 +290,10 @@ export default function StoreHeader({
           </button>
         </nav>
 
-        {/* ACCIONES DERECHA: Search, User/Admin, ShoppingBag */}
-        <div className="flex items-center gap-3 sm:gap-4">
-          {/* Botón Buscar */}
-          <div className="relative">
+        {/* EXTREMO DERECHO: ShoppingBag en Mobile, Search + Admin + ShoppingBag en Desktop */}
+        <div className="flex items-center justify-end gap-2 sm:gap-4 shrink-0 w-10 lg:w-auto">
+          {/* Botón Buscar (Desktop) */}
+          <div className="relative hidden lg:block">
             <button
               type="button"
               onClick={() => setSearchOpen(!searchOpen)}
@@ -308,11 +327,11 @@ export default function StoreHeader({
             )}
           </div>
 
-          {/* Botón Admin / Usuario */}
+          {/* Botón Admin / Usuario (Desktop) */}
           <Link
             href="/admin/products"
             title="Panel de Administración"
-            className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+            className={`hidden lg:flex w-9 h-9 rounded-full items-center justify-center transition-all ${
               isScrolled
                 ? 'hover:bg-rose-200/60 text-[#2A2422]'
                 : 'hover:bg-white/20 text-white'
@@ -321,7 +340,7 @@ export default function StoreHeader({
             <User className="w-4 h-4" />
           </Link>
 
-          {/* Botón ShoppingBag con Badge Dinámico */}
+          {/* Botón ShoppingBag con Badge Dinámico (Extremo derecho en mobile y desktop) */}
           <button
             type="button"
             onClick={onOpenCart}
@@ -338,20 +357,6 @@ export default function StoreHeader({
                 {cartCount}
               </span>
             )}
-          </button>
-
-          {/* Botón Hamburguesa Mobile */}
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(true)}
-            aria-label="Menú principal"
-            className={`lg:hidden w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-              isScrolled
-                ? 'hover:bg-rose-200/60 text-[#2A2422]'
-                : 'hover:bg-white/20 text-white'
-            }`}
-          >
-            <Menu className="w-5 h-5" />
           </button>
         </div>
       </header>
@@ -393,6 +398,26 @@ export default function StoreHeader({
               >
                 <X className="w-4 h-4" />
               </button>
+            </div>
+
+            {/* Buscador Rápido en Mobile */}
+            <div className="pt-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Buscar en el catálogo..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setMobileMenuOpen(false);
+                      handleScrollToSection('catalogo');
+                    }
+                  }}
+                  className="w-full text-xs pl-8 pr-3 py-2.5 bg-white rounded-xl border border-rose-200/80 focus:outline-rose-500 text-[#2A2422] shadow-2xs placeholder:text-warm-500"
+                />
+                <Search className="w-3.5 h-3.5 text-warm-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              </div>
             </div>
 
             {/* Links de Navegación */}

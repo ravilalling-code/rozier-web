@@ -76,7 +76,7 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
     <section
       id="unfold-story"
       ref={containerRef}
-      className="relative h-[180vh] bg-[#F9ECEF] transition-colors"
+      className="relative h-[180vh] bg-[#F9ECEF] transition-colors w-full max-w-full overflow-hidden"
     >
       {/* Contenedor sticky que permanece fijo en pantalla durante el scroll */}
       <div className="sticky top-0 h-screen overflow-hidden flex items-center justify-center">

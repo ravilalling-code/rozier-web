@@ -194,9 +194,9 @@ export default function ChatBot() {
     <>
       {/* Botón Flotante Moderno Palo Rosa & Alta Gama */}
       {!isOpen && (
-        <div className="fixed bottom-5 right-5 z-40 flex items-center gap-2">
+        <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 flex items-center gap-2">
           {hasUnread && (
-            <div className="hidden sm:flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-lg border border-[#E8B4B8] text-xs text-[#1A1A1A] font-medium animate-bounce">
+            <div className="hidden sm:flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-md border border-[#E8B4B8] text-xs text-[#1A1A1A] font-medium animate-bounce">
               <span className="w-2 h-2 rounded-full bg-[#D49A9E] animate-ping" />
               <span>¿Buscas un arreglo especial?</span>
             </div>
@@ -204,14 +204,15 @@ export default function ChatBot() {
 
           <button
             onClick={() => setIsOpen(true)}
-            className="group relative flex items-center gap-2.5 bg-[#1A1A1A] hover:bg-[#D49A9E] text-white hover:text-[#1A1A1A] px-4 py-3.5 rounded-full shadow-xl shadow-black/20 border border-[#D49A9E]/60 transition-all duration-300 transform hover:scale-105 active:scale-[0.98]"
+            className="group relative flex items-center justify-center w-12 h-12 md:w-auto md:h-auto md:px-4 md:py-3.5 bg-[#1A1A1A] hover:bg-[#D49A9E] text-white hover:text-[#1A1A1A] rounded-full shadow-lg shadow-black/20 border border-[#D49A9E]/60 transition-all duration-300 transform hover:scale-105 active:scale-[0.98] shrink-0"
             aria-label="Abrir Asistente Virtual PETALIA"
+            title="Asesora Virtual PETALIA"
           >
-            <div className="relative">
+            <div className="relative flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-[#E8B4B8] group-hover:text-[#1A1A1A] animate-pulse" />
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#D49A9E] border-2 border-[#1A1A1A] rounded-full" />
             </div>
-            <span className="text-xs font-bold tracking-wide">
+            <span className="hidden md:inline-block text-xs font-bold tracking-wide ml-2.5">
               Asesora Virtual
             </span>
           </button>
@@ -220,7 +221,7 @@ export default function ChatBot() {
 
       {/* Ventana Desplegable del Chatbot */}
       {isOpen && (
-        <div className="fixed bottom-0 right-0 sm:bottom-5 sm:right-5 z-50 w-full sm:w-[420px] h-[92vh] sm:h-[620px] max-h-[100vh] bg-white sm:rounded-2xl shadow-2xl border border-[#EFEAE9] card-editorial flex flex-col overflow-hidden animate-spring-modal">
+        <div className="fixed inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-4 sm:right-4 md:bottom-6 md:right-6 z-50 w-full sm:w-[400px] md:w-[420px] max-w-full h-[90vh] sm:h-[600px] max-h-[100dvh] bg-white sm:rounded-2xl shadow-2xl border border-[#EFEAE9] card-editorial flex flex-col overflow-hidden animate-spring-modal">
           {/* Header Elegante Alta Gama */}
           <div className="bg-[#111111] text-white p-4 flex items-center justify-between shadow-md border-b border-[#1A1A1A]">
             <div className="flex items-center gap-3">
