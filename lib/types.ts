@@ -46,6 +46,8 @@ export interface DeliveryZone {
   district: string;
   cost: number;
   active?: boolean;
+  is_active?: boolean;
+  created_at?: string;
 }
 
 export interface AddOnItem {

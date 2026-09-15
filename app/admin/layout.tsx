@@ -19,6 +19,7 @@ import {
   Heart,
   Layers,
   Gift,
+  Truck,
 } from 'lucide-react';
 
 const navigationItems = [
@@ -33,6 +34,12 @@ const navigationItems = [
     href: '/admin/addons',
     icon: Gift,
     description: 'Chocolates, peluches y cross-selling',
+  },
+  {
+    name: 'Tarifas de Delivery',
+    href: '/admin/delivery',
+    icon: Truck,
+    description: 'Distritos y costos de flete',
   },
   {
     name: 'Hero Slider (Portada)',

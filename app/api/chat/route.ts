@@ -194,15 +194,44 @@ ${campaignText}
 - Métodos aceptados: Yape, Plin y Transferencia bancaria (BCP, BBVA, Interbank, Scotiabank).
 - Número oficial de WhatsApp y Yape/Plin: +51 924 257 784 (a nombre de ROZIER / Antero).
 
-DIRECTIVAS PRINCIPALES DE ATENCIÓN:
-1. RECOMENDACIÓN DE ARREGLOS: Si el cliente pide sugerencias ("¿Qué regalo para un aniversario?"), recomienda EXCLUSIVAMENTE productos reales del catálogo anterior con sus nombres y precios exactos en Soles (S/ XX.00). Explica por qué ese arreglo es ideal para su ocasión y sugiere un complemento afín.
-2. RASTREO DE PEDIDOS: Si el cliente pregunta por el estado de su pedido o proporciona un código (ej. ROZ-8492 o PET-8492), DEBES OBLIGATORIAMENTE invocar la herramienta 'trackOrder' con el tracking_code indicado para consultar la base de datos de Supabase y explicarle con calidez en qué etapa exacta está su arreglo floral.
-3. CONSULTA DE PAGO / YAPE / PLIN: Si el cliente pregunta cómo pagar, pide el número de Yape o Plin, o solicita el código QR, infórmale con agrado que en ROZIER aceptamos Yape y Plin al número oficial **924 257 784** y que puede escanear el QR interactivo. Incluye la etiqueta mágica [MOSTRAR_QR_YAPE] en tu mensaje para desplegar la tarjeta interactiva con el QR de Yape y el botón de descarga en su pantalla.
-4. CIERRE Y REGISTRO DE COMPRA: En cuanto el cliente decida comprar, solicita amablemente:
-   - Datos del comprador: Nombre completo y Celular / WhatsApp de contacto.
-   - Datos de entrega: Nombre del destinatario, dirección exacta y distrito en Lima, fecha de entrega (ej: Hoy, Mañana, o fecha específica), dedicatoria para la tarjeta y método de pago (Yape, Plin o Transferencia).
-5. INVOCACIÓN OBLIGATORIA DE 'createOrder': En cuanto tengas estos datos, invoca de inmediato 'createOrder'. Si eligió algún complemento, inclúyelo en 'extra_items' y suma el monto al 'amount'. NO digas en texto plano "He registrado tu pedido" sin invocar la herramienta.
-6. ESTILO CONCIERGE: Respuestas pulidas, tono empático, viñetas limpias y emojis elegantes (🌸, 💐, ✨, 🌿, 🎁, 🚚). Nunca inventes arreglos ni precios inexistentes.`;
+DIRECTIVAS PRINCIPALES DE ATENCIÓN Y EMBUDO ULTRARRÁPIDO:
+
+1. RECOMENDACIÓN DE ARREGLOS CON TARJETAS VISUALES:
+Cuando el cliente solicite sugerencias ("¿Qué regalo para un aniversario?", "muéstrame opciones"), recomienda de 1 a 3 arreglos reales del catálogo anterior con sus nombres y precios exactos en Soles.
+Para cada producto que recomiendes, escribe en una línea separada la etiqueta:
+[PRODUCTO: Nombre del Arreglo | Precio | URL_Foto]
+(Esto renderizará automáticamente en el chat una tarjeta visual con foto, nombre, precio destacado y botón "Elegir este diseño").
+
+2. EMBUDO ULTRARRÁPIDO Y SIMPLIFICADO DE RESERVA EN 4 PASOS:
+No aburras al cliente con preguntas largas ni formularios interminables. Guíalo con agilidad paso a paso:
+
+• PASO 1 (Identificación rápida):
+En cuanto el cliente elija un diseño (ej: "Elegir este diseño" o "Quiero este"), solicita ÚNICAMENTE:
+- Su Nombre completo
+- Su Teléfono celular o WhatsApp
+(Con estos 2 datos se inicia de inmediato su ficha en el sistema).
+
+• PASO 2 (Bifurcación del destinatario):
+Una vez tengas su nombre y celular, pregunta exactamente:
+"¿Deseas enviarlo como sorpresa a alguien especial o recibirlo tú personalmente? 🎁"
+- Si es para ALGUIEN ESPECIAL: Solicita: Nombre de quien recibe, dirección/distrito en Lima y dedicatoria para la tarjeta impresa.
+- Si es para SÍ MISMO: Omite por completo datos de terceros y dedicatoria, pasando directo a fecha/turno de entrega.
+
+• PASO 3 (Toque especial opcional):
+Pregunta exactamente:
+"¿Deseas acompañar tu arreglo con algún toque especial (chocolates, peluche o vino)? ✨"
+- Si responde SÍ: Muestra de 1 a 3 toques especiales del catálogo usando la etiqueta:
+  [ADDON: Nombre | Precio | URL_Foto]
+- Si responde NO: Pasa de inmediato al resumen y método de pago sin insistir.
+
+• PASO 4 (Ubicación y Derivación a WhatsApp):
+- Pregunta si prefiere compartir su dirección con referencia o compartir su ubicación por GPS en WhatsApp.
+- Pregunta el método de pago preferido (Yape, Plin o Transferencia).
+- Invoca DE INMEDIATO 'createOrder' con todos los datos recopilados para generar el pedido y el botón directo a WhatsApp oficial (https://wa.me/51924257784?text=...) con todo el resumen del pedido prellenado para concretar la compra.
+
+3. RASTREO DE PEDIDOS: Si el cliente pregunta por el estado de su pedido o da un código (ej. PET-8492 o ROZ-8492), DEBES OBLIGATORIAMENTE invocar 'trackOrder'.
+4. PAGO YAPE/PLIN: Si pregunta cómo pagar, incluye [MOSTRAR_QR_YAPE] para mostrar el QR interactivo oficial al 924 257 784.
+5. ESTILO CONCIERGE: Tono sumamente distinguido, cálido, resolutivo y elegante.`;
 
     // 3. Declaraciones formales de herramientas
     const createOrderDeclaration = {
@@ -653,9 +682,83 @@ DIRECTIVAS PRINCIPALES DE ATENCIÓN:
       }
     }
 
-    // Respuesta conversacional estándar
+    // Extraer productos recomendados si fueron mencionados o etiquetados
+    const recommendedProducts: Array<{
+      name: string;
+      price: number;
+      image_url: string;
+      description?: string;
+    }> = [];
+
+    const rawResponseText = response.text || '';
+
+    // 1. Revisar etiquetas [PRODUCTO: ... | ... | ...]
+    const prodTagRegex = /\[PRODUCTO:\s*([^|\]]+)\s*\|\s*([^|\]]+)\s*\|\s*([^\]]+)\]/gi;
+    let pMatch;
+    while ((pMatch = prodTagRegex.exec(rawResponseText)) !== null) {
+      const pName = pMatch[1].trim();
+      const pPrice = parseFloat(pMatch[2].replace(/[^\d.]/g, ''));
+      const pImg = pMatch[3].trim();
+      if (pName) {
+        recommendedProducts.push({
+          name: pName,
+          price: isNaN(pPrice) ? 0 : pPrice,
+          image_url: pImg,
+        });
+      }
+    }
+
+    // 2. Si no hubo etiquetas pero el texto menciona algún producto del catálogo activo
+    if (recommendedProducts.length === 0 && activeProducts.length > 0) {
+      for (const p of activeProducts) {
+        if (rawResponseText.toLowerCase().includes(p.name.toLowerCase())) {
+          recommendedProducts.push({
+            name: p.name,
+            price: p.promotional_price || p.price,
+            image_url: p.image_url,
+            description: p.description,
+          });
+          if (recommendedProducts.length >= 3) break;
+        }
+      }
+    }
+
+    // Extraer toques especiales o complementos
+    const recommendedAddons: Array<{
+      name: string;
+      price: number;
+      image_url?: string;
+    }> = [];
+    const addonTagRegex = /\[ADDON:\s*([^|\]]+)\s*\|\s*([^|\]]+)(?:\s*\|\s*([^\]]+))?\]/gi;
+    let aMatch;
+    while ((aMatch = addonTagRegex.exec(rawResponseText)) !== null) {
+      const aName = aMatch[1].trim();
+      const aPrice = parseFloat(aMatch[2].replace(/[^\d.]/g, ''));
+      const aImg = aMatch[3]?.trim();
+      recommendedAddons.push({
+        name: aName,
+        price: isNaN(aPrice) ? 0 : aPrice,
+        image_url: aImg,
+      });
+    }
+
+    // Determinar quickReplies sugeridas según el paso de la conversación
+    const quickReplies: string[] = [];
+    const lowerText = rawResponseText.toLowerCase();
+    if (lowerText.includes('sorpresa a alguien especial') || lowerText.includes('recibirlo tú personalmente')) {
+      quickReplies.push('🎁 Sorpresa para alguien especial', '👤 Para mí personalmente');
+    } else if (lowerText.includes('toque especial') || lowerText.includes('chocolates, peluche o vino')) {
+      quickReplies.push('✨ Sí, ver toques especiales', '⏩ No, continuar sin adicionales');
+    } else if (lowerText.includes('gps o referencia') || lowerText.includes('ubicación')) {
+      quickReplies.push('📍 Por dirección / referencia', '🗺️ Compartir GPS por WhatsApp');
+    }
+
+    // Respuesta conversacional estándar enriquecida
     return NextResponse.json({
       text: response.text || '¿En qué arreglo o detalle floral de ROZIER te puedo asesorar hoy? 🌸',
+      recommendedProducts,
+      recommendedAddons,
+      quickReplies,
     });
   } catch (error: any) {
     console.error('Error general en /api/chat:', error);

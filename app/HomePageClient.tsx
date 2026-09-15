@@ -60,7 +60,9 @@ import {
   createWhatsAppLink,
   generateOrderWhatsAppMessage,
 } from '@/lib/whatsapp';
+import { getDeliveryZones } from '@/lib/delivery';
 import ChatBot from '@/components/ChatBot';
+import OrderTrackingModal from '@/components/OrderTrackingModal';
 
 const WHATSAPP_NUMBER = DEFAULT_WHATSAPP_NUMBER;
 
@@ -219,7 +221,7 @@ export default function HomePage() {
     const fetchCatalogAndCategories = async () => {
       setLoading(true);
       try {
-        const [prodsRes, catsData, settingsData, zonesRes, bannersData, campaignData, slidesData] = await Promise.all([
+        const [prodsRes, catsData, settingsData, zonesData, bannersData, campaignData, slidesData] = await Promise.all([
           supabase
             .from('products')
             .select('*')
@@ -227,10 +229,7 @@ export default function HomePage() {
             .order('created_at', { ascending: false }),
           getCategories(),
           getStoreSettings(),
-          supabase
-            .from('delivery_zones')
-            .select('*')
-            .order('district', { ascending: true }),
+          getDeliveryZones(false),
           getCategoryBanners(),
           getActiveCampaign(),
           getHeroSlides(),
@@ -258,11 +257,11 @@ export default function HomePage() {
         if (addonsData && addonsData.length > 0) {
           setSpecialAddons(addonsData);
         }
-        if (!zonesRes.error && zonesRes.data && zonesRes.data.length > 0) {
-          setDeliveryZones(zonesRes.data as DeliveryZone[]);
-          const defaultZone = zonesRes.data.find(
+        if (zonesData && zonesData.length > 0) {
+          setDeliveryZones(zonesData);
+          const defaultZone = zonesData.find(
             (z: any) => z.district?.toLowerCase() === 'miraflores'
-          ) || zonesRes.data[0];
+          ) || zonesData[0];
           setSelectedDistrict(defaultZone.district);
           setDeliveryFee(defaultZone.cost);
         }
@@ -1728,13 +1727,38 @@ export default function HomePage() {
                       </span>
                     </div>
                   )}
-                  <div className="flex justify-between items-center text-xs text-warm-500">
-                    <span>Flete de envío:</span>
-                    <span className="text-ink-900 font-semibold tabular-nums">S/ {deliveryFee.toFixed(2)} ({selectedDistrict})</span>
+                  <div className="pt-1.5 pb-0.5 space-y-1.5">
+                    <div className="flex justify-between items-center text-xs text-warm-500">
+                      <span className="flex items-center gap-1 font-medium text-ink-900">
+                        <Truck className="w-3.5 h-3.5 text-rose-600" />
+                        <span>Flete de envío:</span>
+                      </span>
+                      <span className="text-ink-900 font-bold tabular-nums">
+                        S/ {deliveryFee.toFixed(2)}
+                      </span>
+                    </div>
+                    <select
+                      value={selectedDistrict}
+                      onChange={(e) => {
+                        const dist = e.target.value;
+                        setSelectedDistrict(dist);
+                        const zone = deliveryZones.find((z) => z.district === dist);
+                        if (zone) setDeliveryFee(zone.cost);
+                      }}
+                      className="w-full bg-white border border-warm-200 rounded-lg px-2.5 py-1.5 text-xs text-ink-900 font-medium focus:outline-none focus:border-rose-600 cursor-pointer"
+                    >
+                      {deliveryZones
+                        .filter((z) => z.active !== false && z.is_active !== false)
+                        .map((z) => (
+                          <option key={z.id} value={z.district}>
+                            {z.district} — S/ {z.cost.toFixed(2)}
+                          </option>
+                        ))}
+                    </select>
                   </div>
                   <div className="flex justify-between items-baseline pt-2 border-t border-warm-100 text-sm">
                     <span className="font-bold text-ink-900">Total a pagar:</span>
-                    <span className="font-bold tabular-nums text-lg text-ink-900">
+                    <span className="font-bold tabular-nums text-lg text-rose-600">
                       S/ {grandTotal.toFixed(2)}
                     </span>
                   </div>
@@ -2032,11 +2056,13 @@ export default function HomePage() {
                       }}
                       className="w-full border border-warm-100 rounded-lg px-3 py-2 text-xs outline-none focus:border-rose-600 focus:ring-1 focus:ring-rose-500 bg-white text-ink-900 font-medium"
                     >
-                      {deliveryZones.map((z) => (
-                        <option key={z.id} value={z.district}>
-                          {z.district} — S/ {z.cost.toFixed(2)} (Delivery oficial)
-                        </option>
-                      ))}
+                      {deliveryZones
+                        .filter((z) => z.active !== false && z.is_active !== false)
+                        .map((z) => (
+                          <option key={z.id} value={z.district}>
+                            {z.district} — S/ {z.cost.toFixed(2)} (Delivery oficial)
+                          </option>
+                        ))}
                     </select>
                   </div>
 
@@ -2284,249 +2310,13 @@ export default function HomePage() {
       {/* Asistente Virtual Inteligente (Chatbot IA) */}
       <ChatBot />
 
-      {/* MODAL: Rastreo de Pedido en Tiempo Real */}
-      {isTrackingModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden animate-in fade-in duration-200">
-          <div className="bg-white border border-warm-100 max-w-lg w-full rounded-2xl p-5 sm:p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto animate-spring-modal card-editorial">
-            {/* Header del Modal */}
-            <div className="flex items-center justify-between border-b border-warm-100 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shadow-2xs border border-warm-100">
-                  <Truck className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-ink-900 tracking-tight">Rastrea tu Pedido</h3>
-                  <p className="text-xs text-warm-500">
-                    Sigue en vivo la preparación y despacho de tus flores
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsTrackingModalOpen(false)}
-                className="btn-tactile p-1.5 text-warm-500 hover:text-ink-900 rounded-lg hover:bg-rose-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Buscador de Código */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                lookupTrackingOrder(trackingInput);
-              }}
-              className="flex gap-2"
-            >
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-warm-500" />
-                <input
-                  type="text"
-                  value={trackingInput}
-                  onChange={(e) => setTrackingInput(e.target.value.toUpperCase())}
-                  placeholder="Ingresa tu código (ej: PET-8492)"
-                  className="w-full bg-rose-50 border border-warm-100 rounded-lg pl-10 pr-4 py-2.5 text-xs text-ink-900 font-mono uppercase placeholder:font-sans placeholder:text-warm-500/60 focus:outline-none focus:border-rose-600 focus:bg-white transition"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={trackingLoading || !trackingInput.trim()}
-                className="btn-tactile px-4 py-2.5 rounded-lg bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 text-xs font-semibold shadow disabled:opacity-50 flex items-center gap-1.5"
-              >
-                {trackingLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <span>Buscar</span>
-                )}
-              </button>
-            </form>
-
-            {/* Mensaje de Error */}
-            {trackingError && (
-              <div className="bg-rose-100 border border-accent-carmine/30 rounded-lg p-4 text-xs text-accent-carmine space-y-1">
-                <p className="font-bold">No se encontró el pedido</p>
-                <p className="text-[11px] text-warm-500">{trackingError}</p>
-                <div className="pt-2">
-                  <a
-                    href={`https://wa.me/${storeSettings?.whatsapp_number || WHATSAPP_NUMBER}?text=${encodeURIComponent(
-                      `¡Hola ROZIER! Deseo consultar sobre mi código de pedido: ${trackingInput}`
-                    )}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 font-semibold text-ink-900 hover:underline text-[11px]"
-                  >
-                    <MessageCircle className="w-3.5 h-3.5 text-rose-600" />
-                    <span>Consultar por WhatsApp con una asesora</span>
-                  </a>
-                </div>
-              </div>
-            )}
-
-            {/* Resultados y Línea de Tiempo del Pedido */}
-            {trackingOrder && (
-              <div className="space-y-5 animate-in fade-in duration-200">
-                {/* Código y Estado Destacado */}
-                <div className="bg-rose-50 border border-warm-100 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-warm-500">
-                      Código de Seguimiento
-                    </span>
-                    <p className="text-lg font-bold tabular-nums text-ink-900">
-                      {trackingOrder.tracking_code || 'PET-ORDEN'}
-                    </p>
-                    <p className="text-xs text-warm-500 mt-0.5">
-                      Fecha programada: {formatLocalDate(trackingOrder.delivery_date)}
-                    </p>
-                  </div>
-
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-100 text-ink-900 border border-rose-500 self-start sm:self-auto">
-                    <span className="w-2 h-2 rounded-full bg-rose-600 animate-rose-pulse" />
-                    <span className="capitalize">
-                      {trackingOrder.status === 'en_preparacion' ? 'En Preparación' : trackingOrder.status}
-                    </span>
-                  </div>
-                </div>
-
-                {/* LÍNEA DE TIEMPO VISUAL ESTRICTAMENTE HORIZONTAL (5 ETAPAS) */}
-                <div className="bg-white border border-warm-100 rounded-lg p-4 sm:p-5 space-y-4 shadow-xs overflow-hidden">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold text-ink-900 uppercase tracking-wider flex items-center gap-1.5">
-                      <Truck className="w-3.5 h-3.5 text-rose-600" />
-                      <span>Línea de Tiempo del Arreglo</span>
-                    </h4>
-                    <span className="text-[11px] text-warm-500 font-mono">
-                      Seguimiento en vivo
-                    </span>
-                  </div>
-
-                  {(() => {
-                    const normStatus = (trackingOrder.status || 'pendiente').toLowerCase();
-                    const getRank = (st: string) => {
-                      if (st === 'pendiente') return 1;
-                      if (st === 'confirmado') return 2;
-                      if (st === 'en_preparacion' || st === 'en_taller') return 3;
-                      if (st === 'en_despacho') return 4;
-                      if (st === 'entregado') return 5;
-                      return 1;
-                    };
-                    const currentRank = getRank(normStatus);
-
-                    const stages = [
-                      { rank: 1, label: 'Recibido', desc: 'Registrado', icon: Sparkles },
-                      { rank: 2, label: 'Confirmado', desc: 'Validado', icon: ShieldCheck },
-                      { rank: 3, label: 'En Preparación', desc: 'Taller floral', icon: Flower2 },
-                      { rank: 4, label: 'En Despacho', desc: 'Chofer en ruta', icon: Truck },
-                      { rank: 5, label: 'Entregado', desc: 'Completado', icon: Heart },
-                    ];
-
-                    const progressPercent =
-                      currentRank === 1 ? 0 : Math.min(100, ((currentRank - 1) / 4) * 100);
-
-                    return (
-                      <div className="relative py-3 px-1 overflow-hidden">
-                        {/* Línea conectora base horizontal continua */}
-                        <div className="absolute top-7 sm:top-8 left-6 right-6 h-1 bg-warm-100 -translate-y-1/2 z-0 rounded-full" />
-                        
-                        {/* Línea conectora activa iluminada con gradiente rose-500 a rose-600 */}
-                        <div
-                          className="absolute top-7 sm:top-8 left-6 h-1 bg-gradient-to-r from-rose-500 to-rose-600 -translate-y-1/2 z-0 rounded-full transition-all duration-500 ease-spring shadow-xs"
-                          style={{
-                            width: `calc(${progressPercent}% - ${progressPercent > 0 ? '16px' : '0px'})`,
-                          }}
-                        />
-
-                        {/* 5 Pasos distribuidos uniformemente en una sola fila continua sin scrollbar */}
-                        <div className="relative z-10 flex items-start justify-between w-full">
-                          {stages.map((st) => {
-                            const isCompleted = currentRank > st.rank;
-                            const isCurrent = currentRank === st.rank;
-                            const IconComp = st.icon;
-
-                            return (
-                              <div
-                                key={st.rank}
-                                className="flex flex-col items-center text-center flex-1 min-w-0 px-0.5"
-                              >
-                                <div
-                                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-300 ease-spring ${
-                                    isCompleted
-                                      ? 'bg-ink-900 text-white shadow-xs'
-                                      : isCurrent
-                                      ? 'bg-rose-500 text-ink-900 ring-4 ring-rose-100 shadow-md scale-110 font-bold animate-rose-pulse'
-                                      : 'bg-warm-100 text-warm-500'
-                                  }`}
-                                >
-                                  {isCompleted ? (
-                                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[3]" />
-                                  ) : (
-                                    <IconComp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                  )}
-                                </div>
-                                <span
-                                  className={`mt-2 text-[10px] sm:text-xs font-semibold leading-tight line-clamp-1 ${
-                                    isCurrent
-                                      ? 'text-rose-600 font-bold'
-                                      : isCompleted
-                                      ? 'text-ink-900'
-                                      : 'text-warm-500'
-                                  }`}
-                                >
-                                  {st.label}
-                                </span>
-                                <span className="hidden sm:block text-[9px] text-warm-500 mt-0.5 truncate max-w-full">
-                                  {st.desc}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {/* Resumen del Arreglo y Destinatario */}
-                <div className="bg-rose-50 rounded-lg p-4 border border-warm-100 space-y-2 text-xs">
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-warm-500">Destinatario:</span>
-                    <span className="font-semibold text-ink-900">
-                      {trackingOrder.recipient_name?.split('[Comprador:')[0].split('(Cel:')[0].trim() || 'Cliente'}
-                    </span>
-                  </div>
-
-                  {trackingOrder.delivery_address && (
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-warm-500">Destino:</span>
-                      <span className="font-medium text-ink-900 text-right truncate max-w-[200px]">
-                        {trackingOrder.delivery_address}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-baseline pt-1 border-t border-warm-100">
-                    <span className="text-warm-500">Total del pedido:</span>
-                    <span className="font-bold text-ink-900 tabular-nums text-sm">
-                      S/ {Number(trackingOrder.total_amount).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Botón WhatsApp para consultas sobre este pedido */}
-                <a
-                  href={`https://wa.me/${storeSettings?.whatsapp_number || WHATSAPP_NUMBER}?text=${encodeURIComponent(
-                    `¡Hola ROZIER! 🌸 Deseo consultar sobre el estado de mi pedido con código ${trackingOrder.tracking_code || 'ROZ-ORDEN'}.`
-                  )}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-tactile w-full bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 font-semibold py-3 rounded-lg shadow-md flex items-center justify-center gap-2 text-xs border border-ink-900 hover:border-rose-600"
-                >
-                  <MessageCircle className="w-4 h-4 fill-current opacity-80" />
-                  <span>Consultar por WhatsApp</span>
-                </a>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* MODAL MODERNO GLASSMORPHISM: Rastreo de Pedido en Tiempo Real */}
+      <OrderTrackingModal
+        isOpen={isTrackingModalOpen}
+        onClose={() => setIsTrackingModalOpen(false)}
+        initialCode={trackingInput}
+        whatsappNumber={storeSettings?.whatsapp_number || WHATSAPP_NUMBER}
+      />
 
       {/* Footer Editorial de Alta Gama */}
       <Footer

@@ -20,8 +20,30 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "ROZIER | Alta Floristería — Lima Metropolitana",
-  description: "ROZIER: Alta floristería de autor y diseño floral contemporáneo en Lima Metropolitana. La exclusividad de crear momentos inolvidables.",
+  title: 'ROZIER | Alta Floristería — Lima Metropolitana',
+  description: 'Alta floristería de autor y diseño floral contemporáneo en Lima Metropolitana. La exclusividad de crear momentos inolvidables.',
+  metadataBase: new URL('https://rozier-web.vercel.app'),
+  openGraph: {
+    title: 'ROZIER | Alta Floristería — Lima Metropolitana',
+    description: 'La exclusividad de crear momentos inolvidables. Arreglos florales exclusivos y delivery en Lima.',
+    url: 'https://rozier-web.vercel.app',
+    siteName: 'ROZIER',
+    images: [
+      {
+        url: '/images/logo web.jpg',
+        width: 800,
+        height: 800,
+        alt: 'ROZIER Alta Floristería Logo',
+      },
+    ],
+    locale: 'es_PE',
+    type: 'website',
+  },
+  icons: {
+    icon: '/images/logo web.jpg',
+    shortcut: '/images/logo web.jpg',
+    apple: '/images/logo web.jpg',
+  },
 };
 
 export default function RootLayout({
