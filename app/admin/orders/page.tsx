@@ -400,7 +400,7 @@ export default function AdminOrdersPage() {
             .from('customers')
             .insert([
               {
-                full_name: customerName.trim() || 'Cliente Petalia',
+                full_name: customerName.trim() || 'Cliente ROZIER',
                 phone: cleanPhone,
                 anniversary_date: anniversaryDate || null,
                 notes: customerNotes.trim() || null,
@@ -506,11 +506,11 @@ export default function AdminOrdersPage() {
     if (norm === 'en_preparacion') {
       message = `¡Hola ${clientName}! Tu pedido ${tracking} ya se encuentra *En Preparación* 🌸. Puedes rastrearlo aquí: ${trackingUrl}`;
     } else if (norm === 'en_despacho') {
-      message = `¡Hola ${clientName}! Tu arreglo floral de PETALIA (${tracking}) ya está *En Despacho* en camino a la dirección indicada 🚗💐. Puedes seguir su recorrido aquí: ${trackingUrl}`;
+      message = `¡Hola ${clientName}! Tu arreglo floral de ROZIER (${tracking}) ya está *En Despacho* en camino a la dirección indicada 🚗💐. Puedes seguir su recorrido aquí: ${trackingUrl}`;
     } else if (norm === 'entregado') {
-      message = `¡Hola ${clientName}! Tu pedido ${tracking} ha sido *Entregado* con éxito ✨. ¡Esperamos que sea un momento inolvidable! Muchas gracias por confiar en PETALIA 🌸`;
+      message = `¡Hola ${clientName}! Tu pedido ${tracking} ha sido *Entregado* con éxito ✨. ¡Esperamos que sea un momento inolvidable! Muchas gracias por confiar en ROZIER 🌸`;
     } else {
-      message = `¡Hola ${clientName}! Te saludamos de *PETALIA diseño floral*. Te informamos que tu pedido ${tracking} se encuentra en estado *${STATUS_CONFIG[norm]?.label || targetStatus}*. Puedes consultarlo aquí: ${trackingUrl}`;
+      message = `¡Hola ${clientName}! Te saludamos de *ROZIER, Alta Floristería*. Te informamos que tu pedido ${tracking} se encuentra en estado *${STATUS_CONFIG[norm]?.label || targetStatus}*. Puedes consultarlo aquí: ${trackingUrl}`;
     }
 
     window.open(`https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(message)}`, '_blank');
@@ -889,7 +889,7 @@ export default function AdminOrdersPage() {
     const phoneWithCountry = cleanPhone.startsWith('51') ? cleanPhone : `51${cleanPhone}`;
     const greeting = customerFullName ? `¡Hola ${customerFullName}!` : '¡Hola!';
     const text = encodeURIComponent(
-      `${greeting} Te saludamos de *PETALIA diseño floral*. Nos comunicamos para coordinar los detalles de tu pedido 🌸`
+      `${greeting} Te saludamos de *ROZIER, Alta Floristería*. Nos comunicamos para coordinar los detalles de tu pedido 🌸`
     );
     window.open(`https://wa.me/${phoneWithCountry}?text=${text}`, '_blank');
   };
@@ -1026,7 +1026,7 @@ export default function AdminOrdersPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `pedidos_petalia_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `pedidos_rozier_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

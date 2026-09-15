@@ -19,8 +19,8 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "PETALIA | Diseño Floral & Decoraciones de Alta Gama",
-  description: "Florería de alta gama en Lima Metropolitana. Arreglos florales exclusivos, boxes de rosas, ramos y detalles para toda ocasión. Pedidos directos y delivery coordinado.",
+  title: "ROZIER | Alta Floristería — Lima Metropolitana",
+  description: "ROZIER: Alta floristería de autor y diseño floral contemporáneo en Lima Metropolitana. La exclusividad de crear momentos inolvidables.",
 };
 
 export default function RootLayout({

@@ -60,7 +60,7 @@ export default function AdminHeroPage() {
       image_url: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=2000&q=85',
       cta_text: 'Explorar Colección',
       cta_link: '#catalogo',
-      watermark_text: 'Petalia',
+      watermark_text: 'Rozier',
       sort_order: slides.length + 1,
       is_active: true,
     };
@@ -156,7 +156,7 @@ export default function AdminHeroPage() {
             </span>
           </div>
           <p className="text-sm text-neutral-400 mt-1">
-            Gestiona de 1 a 5 fotos de gran impacto editorial con textos coreografiados en el Hero principal de PETALIA.
+            Personaliza los banners rotativos del Hero principal de ROZIER en la página de inicio.
           </p>
         </div>
 
@@ -436,7 +436,7 @@ export default function AdminHeroPage() {
                           type="text"
                           value={slide.watermark_text || ''}
                           onChange={(e) => handleSlideChange(index, 'watermark_text', e.target.value)}
-                          placeholder="Petalia, Romance, etc."
+                          placeholder="Rozier, Romance, etc."
                           className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white focus:border-rose-500 focus:outline-hidden"
                         />
                       </div>

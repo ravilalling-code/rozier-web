@@ -272,7 +272,7 @@ export default function HomePage() {
 
     // Recuperar carrito persistente
     try {
-      const savedCart = localStorage.getItem('petalia_cart');
+      const savedCart = localStorage.getItem('rozier_cart') || localStorage.getItem('petalia_cart');
       if (savedCart) {
         const parsed = JSON.parse(savedCart);
         if (Array.isArray(parsed)) {
@@ -285,7 +285,7 @@ export default function HomePage() {
 
     // Sincronización en tiempo real con Supabase ante cambios en el CRM Admin
     const realtimeChannel = supabase
-      .channel('petalia-store-realtime')
+      .channel('rozier-store-realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'category_banners' },
@@ -440,7 +440,7 @@ export default function HomePage() {
   const saveCart = (newCart: CartItem[]) => {
     setCart(newCart);
     try {
-      localStorage.setItem('petalia_cart', JSON.stringify(newCart));
+      localStorage.setItem('rozier_cart', JSON.stringify(newCart));
     } catch (e) {
       console.warn('Error guardando carrito en localStorage:', e);
     }
@@ -712,7 +712,9 @@ export default function HomePage() {
       // 4. Construir mensaje preformateado de WhatsApp
       const trackingLink = `https://petalia-web.vercel.app/?track=${trackingCode}`;
       const waLines = [
-        `¡Hola *PETALIA*! 🌸 Acabo de registrar mi pedido en la tienda:`,
+        `🌸 *NUEVO PEDIDO CONFIRMADO — ROZIER* 🌸`,
+        ``,
+        `¡Hola *ROZIER*! Acabo de registrar mi pedido en la tienda:`,
         ``,
         `🏷️ *Código de Pedido:* ${trackingCode}`,
         `📦 *Arreglos seleccionados:*`,
@@ -949,7 +951,7 @@ export default function HomePage() {
               ¿QUÉ QUIERES CELEBRAR?
             </h2>
             <p className="text-sm sm:text-base text-[#686161] leading-relaxed">
-              El detalle floral exclusivo con el sello de lujo de PETALIA.
+              El detalle floral exclusivo con el sello de lujo de ROZIER.
             </p>
 
             {/* Flechas de navegación integradas */}
@@ -1363,7 +1365,7 @@ export default function HomePage() {
               <div>
                 <h3 className="font-bold text-base text-ink-900 tracking-tight">{selectedProduct.name}</h3>
                 <p className="text-xs text-warm-500">
-                  {selectedProduct.category ? `Colección: ${selectedProduct.category}` : 'Florería Petalia'}
+                  {selectedProduct.category ? `Colección: ${selectedProduct.category}` : 'Alta Floristería ROZIER'}
                 </p>
               </div>
               <button
@@ -2188,7 +2190,7 @@ export default function HomePage() {
                       <div className="flex items-center gap-3">
                         <img
                           src={storeSettings?.yape_qr_url || '/images/qr-yape.png'}
-                          alt="QR Yape Petalia"
+                          alt="QR Yape ROZIER"
                           className="w-20 h-20 rounded-md object-contain bg-white p-1 border border-warm-100 shadow-2xs shrink-0"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = '/images/qr-yape.png';
@@ -2199,7 +2201,7 @@ export default function HomePage() {
                             Paga <span className="tabular-nums">S/ {grandTotal.toFixed(2)}</span> escaneando el QR
                           </p>
                           <p className="text-[11px] text-warm-500">
-                            Número: <span className="tabular-nums font-bold text-ink-900">924 257 784</span> (PETALIA)
+                            Número: <span className="tabular-nums font-bold text-ink-900">924 257 784</span> (ROZIER)
                           </p>
                           <button
                             type="button"
@@ -2228,7 +2230,7 @@ export default function HomePage() {
 
                   {paymentMethod === 'transferencia' && (
                     <div className="bg-rose-100 border border-warm-100 rounded-lg p-3 text-xs text-ink-900 space-y-1">
-                      <p className="font-bold">Cuentas bancarias oficiales de PETALIA:</p>
+                      <p className="font-bold">Cuentas bancarias oficiales de ROZIER:</p>
                       <p className="text-[11px] text-warm-500">
                         • BCP / BBVA / Interbank (coordinación inmediata de cuenta al confirmar por WhatsApp).
                       </p>
@@ -2274,13 +2276,13 @@ export default function HomePage() {
       {/* BOTÓN FLOTANTE PERMANENTE DE WHATSAPP (Logo Oficial & Verde de Marca) */}
       <a
         href={`https://wa.me/${storeSettings?.whatsapp_number || WHATSAPP_NUMBER}?text=${encodeURIComponent(
-          '¡Hola PETALIA! Deseo realizar una consulta sobre un arreglo floral 🌸'
+          '¡Hola ROZIER! Deseo realizar una consulta sobre un arreglo floral 🌸'
         )}`}
         target="_blank"
         rel="noreferrer"
         className="fixed bottom-20 right-4 md:bottom-24 md:right-6 z-50 bg-[#25D366] hover:bg-[#20ba59] text-white w-12 h-12 md:w-auto md:h-auto md:px-4 md:py-3.5 rounded-full shadow-lg shadow-emerald-950/20 flex items-center justify-center transition-all duration-300 transform hover:scale-105 active:scale-95 group border border-emerald-400/40 shrink-0"
-        title="Consultar al WhatsApp de PETALIA"
-        aria-label="Consultar al WhatsApp de PETALIA"
+        title="Consultar al WhatsApp de ROZIER"
+        aria-label="Consultar al WhatsApp de ROZIER"
       >
         <svg className="w-5 h-5 md:w-6 md:h-6 fill-white shrink-0" viewBox="0 0 24 24">
           <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
@@ -2376,7 +2378,7 @@ export default function HomePage() {
                 <div className="pt-2">
                   <a
                     href={`https://wa.me/${storeSettings?.whatsapp_number || WHATSAPP_NUMBER}?text=${encodeURIComponent(
-                      `¡Hola PETALIA! Deseo consultar sobre mi código de pedido: ${trackingInput}`
+                      `¡Hola ROZIER! Deseo consultar sobre mi código de pedido: ${trackingInput}`
                     )}`}
                     target="_blank"
                     rel="noreferrer"
@@ -2541,7 +2543,7 @@ export default function HomePage() {
                 {/* Botón WhatsApp para consultas sobre este pedido */}
                 <a
                   href={`https://wa.me/${storeSettings?.whatsapp_number || WHATSAPP_NUMBER}?text=${encodeURIComponent(
-                    `¡Hola PETALIA! 🌸 Deseo consultar sobre el estado de mi pedido con código ${trackingOrder.tracking_code || 'PET-ORDEN'}.`
+                    `¡Hola ROZIER! 🌸 Deseo consultar sobre el estado de mi pedido con código ${trackingOrder.tracking_code || 'ROZ-ORDEN'}.`
                   )}`}
                   target="_blank"
                   rel="noreferrer"
@@ -2563,9 +2565,9 @@ export default function HomePage() {
           setIsTrackingModalOpen(true);
         }}
         whatsappNumber={storeSettings?.whatsapp_number || WHATSAPP_NUMBER}
-        instagramUrl={storeSettings?.instagram_url || 'https://instagram.com/petalia.pe'}
-        facebookUrl={storeSettings?.facebook_url || 'https://facebook.com/petalia.pe'}
-        tiktokUrl={storeSettings?.tiktok_url || 'https://tiktok.com/@petalia.pe'}
+        instagramUrl={storeSettings?.instagram_url || 'https://instagram.com/rozier.pe'}
+        facebookUrl={storeSettings?.facebook_url || 'https://facebook.com/rozier.pe'}
+        tiktokUrl={storeSettings?.tiktok_url || 'https://tiktok.com/@rozier.pe'}
         logoUrl={storeSettings?.logo_url}
       />
     </div>

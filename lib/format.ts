@@ -1,5 +1,5 @@
 /**
- * Utilidades de formateo para fechas y moneda en PETALIA
+ * Utilidades de formateo para fechas y moneda en ROZIER
  */
 
 /**
@@ -111,9 +111,9 @@ export function parseToSqlDate(rawDate?: string | null): string {
 }
 
 /**
- * Genera un código de rastreo único y legible para el cliente (ej: PET-8492)
+ * Genera un código de rastreo único y legible para el cliente (ej: ROZ-8492)
  */
 export function generateTrackingCode(): string {
   const randomDigits = Math.floor(1000 + Math.random() * 9000);
-  return `PET-${randomDigits}`;
+  return `ROZ-${randomDigits}`;
 }

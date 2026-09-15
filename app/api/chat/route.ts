@@ -162,10 +162,10 @@ export async function POST(req: NextRequest) {
       : '• Sin campaña estacional activa por el momento (Catálogo regular completo disponible).';
 
     // 2. System prompt con directivas de Function Calling para pedidos y rastreo
-    const systemInstruction = `Eres la Asesora Floral Concierge de lujo y experta de "PETALIA diseño floral & decoraciones" en Lima, Perú.
+    const systemInstruction = `Eres la Asesora Floral Concierge de lujo y experta de "ROZIER, Alta Floristería" en Lima, Perú. Slogan oficial: "La exclusividad de crear momentos inolvidables".
 Tu trato es sumamente empático, distinguido, educado, refinado y resolutivo. Actúas como una personal shopper o concierge floral de alta gama que asesora a clientes exigentes para sorprender a sus seres queridos.
 
-INFORMACIÓN VIVA Y CONTEXTO EN TIEMPO REAL DE PETALIA:
+INFORMACIÓN VIVA Y CONTEXTO EN TIEMPO REAL DE ROZIER:
 
 1. CATÁLOGO DE LÍNEAS Y CATEGORÍAS FLORALES EN VIVO:
 ${categoriesText}
@@ -191,12 +191,12 @@ ${campaignText}
 
 6. MÉTODOS DE PAGO Y CONTACTO DIRECTO:
 - Métodos aceptados: Yape, Plin y Transferencia bancaria (BCP, BBVA, Interbank, Scotiabank).
-- Número oficial de WhatsApp y Yape/Plin: +51 924 257 784 (a nombre de PETALIA / Antero).
+- Número oficial de WhatsApp y Yape/Plin: +51 924 257 784 (a nombre de ROZIER / Antero).
 
 DIRECTIVAS PRINCIPALES DE ATENCIÓN:
 1. RECOMENDACIÓN DE ARREGLOS: Si el cliente pide sugerencias ("¿Qué regalo para un aniversario?"), recomienda EXCLUSIVAMENTE productos reales del catálogo anterior con sus nombres y precios exactos en Soles (S/ XX.00). Explica por qué ese arreglo es ideal para su ocasión y sugiere un complemento afín.
-2. RASTREO DE PEDIDOS: Si el cliente pregunta por el estado de su pedido o proporciona un código (ej. PET-8492 o similar), DEBES OBLIGATORIAMENTE invocar la herramienta 'trackOrder' con el tracking_code indicado para consultar la base de datos de Supabase y explicarle con calidez en qué etapa exacta está su arreglo floral.
-3. CONSULTA DE PAGO / YAPE / PLIN: Si el cliente pregunta cómo pagar, pide el número de Yape o Plin, o solicita el código QR, infórmale con agrado que en PETALIA aceptamos Yape y Plin al número oficial **924 257 784** y que puede escanear el QR interactivo. Incluye la etiqueta mágica [MOSTRAR_QR_YAPE] en tu mensaje para desplegar la tarjeta interactiva con el QR de Yape y el botón de descarga en su pantalla.
+2. RASTREO DE PEDIDOS: Si el cliente pregunta por el estado de su pedido o proporciona un código (ej. ROZ-8492 o PET-8492), DEBES OBLIGATORIAMENTE invocar la herramienta 'trackOrder' con el tracking_code indicado para consultar la base de datos de Supabase y explicarle con calidez en qué etapa exacta está su arreglo floral.
+3. CONSULTA DE PAGO / YAPE / PLIN: Si el cliente pregunta cómo pagar, pide el número de Yape o Plin, o solicita el código QR, infórmale con agrado que en ROZIER aceptamos Yape y Plin al número oficial **924 257 784** y que puede escanear el QR interactivo. Incluye la etiqueta mágica [MOSTRAR_QR_YAPE] en tu mensaje para desplegar la tarjeta interactiva con el QR de Yape y el botón de descarga en su pantalla.
 4. CIERRE Y REGISTRO DE COMPRA: En cuanto el cliente decida comprar, solicita amablemente:
    - Datos del comprador: Nombre completo y Celular / WhatsApp de contacto.
    - Datos de entrega: Nombre del destinatario, dirección exacta y distrito en Lima, fecha de entrega (ej: Hoy, Mañana, o fecha específica), dedicatoria para la tarjeta y método de pago (Yape, Plin o Transferencia).
@@ -207,7 +207,7 @@ DIRECTIVAS PRINCIPALES DE ATENCIÓN:
     const createOrderDeclaration = {
       name: 'createOrder',
       description:
-        'Registra formalmente el pedido floral en la base de datos de PETALIA cuando el cliente decida comprar y proporcione los datos: comprador, teléfono, destinatario, dirección, fecha de entrega, dedicatoria y producto.',
+        'Registra formalmente el pedido floral en la base de datos de ROZIER cuando el cliente decida comprar y proporcione los datos: comprador, teléfono, destinatario, dirección, fecha de entrega, dedicatoria y producto.',
       parameters: {
         type: Type.OBJECT,
         properties: {
@@ -587,11 +587,11 @@ DIRECTIVAS PRINCIPALES DE ATENCIÓN:
         const trackingLink = `https://petalia-web.vercel.app/?track=${trackingCode}`;
 
         const waLines = [
-          `¡Hola *PETALIA*! 🌸 Acabo de generar mi pedido con su Asesora Virtual:`,
+          `🌸 *NUEVO PEDIDO CONFIRMADO — ROZIER* 🌸`,
           ``,
           `🔖 *Código de rastreo:* ${trackingCode}`,
           `👤 *Comprador:* ${buyerName}${cleanPhone ? ` (${cleanPhone})` : ''}`,
-          `📦 *Arreglo:* ${args.product_name}`,
+          `📦 *Arreglo Floral:* ${args.product_name}`,
         ];
 
         if (args.extra_items && args.extra_items.length > 0) {
@@ -613,7 +613,7 @@ DIRECTIVAS PRINCIPALES DE ATENCIÓN:
           `💳 *Método de pago:* ${sqlPaymentMethod.toUpperCase()}`,
           `🔍 *Rastreo en vivo:* ${trackingLink}`,
           ``,
-          `Adjunto por este medio mi comprobante de pago para que inicien la preparación. ¡Muchas gracias! ✨`
+          `Adjunto por este medio mi comprobante de pago para que inicien la preparación. ¡Muchas gracias por confiar en ROZIER! ✨`
         );
 
         const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
@@ -642,7 +642,7 @@ DIRECTIVAS PRINCIPALES DE ATENCIÓN:
 
     // Respuesta conversacional estándar
     return NextResponse.json({
-      text: response.text || '¿En qué arreglo o detalle floral de PETALIA te puedo asesorar hoy? 🌸',
+      text: response.text || '¿En qué arreglo o detalle floral de ROZIER te puedo asesorar hoy? 🌸',
     });
   } catch (error: any) {
     console.error('Error general en /api/chat:', error);

@@ -125,7 +125,7 @@ export default function AdminSettingsPage() {
             </span>
           </div>
           <p className="text-sm text-neutral-400 mt-1">
-            Gestiona los banners editoriales de ocasión, redes sociales y números oficiales de PETALIA.
+            Gestiona los banners editoriales de ocasión, redes sociales y números oficiales de ROZIER.
           </p>
         </div>
 
@@ -410,7 +410,7 @@ export default function AdminSettingsPage() {
                     type="url"
                     value={settings.instagram_url}
                     onChange={(e) => setSettings({ ...settings, instagram_url: e.target.value })}
-                    placeholder="https://instagram.com/petalia.floral"
+                    placeholder="https://instagram.com/rozier.pe"
                     className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition"
                   />
                 </div>
@@ -427,7 +427,7 @@ export default function AdminSettingsPage() {
                     type="url"
                     value={settings.facebook_url}
                     onChange={(e) => setSettings({ ...settings, facebook_url: e.target.value })}
-                    placeholder="https://facebook.com/petalia.pe"
+                    placeholder="https://facebook.com/rozier.pe"
                     className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition"
                   />
                 </div>
@@ -442,7 +442,7 @@ export default function AdminSettingsPage() {
                     type="url"
                     value={settings.tiktok_url}
                     onChange={(e) => setSettings({ ...settings, tiktok_url: e.target.value })}
-                    placeholder="https://tiktok.com/@petalia_flores"
+                    placeholder="https://tiktok.com/@rozier.pe"
                     className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition"
                   />
                 </div>
@@ -451,13 +451,13 @@ export default function AdminSettingsPage() {
                 <div className="space-y-2 md:col-span-1 bg-neutral-950/60 p-4 rounded-2xl border border-neutral-800/80">
                   <label className="text-xs font-semibold text-neutral-300 flex items-center justify-between">
                     <span>Logo Oficial Web</span>
-                    <span className="text-[10px] text-neutral-500 font-mono">public/images/logo.jpg</span>
+                    <span className="text-[10px] text-neutral-500 font-mono">public/images/logo web.jpg</span>
                   </label>
                   <input
                     type="text"
                     value={settings.logo_url || ''}
                     onChange={(e) => setSettings({ ...settings, logo_url: e.target.value })}
-                    placeholder="/images/logo.jpg"
+                    placeholder="/images/logo web.jpg"
                     className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white font-mono placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition"
                   />
                   <div className="flex items-center gap-3 pt-1">

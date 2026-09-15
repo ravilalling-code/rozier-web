@@ -93,7 +93,7 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
           <div className="w-full lg:w-1/3 h-1/3 lg:h-full relative overflow-hidden shrink-0">
             <img
               src="https://qnrwguxaxcwqzodngztg.supabase.co/storage/v1/object/public/products/boxes/IMG-20260912-WA0044.jpg"
-              alt="Arreglo de lujo PETALIA"
+              alt="Arreglo de lujo ROZIER"
               className="w-full h-full object-cover"
               loading="lazy"
             />
@@ -112,7 +112,7 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
             </h2>
 
             <p className="text-xs sm:text-sm md:text-base text-neutral-300 font-light max-w-xl leading-relaxed">
-              Cada tallo seleccionado a mano, cada lazo anudado con absoluta precisión. En PETALIA entendemos que no estás enviando simplemente un ramo; estás confiando la entrega de un sentimiento inolvidable.
+              Cada tallo seleccionado a mano, cada lazo anudado con absoluta precisión. En ROZIER entendemos que no estás enviando simplemente un ramo; estás confiando la entrega de un sentimiento inolvidable.
             </p>
 
             <div className="pt-3">
@@ -131,7 +131,7 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
           <div className="w-full lg:w-1/3 h-1/3 lg:h-full relative overflow-hidden shrink-0">
             <img
               src="https://qnrwguxaxcwqzodngztg.supabase.co/storage/v1/object/public/products/ramos/IMG-20260912-WA0045.jpg"
-              alt="Taller floral PETALIA"
+              alt="Taller floral ROZIER"
               className="w-full h-full object-cover"
               loading="lazy"
             />

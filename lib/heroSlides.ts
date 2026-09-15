@@ -10,7 +10,7 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
     image_url: 'https://qnrwguxaxcwqzodngztg.supabase.co/storage/v1/object/public/products/ramos/IMG-20260912-WA0043.jpg',
     cta_text: 'Explorar Colección',
     cta_link: '#catalogo',
-    watermark_text: 'Petalia',
+    watermark_text: 'Rozier',
     sort_order: 1,
     is_active: true,
   },
@@ -125,7 +125,7 @@ export async function updateHeroSlides(slides: HeroSlide[]): Promise<HeroSlide[]
     image_url: slide.image_url?.trim() || '',
     cta_text: slide.cta_text?.trim() || 'Ver Diseños',
     cta_link: slide.cta_link?.trim() || '#catalogo',
-    watermark_text: slide.watermark_text?.trim() || 'Petalia',
+    watermark_text: slide.watermark_text?.trim() || 'Rozier',
     sort_order: slide.sort_order ?? idx + 1,
     is_active: slide.is_active ?? true,
   }));

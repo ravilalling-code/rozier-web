@@ -100,15 +100,19 @@ export default function AdminLayout({
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col lg:flex-row antialiased">
       {/* Mobile Top Navbar */}
       <div className="lg:hidden sticky top-0 z-40 bg-neutral-900/95 backdrop-blur-md border-b border-neutral-800/80 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <Link href="/admin/products" className="flex items-center gap-2">
             <img
-              src="/images/logo.jpg"
-              alt="PETALIA Logo"
+              src="/images/logo web.jpg"
+              alt="ROZIER CRM"
               className="h-8 w-auto object-contain rounded-lg shadow-md"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/images/logo.jpg';
+              }}
             />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-400 bg-rose-950/60 border border-rose-800/50 px-1.5 py-0.5 rounded-full">
-              Admin
+            <span className="font-serif text-sm font-bold text-white tracking-wide">ROZIER CRM</span>
+            <span className="text-[9px] font-semibold uppercase tracking-wider text-rose-400 bg-rose-950/60 border border-rose-800/50 px-1.5 py-0.5 rounded-full">
+              PRO
             </span>
           </Link>
         </div>
@@ -141,11 +145,11 @@ export default function AdminLayout({
         </div>
       </div>
 
-      {/* Mobile Drawer Backdrop */}
+      {/* Backdrop for mobile drawer */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
+          className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-xs transition-opacity"
         />
       )}
 
@@ -159,15 +163,26 @@ export default function AdminLayout({
           {/* Brand Header */}
           <div className="flex items-center justify-between pb-6 border-b border-neutral-800/80">
             <div className="flex items-center gap-3">
-              <Link href="/admin/products" className="flex items-center gap-2.5 group">
+              <Link href="/admin/products" className="flex items-center gap-3 group">
                 <img
-                  src="/images/logo.jpg"
-                  alt="PETALIA Logo"
+                  src="/images/logo web.jpg"
+                  alt="ROZIER CRM"
                   className="h-10 w-auto object-contain rounded-xl shadow-lg shadow-black/40 group-hover:opacity-90 transition"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/images/logo.jpg';
+                  }}
                 />
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-400 bg-rose-950/70 border border-rose-800/60 px-1.5 py-0.5 rounded-full">
-                  PRO
-                </span>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-serif text-base font-bold text-white tracking-wider">ROZIER</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400 bg-rose-950/70 border border-rose-800/60 px-1.5 py-0.2 rounded-full">
+                      CRM
+                    </span>
+                  </div>
+                  <span className="text-[9px] uppercase tracking-[0.2em] text-neutral-400 font-sans">
+                    Alta Floristería
+                  </span>
+                </div>
               </Link>
             </div>
             <button
@@ -263,9 +278,9 @@ export default function AdminLayout({
         <header className="hidden lg:flex items-center justify-between px-8 py-3.5 border-b border-neutral-800/70 bg-neutral-900/40 backdrop-blur-md">
           <div className="flex items-center gap-2 text-xs text-neutral-400">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-medium text-neutral-300">Florería PETALIA</span>
+            <span className="font-medium text-neutral-300">ROZIER CRM</span>
             <span className="text-neutral-600">•</span>
-            <span>Panel de Control Operativo</span>
+            <span>Alta Floristería</span>
           </div>
 
           <div className="flex items-center gap-3">

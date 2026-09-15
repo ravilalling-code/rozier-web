@@ -33,7 +33,7 @@ export default function StoreHeader({
   onOpenTracking,
   onSelectCategory,
   categories,
-  logoUrl = '/images/logo.jpg',
+  logoUrl = '/images/logo web.jpg',
 }: StoreHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [collectionMenuOpen, setCollectionMenuOpen] = useState(false);
@@ -102,15 +102,15 @@ export default function StoreHeader({
           </button>
         </div>
 
-        {/* IDENTIDAD: Isotipo floral + Wordmark PETALIA (Centrado en mobile, izquierda en desktop) */}
+        {/* IDENTIDAD: Isotipo floral + Wordmark ROZIER (Centrado en mobile, izquierda en desktop) */}
         <Link
           href="/"
           className="flex items-center gap-2 sm:gap-3 group shrink-0 lg:mr-auto justify-center"
         >
           <div className="relative">
             <img
-              src={logoUrl}
-              alt="PETALIA"
+              src={logoUrl || '/images/logo web.jpg'}
+              alt="ROZIER"
               className={`h-10 sm:h-11 md:h-12 w-auto object-contain rounded-xl transition-all duration-300 shadow-xs border ${
                 isScrolled ? 'border-rose-200/80 shadow-2xs' : 'border-white/30 drop-shadow-md'
               }`}
@@ -125,14 +125,14 @@ export default function StoreHeader({
                 isScrolled ? 'text-[#2A2422]' : 'text-white'
               }`}
             >
-              PETALIA
+              ROZIER
             </span>
             <span
               className={`text-[8px] sm:text-[9px] uppercase tracking-[0.25em] font-medium -mt-1 font-sans transition-colors ${
                 isScrolled ? 'text-[#685D5A]' : 'text-white/85'
               }`}
             >
-              Alta Floristería
+              ALTA FLORISTERÍA
             </span>
           </div>
         </Link>
@@ -378,16 +378,19 @@ export default function StoreHeader({
             <div className="flex items-center justify-between pb-5 border-b border-warm-100">
               <div className="flex items-center gap-2.5">
                 <img
-                  src={logoUrl}
-                  alt="PETALIA"
+                  src={logoUrl || '/images/logo web.jpg'}
+                  alt="ROZIER"
                   className="h-9 w-auto rounded-lg object-contain shadow-2xs"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/images/logo.jpg';
+                  }}
                 />
                 <div>
                   <h3 className="font-serif text-lg font-bold text-ink-900 tracking-wider">
-                    PETALIA
+                    ROZIER
                   </h3>
                   <p className="text-[10px] text-warm-500 uppercase tracking-widest">
-                    Alta Floristería
+                    ALTA FLORISTERÍA
                   </p>
                 </div>
               </div>
@@ -486,7 +489,7 @@ export default function StoreHeader({
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full text-center block text-[11px] text-warm-500 hover:text-ink-900 py-1"
               >
-                Acceso Administrativo (CRM)
+                Acceso Administrativo (ROZIER CRM)
               </Link>
             </div>
           </div>

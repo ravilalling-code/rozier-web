@@ -297,7 +297,7 @@ export default function AdminExpensesPage() {
             </span>
           </div>
           <p className="text-sm text-neutral-400 mt-1">
-            Métricas financieras, compras de insumos, flujo mensual y margen neto de PETALIA.
+            Métricas financieras, compras de insumos, flujo mensual y margen neto de ROZIER.
           </p>
         </div>
 

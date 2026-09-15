@@ -62,7 +62,7 @@ export default function ChatBot() {
       id: 'welcome',
       role: 'assistant',
       content:
-        '¡Hola! 🌸 Soy tu Asesora Floral Concierge de **PETALIA**.\n\nEstoy aquí para acompañarte a seleccionar o diseñar el arreglo perfecto para esa persona especial. ¿En qué detalle puedo complacerte hoy?\n\n✨ **1. Recomendarte arreglos según la ocasión** (Aniversario, Amor, Cumpleaños, etc.)\n🍫 **2. Añadir un Toque Especial** (Chocolates Ferrero, Peluches, Vinos o Globos)\n🚚 **3. Rastrear tu pedido en tiempo real** (con tu código ej. **PET-8492**)\n💜 **4. Consultar métodos de pago y delivery** en Lima Metropolitana',
+        '¡Hola! 🌸 Soy tu Concierge Floral de **ROZIER**.\n\nEstoy aquí para acompañarte a seleccionar o diseñar el arreglo perfecto para esa persona especial. La exclusividad de crear momentos inolvidables. ¿En qué detalle puedo complacerte hoy?\n\n✨ **1. Recomendarte arreglos según la ocasión** (Aniversario, Amor, Cumpleaños, etc.)\n🍫 **2. Añadir un Toque Especial** (Chocolates Ferrero, Peluches, Vinos o Globos)\n🚚 **3. Rastrear tu pedido en tiempo real** (con tu código ej. **ROZ-8492**)\n💜 **4. Consultar métodos de pago y delivery** en Lima Metropolitana',
       timestamp: 'Ahora',
     },
   ]);
@@ -148,7 +148,7 @@ export default function ChatBot() {
           id: `err-${Date.now()}`,
           role: 'assistant',
           content:
-            'Disculpa, ocurrió un error de conexión momentáneo. Puedes contactar directamente a nuestro WhatsApp oficial: **+51 924 257 784** 🌸',
+            'Disculpa, ocurrió un error de conexión momentáneo. Puedes contactar directamente a nuestro WhatsApp oficial de ROZIER: **+51 924 257 784** 🌸',
           timestamp: 'Ahora',
         },
       ]);
@@ -205,15 +205,15 @@ export default function ChatBot() {
           <button
             onClick={() => setIsOpen(true)}
             className="group relative flex items-center justify-center w-12 h-12 md:w-auto md:h-auto md:px-4 md:py-3.5 bg-[#1A1A1A] hover:bg-[#D49A9E] text-white hover:text-[#1A1A1A] rounded-full shadow-lg shadow-black/20 border border-[#D49A9E]/60 transition-all duration-300 transform hover:scale-105 active:scale-[0.98] shrink-0"
-            aria-label="Abrir Asistente Virtual PETALIA"
-            title="Asesora Virtual PETALIA"
+            aria-label="Abrir Concierge Virtual ROZIER"
+            title="Concierge ROZIER"
           >
             <div className="relative flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-[#E8B4B8] group-hover:text-[#1A1A1A] animate-pulse" />
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#D49A9E] border-2 border-[#1A1A1A] rounded-full" />
             </div>
             <span className="hidden md:inline-block text-xs font-bold tracking-wide ml-2.5">
-              Asesora Virtual
+              Asesora ROZIER
             </span>
           </button>
         </div>
@@ -231,14 +231,14 @@ export default function ChatBot() {
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-bold text-sm text-white tracking-tight">Asesora PETALIA</h3>
+                  <h3 className="font-bold text-sm text-white tracking-tight">Concierge ROZIER</h3>
                   <span className="text-[10px] uppercase font-semibold bg-[#F9ECEE] text-[#C94A58] border border-[#E8B4B8]/40 px-1.5 py-0.2 rounded-md">
                     IA
                   </span>
                 </div>
                 <p className="text-[11px] text-[#686161] flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#E8B4B8] animate-pulse" />
-                  <span className="text-stone-300">En línea • Florería PETALIA Lima</span>
+                  <span className="text-stone-300">En línea • ROZIER, Alta Floristería Lima</span>
                 </p>
               </div>
             </div>
@@ -295,7 +295,7 @@ export default function ChatBot() {
                               </div>
                               <div>
                                 <h4 className="font-bold text-xs text-purple-200">QR Oficial Yape / Plin</h4>
-                                <p className="text-[10px] text-purple-300/80">PETALIA • Florería</p>
+                                <p className="text-[10px] text-purple-300/80">ROZIER • Alta Floristería</p>
                               </div>
                             </div>
                             <span className="text-[10px] bg-purple-900/80 text-purple-300 border border-purple-700 px-2 py-0.5 rounded-full font-semibold">
@@ -306,7 +306,7 @@ export default function ChatBot() {
                           <div className="flex flex-col items-center bg-white rounded-xl p-3 shadow-inner">
                             <img
                               src="/images/qr-yape.png"
-                              alt="QR de Pago Yape PETALIA"
+                              alt="QR de Pago Yape ROZIER"
                               className="w-44 h-44 object-contain rounded-lg"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).src = '/images/qr-yape.png';
@@ -348,7 +348,7 @@ export default function ChatBot() {
                           {/* Botón Descargar QR */}
                           <a
                             href="/images/qr-yape.png"
-                            download="qr-yape-petalia.png"
+                            download="qr-yape-rozier.png"
                             className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold py-2 rounded-xl text-xs shadow transition active:scale-98"
                           >
                             <Download className="w-3.5 h-3.5" />

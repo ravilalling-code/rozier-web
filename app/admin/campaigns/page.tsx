@@ -1050,7 +1050,7 @@ export default function AdminCampaignsPage() {
                         ¿Activar de inmediato en la tienda web?
                       </span>
                       <span className="text-[11px] text-warm-500 block">
-                        Si se activa, se mostrará en la landing page de PETALIA en tiempo real.
+                        Si se activa, se mostrará en la landing page de ROZIER en tiempo real.
                       </span>
                     </div>
 

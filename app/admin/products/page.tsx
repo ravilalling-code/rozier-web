@@ -658,7 +658,7 @@ export default function AdminProductsPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 text-neutral-500 space-y-3">
           <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
-          <p className="text-sm">Cargando catálogo de PETALIA...</p>
+          <p className="text-sm">Cargando catálogo de ROZIER...</p>
         </div>
       ) : filteredProducts.length === 0 ? (
         <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/80 p-12 text-center space-y-3">

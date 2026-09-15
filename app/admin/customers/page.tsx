@@ -246,7 +246,7 @@ export default function AdminCustomersPage() {
     const cleanPhone = phone.replace(/\D/g, '');
     const phoneWithCountry = cleanPhone.startsWith('51') ? cleanPhone : `51${cleanPhone}`;
     const text = encodeURIComponent(
-      `¡Hola ${customerName}! Se acerca el ${occasion.toLowerCase()} de ${recipientName} 🌸 ¿Deseas programar tu arreglo especial con anticipación? En PETALIA tenemos opciones de alta gama para sorprender en esa fecha tan especial.`
+      `¡Hola ${customerName}! Se acerca el ${occasion.toLowerCase()} de ${recipientName} 🌸 ¿Deseas programar tu arreglo especial con anticipación? En ROZIER tenemos opciones de alta gama para sorprender en esa fecha tan especial.`
     );
     window.open(`https://wa.me/${phoneWithCountry}?text=${text}`, '_blank');
   };
