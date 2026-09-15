@@ -435,7 +435,7 @@ export default function ChatBot() {
                           )}
                         </div>
 
-                        {/* Botón Prominente para Enviar Constancia por WhatsApp */}
+                        {/* Botón Prominente para Enviar Comprobante por WhatsApp */}
                         <a
                           href={msg.orderCreated.whatsapp_url}
                           target="_blank"
@@ -443,7 +443,7 @@ export default function ChatBot() {
                           className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-xs text-center"
                         >
                           <MessageCircle className="w-4 h-4 fill-white/20" />
-                          <span>Enviar constancia por WhatsApp</span>
+                          <span>Enviar Comprobante a WhatsApp</span>
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       </div>

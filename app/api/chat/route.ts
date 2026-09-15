@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
 import { supabase } from '@/lib/supabase';
 import { formatLocalDate, generateTrackingCode } from '@/lib/format';
+import { DEFAULT_WHATSAPP_NUMBER, createWhatsAppLink } from '@/lib/whatsapp';
 
-const WHATSAPP_NUMBER = '51924257784';
+const WHATSAPP_NUMBER = DEFAULT_WHATSAPP_NUMBER;
 
 /**
  * Normaliza cualquier expresión de fecha a un formato válido SQL DATE (YYYY-MM-DD)
@@ -616,9 +617,21 @@ DIRECTIVAS PRINCIPALES DE ATENCIÓN:
           `Adjunto por este medio mi comprobante de pago para que inicien la preparación. ¡Muchas gracias por confiar en ROZIER! ✨`
         );
 
-        const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-          waLines.join('\n')
-        )}`;
+        let targetWhatsapp = WHATSAPP_NUMBER;
+        try {
+          const { data: stData } = await supabase
+            .from('store_settings')
+            .select('whatsapp_number')
+            .eq('id', 1)
+            .maybeSingle();
+          if (stData?.whatsapp_number) {
+            targetWhatsapp = stData.whatsapp_number;
+          }
+        } catch {
+          // fallback a WHATSAPP_NUMBER
+        }
+
+        const whatsappUrl = createWhatsAppLink(targetWhatsapp, waLines.join('\n'));
 
         return NextResponse.json({
           text: `¡Qué gran elección, **${buyerName}**! He registrado tu pedido de **${args.product_name}** en nuestro sistema con código de rastreo **${trackingCode}** 🌸.\n\nPara que nuestro equipo comience con la preparación de tus flores frescas y confirme la ruta de entrega, por favor envía la constancia de tu ${sqlPaymentMethod.toUpperCase()} haciendo clic en el botón de WhatsApp a continuación:`,
