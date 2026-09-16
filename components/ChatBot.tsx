@@ -385,21 +385,21 @@ export default function ChatBot() {
           }`}
         >
           {hasUnread && (
-            <div className="hidden sm:flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-md border border-[#E8B4B8] text-xs text-[#1A1A1A] font-medium animate-bounce">
-              <span className="w-2 h-2 rounded-full bg-[#D49A9E] animate-ping" />
+            <div className="hidden sm:flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-md border border-[#B85D6F]/40 text-xs text-[#1A1A1A] font-medium animate-bounce">
+              <span className="w-2 h-2 rounded-full bg-[#B85D6F] animate-ping" />
               <span>¿Buscas un arreglo especial?</span>
             </div>
           )}
 
           <button
             onClick={() => setIsOpen(true)}
-            className="group relative flex items-center justify-center w-12 h-12 md:w-auto md:h-auto md:px-4 md:py-3.5 bg-[#1A1A1A] hover:bg-[#D49A9E] text-white hover:text-[#1A1A1A] rounded-full shadow-lg shadow-black/20 border border-[#D49A9E]/60 transition-all duration-300 transform hover:scale-105 active:scale-[0.98] shrink-0"
+            className="group relative flex items-center justify-center w-12 h-12 md:w-auto md:h-auto md:px-4 md:py-3.5 bg-[#1A1A1A] hover:bg-[#B85D6F] text-white rounded-full shadow-lg shadow-black/20 border border-[#B85D6F]/60 transition-all duration-300 transform hover:scale-105 active:scale-[0.98] shrink-0"
             aria-label="Abrir Concierge Virtual ROZIER"
             title="Concierge ROZIER"
           >
             <div className="relative flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-[#E8B4B8] group-hover:text-[#1A1A1A] animate-pulse" />
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#D49A9E] border-2 border-[#1A1A1A] rounded-full" />
+              <Sparkles className="w-5 h-5 text-[#EBB6BC] group-hover:text-white animate-pulse" />
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#B85D6F] border-2 border-[#1A1A1A] rounded-full" />
             </div>
             <span className="hidden md:inline-block text-xs font-bold tracking-wide ml-2.5">
               Asesora ROZIER
@@ -418,19 +418,19 @@ export default function ChatBot() {
           {/* Header Elegante Alta Gama */}
           <div className="bg-[#111111] text-white p-4 flex items-center justify-between shadow-md border-b border-[#1A1A1A]">
             <div className="flex items-center gap-3">
-              <div className="relative w-10 h-10 rounded-lg bg-[#F9ECEE] text-[#D49A9E] border border-[#E8B4B8] flex items-center justify-center shadow-xs">
+              <div className="relative w-10 h-10 rounded-lg bg-[#FAF2F4] text-[#B85D6F] border border-[#E8D5DC] flex items-center justify-center shadow-xs">
                 <Flower2 className="w-5 h-5" />
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#D49A9E] border-2 border-[#111111] rounded-full" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#B85D6F] border-2 border-[#111111] rounded-full" />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
                   <h3 className="font-bold text-sm text-white tracking-tight">Concierge ROZIER</h3>
-                  <span className="text-[10px] uppercase font-semibold bg-[#F9ECEE] text-[#C94A58] border border-[#E8B4B8]/40 px-1.5 py-0.2 rounded-md">
+                  <span className="text-[10px] uppercase font-semibold bg-[#FAF2F4] text-[#9B4858] border border-[#B85D6F]/30 px-1.5 py-0.2 rounded-md">
                     IA
                   </span>
                 </div>
                 <p className="text-[11px] text-[#686161] flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#E8B4B8] animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#B85D6F] animate-pulse" />
                   <span className="text-stone-300">En línea • ROZIER, Alta Floristería Lima</span>
                 </p>
               </div>
@@ -456,7 +456,7 @@ export default function ChatBot() {
                   className={`flex gap-2.5 ${isUser ? 'justify-end' : 'justify-start'}`}
                 >
                   {!isUser && (
-                    <div className="w-7 h-7 rounded-xl bg-[#F9ECEE] text-[#D49A9E] border border-[#E8B4B8] flex-shrink-0 flex items-center justify-center shadow-2xs mt-0.5">
+                    <div className="w-7 h-7 rounded-xl bg-[#FAF2F4] text-[#B85D6F] border border-[#E8D5DC] flex-shrink-0 flex items-center justify-center shadow-2xs mt-0.5">
                       <Flower2 className="w-3.5 h-3.5" />
                     </div>
                   )}
@@ -805,7 +805,7 @@ export default function ChatBot() {
                   key={sug}
                   onClick={() => handleSendMessage(sug)}
                   disabled={isLoading}
-                  className="btn-tactile px-3 py-1 rounded-full bg-[#F9ECEE] hover:bg-[#F3E0E3] text-[#686161] hover:text-[#1A1A1A] text-[11px] whitespace-nowrap border border-[#EFEAE9]"
+                  className="btn-tactile px-3 py-1 rounded-full bg-[#FAF2F4] hover:bg-[#F5E5EA] text-[#686161] hover:text-[#1A1A1A] text-[11px] whitespace-nowrap border border-[#E8D5DC]"
                 >
                   {sug}
                 </button>
@@ -823,12 +823,12 @@ export default function ChatBot() {
               onKeyDown={handleKeyDown}
               placeholder="Escribe tu consulta o pide un arreglo..."
               disabled={isLoading}
-              className="flex-1 bg-[#FDF7F7] border border-[#EFEAE9] rounded-lg px-4 py-2.5 text-xs text-[#1A1A1A] placeholder:text-[#686161] focus:outline-none focus:border-[#D49A9E] focus:bg-white transition"
+              className="flex-1 bg-[#FDF7F7] border border-[#EFEAE9] rounded-lg px-4 py-2.5 text-xs text-[#1A1A1A] placeholder:text-[#686161] focus:outline-none focus:border-[#B85D6F] focus:bg-white transition"
             />
             <button
               onClick={() => handleSendMessage()}
               disabled={isLoading || !inputValue.trim()}
-              className="btn-tactile p-2.5 rounded-lg bg-[#1A1A1A] hover:bg-[#D49A9E] text-white hover:text-[#1A1A1A] shadow-md border border-[#1A1A1A] hover:border-[#D49A9E] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="btn-tactile p-2.5 rounded-lg bg-[#1A1A1A] hover:bg-[#B85D6F] text-white hover:text-white shadow-md border border-[#1A1A1A] hover:border-[#B85D6F] disabled:opacity-40 disabled:cursor-not-allowed"
               title="Enviar mensaje"
             >
               <Send className="w-4 h-4" />

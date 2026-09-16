@@ -305,7 +305,33 @@ export async function getClientReviews(): Promise<ClientReview[]> {
       .order('order_index', { ascending: true });
 
     if (!error && data && data.length > 0) {
-      return data as ClientReview[];
+      return (data as Record<string, unknown>[]).map((row) => {
+        const rowOrderIndex = typeof row.order_index === 'number' ? row.order_index : undefined;
+        const rowImageUrl = typeof row.image_url === 'string' ? row.image_url : undefined;
+        const rowClientName = typeof row.client_name === 'string' ? row.client_name : undefined;
+
+        const defaultMatch = DEFAULT_CLIENT_REVIEWS.find(
+          (d) =>
+            d.order_index === rowOrderIndex ||
+            d.image_url === rowImageUrl ||
+            d.client_name?.toLowerCase() === rowClientName?.toLowerCase()
+        );
+
+        return {
+          id: String(row.id),
+          client_name: (row.client_name as string) || defaultMatch?.client_name || 'Cliente Verificado',
+          image_url: (row.image_url as string) || defaultMatch?.image_url || '/images/clientes/1.jpg',
+          photo_url: (row.image_url as string) || defaultMatch?.photo_url || '/images/clientes/1.jpg',
+          district: (row.district as string) || defaultMatch?.district || 'Lima',
+          rating: typeof row.rating === 'number' ? Number(row.rating) : (defaultMatch?.rating || 5),
+          comment: (row.comment as string) || defaultMatch?.comment || defaultMatch?.testimonial || 'Excelente experiencia floral.',
+          testimonial: (row.testimonial as string) || (row.comment as string) || defaultMatch?.testimonial || defaultMatch?.comment || 'Excelente experiencia floral.',
+          occasion: (row.occasion as string) || defaultMatch?.occasion || 'Ocasión Especial',
+          order_index: (row.order_index as number) ?? defaultMatch?.order_index ?? 0,
+          is_active: (row.is_active as boolean) ?? true,
+          created_at: row.created_at as string | undefined,
+        };
+      }) as ClientReview[];
     }
   } catch (err) {
     console.warn('Advertencia consultando client_reviews en Supabase, recurriendo a local:', err);
@@ -326,7 +352,33 @@ export async function getAllClientReviews(): Promise<ClientReview[]> {
       .order('order_index', { ascending: true });
 
     if (!error && data && data.length > 0) {
-      return data as ClientReview[];
+      return (data as Record<string, unknown>[]).map((row) => {
+        const rowOrderIndex = typeof row.order_index === 'number' ? row.order_index : undefined;
+        const rowImageUrl = typeof row.image_url === 'string' ? row.image_url : undefined;
+        const rowClientName = typeof row.client_name === 'string' ? row.client_name : undefined;
+
+        const defaultMatch = DEFAULT_CLIENT_REVIEWS.find(
+          (d) =>
+            d.order_index === rowOrderIndex ||
+            d.image_url === rowImageUrl ||
+            d.client_name?.toLowerCase() === rowClientName?.toLowerCase()
+        );
+
+        return {
+          id: String(row.id),
+          client_name: (row.client_name as string) || defaultMatch?.client_name || 'Cliente Verificado',
+          image_url: (row.image_url as string) || defaultMatch?.image_url || '/images/clientes/1.jpg',
+          photo_url: (row.image_url as string) || defaultMatch?.photo_url || '/images/clientes/1.jpg',
+          district: (row.district as string) || defaultMatch?.district || 'Lima',
+          rating: typeof row.rating === 'number' ? Number(row.rating) : (defaultMatch?.rating || 5),
+          comment: (row.comment as string) || defaultMatch?.comment || defaultMatch?.testimonial || 'Excelente experiencia floral.',
+          testimonial: (row.testimonial as string) || (row.comment as string) || defaultMatch?.testimonial || defaultMatch?.comment || 'Excelente experiencia floral.',
+          occasion: (row.occasion as string) || defaultMatch?.occasion || 'Ocasión Especial',
+          order_index: (row.order_index as number) ?? defaultMatch?.order_index ?? 0,
+          is_active: (row.is_active as boolean) ?? true,
+          created_at: row.created_at as string | undefined,
+        };
+      }) as ClientReview[];
     }
   } catch (err) {
     console.warn('Advertencia consultando client_reviews para admin:', err);

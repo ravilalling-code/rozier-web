@@ -240,7 +240,7 @@ export default function HomePage() {
     const fetchCatalogAndCategories = async () => {
       setLoading(true);
       try {
-        const [prodsRes, catsData, settingsData, zonesData, bannersData, campaignData, slidesData] = await Promise.all([
+        const results = await Promise.allSettled([
           supabase
             .from('products')
             .select('*')
@@ -254,10 +254,20 @@ export default function HomePage() {
           getHeroSlides(),
         ]);
 
-        if (!prodsRes.error && prodsRes.data) {
+        const prodsRes = results[0].status === 'fulfilled' ? results[0].value : null;
+        const catsData = results[1].status === 'fulfilled' ? results[1].value : [];
+        const settingsData = results[2].status === 'fulfilled' ? results[2].value : null;
+        const zonesData = results[3].status === 'fulfilled' ? results[3].value : [];
+        const bannersData = results[4].status === 'fulfilled' ? results[4].value : [];
+        const campaignData = results[5].status === 'fulfilled' ? results[5].value : null;
+        const slidesData = results[6].status === 'fulfilled' ? results[6].value : [];
+
+        if (prodsRes && !prodsRes.error && prodsRes.data) {
           setProducts(prodsRes.data as Product[]);
         }
-        setCategories(catsData);
+        if (catsData && catsData.length > 0) {
+          setCategories(catsData);
+        }
         if (settingsData) {
           setStoreSettings(settingsData);
         }
@@ -272,9 +282,13 @@ export default function HomePage() {
         if (slidesData && slidesData.length > 0) {
           setHeroSlides(slidesData);
         }
-        const addonsData = await getSpecialAddons();
-        if (addonsData && addonsData.length > 0) {
-          setSpecialAddons(addonsData);
+        try {
+          const addonsData = await getSpecialAddons();
+          if (addonsData && addonsData.length > 0) {
+            setSpecialAddons(addonsData);
+          }
+        } catch (addonsErr) {
+          console.warn('Error cargando special addons:', addonsErr);
         }
         if (zonesData && zonesData.length > 0) {
           setDeliveryZones(zonesData);
@@ -580,19 +594,62 @@ export default function HomePage() {
     }
   };
 
+  // Función de coincidencia inteligente de categorías con soporte para alias y variaciones
+  const isMatchCategory = (prodCat: string, targetSlug: string, prodName?: string) => {
+    const cleanProd = (prodCat || '').toLowerCase().trim();
+    const cleanTarget = (targetSlug || '').toLowerCase().trim();
+    if (!cleanTarget || cleanTarget === 'todos') return true;
+    if (cleanProd === cleanTarget) return true;
+
+    // Normalización de tildes y caracteres
+    const normProd = cleanProd.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const normTarget = cleanTarget.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (normProd === normTarget) return true;
+
+    // Aliases frecuentes en floristería de lujo
+    if (normTarget === 'detalles') {
+      if (['box', 'cajas', 'peluche', 'peluches', 'adicionales', 'globos', 'chocolates', 'detalles'].includes(normProd)) return true;
+      if (prodName && /detalle|box|caja|peluche|globo|chocolate|vino|licor/i.test(prodName)) return true;
+    }
+    if (normTarget === 'box' || normTarget === 'cajas') {
+      if (['box', 'cajas', 'caja'].includes(normProd)) return true;
+    }
+    if (normTarget === 'ramos' || normTarget === 'bouquets') {
+      if (['ramos', 'bouquets', 'bouquet', 'ramo'].includes(normProd)) return true;
+    }
+    if (normTarget === 'rosas') {
+      if (normProd.includes('rosa')) return true;
+      if (prodName && /rosa/i.test(prodName)) return true;
+    }
+    if (normTarget === 'tulipanes') {
+      if (normProd.includes('tulipan')) return true;
+      if (prodName && /tulip/i.test(prodName)) return true;
+    }
+    if (normTarget === 'girasoles') {
+      if (normProd.includes('girasol')) return true;
+      if (prodName && /girasol/i.test(prodName)) return true;
+    }
+    if (normTarget === 'orquideas') {
+      if (normProd.includes('orquid')) return true;
+      if (prodName && /orquid/i.test(prodName)) return true;
+    }
+    if (normTarget === 'canastas') {
+      if (normProd.includes('canasta')) return true;
+      if (prodName && /canasta/i.test(prodName)) return true;
+    }
+
+    return false;
+  };
+
   // Píldoras de categorías dinámicas: sólo aquellas con productos activos en Supabase
   const activeCategories = categories.filter((cat) =>
-    products.some(
-      (p) => (p.category || '').toLowerCase().trim() === cat.slug.toLowerCase().trim()
-    )
+    products.some((p) => isMatchCategory(p.category || '', cat.slug, p.name))
   );
 
   const filteredProducts =
     category === 'todos'
       ? products
-      : products.filter(
-          (p) => (p.category || '').toLowerCase().trim() === category.toLowerCase().trim()
-        );
+      : products.filter((p) => isMatchCategory(p.category || '', category, p.name));
 
   // Agrupación de productos por categoría desde public.categories para carruseles de 1 sola fila en "Todos"
   const categoryGroups = (
@@ -602,18 +659,14 @@ export default function HomePage() {
   )
     .map((cat) => ({
       ...cat,
-      products: products.filter(
-        (p) => (p.category || '').toLowerCase().trim() === cat.slug.toLowerCase().trim()
-      ),
+      products: products.filter((p) => isMatchCategory(p.category || '', cat.slug, p.name)),
     }))
     .filter((g) => g.products.length > 0);
 
   // Incluir productos con slug no mapeado en otras creaciones si existen
   const unmappedProducts = products.filter(
     (p) =>
-      !categoryGroups.some(
-        (g) => g.slug.toLowerCase().trim() === (p.category || '').toLowerCase().trim()
-      )
+      !categoryGroups.some((g) => isMatchCategory(p.category || '', g.slug, p.name))
   );
   if (unmappedProducts.length > 0) {
     categoryGroups.push({
@@ -1094,20 +1147,32 @@ export default function HomePage() {
           /* Vista de Categoría Específica Seleccionada */
           <div className="space-y-8">
             {filteredProducts.length === 0 ? (
-              <div className="text-center py-24 bg-white rounded-2xl border border-[#E8D5DC] card-editorial p-8 space-y-3 shadow-xs">
-                <Flower2 className="w-12 h-12 text-[#B85D6F] mx-auto stroke-1" />
-                <p className="text-sm font-bold text-[#2D1B22]">
-                  No hay arreglos disponibles en esta categoría.
-                </p>
-                <p className="text-xs text-[#7A4B58]">
-                  Explora otras colecciones o consúltanos directamente por WhatsApp.
-                </p>
-                <button
-                  onClick={() => setCategory('todos')}
-                  className="btn-tactile text-xs text-[#B85D6F] font-bold hover:underline pt-1 inline-block"
-                >
-                  Ver todos los arreglos
-                </button>
+              <div className="space-y-6">
+                <div className="text-center py-14 bg-white rounded-2xl border border-[#E8D5DC] card-editorial p-8 space-y-3 shadow-xs">
+                  <Flower2 className="w-12 h-12 text-[#B85D6F] mx-auto stroke-1" />
+                  <p className="text-sm font-bold text-[#2D1B22]">
+                    No encontramos arreglos específicos para esta selección.
+                  </p>
+                  <p className="text-xs text-[#7A4B58]">
+                    Explora otras colecciones o revisa algunos de nuestros diseños más solicitados:
+                  </p>
+                  <button
+                    onClick={() => setCategory('todos')}
+                    className="btn-tactile px-5 py-2.5 rounded-full bg-[#B85D6F] hover:bg-[#9B4858] text-white text-xs font-bold shadow-xs transition-all inline-block mt-2"
+                  >
+                    Ver catálogo completo
+                  </button>
+                </div>
+                {representativeProducts.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-mono uppercase tracking-wider text-[#8B3B4D] font-bold">
+                      Diseños sugeridos para ti
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 items-stretch">
+                      {representativeProducts.slice(0, 4).map((product) => renderProductCard(product, false))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-8">

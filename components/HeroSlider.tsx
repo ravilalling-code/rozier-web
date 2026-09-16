@@ -15,13 +15,12 @@ export default function HeroSlider({ slides, onCtaClick }: HeroSliderProps) {
   const totalSlides = activeSlides.length;
 
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [incomingIdx, setIncomingIdx] = useState<number | null>(null);
-  const [isWiping, setIsWiping] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [textVisible, setTextVisible] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
 
   const touchStartX = useRef<number | null>(null);
-  const wipeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const textTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Asegurar que currentIdx esté dentro del rango si la cantidad de slides cambia dinámicamente
@@ -33,30 +32,28 @@ export default function HeroSlider({ slides, onCtaClick }: HeroSliderProps) {
 
   const goToSlide = useCallback(
     (targetIndex: number) => {
-      if (isWiping || targetIndex === currentIdx || totalSlides <= 1) return;
+      if (targetIndex === currentIdx || totalSlides <= 1) return;
 
-      // 1. Coreografía: Fade-out rápido del texto saliente (150ms)
+      // Cancelar transiciones previas en vuelo para evitar estados inconsistentes (Skill UX Rule: Cancellable Transitions)
+      if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+      if (textTimeoutRef.current) clearTimeout(textTimeoutRef.current);
+
+      setIsTransitioning(true);
+      // 1. Fade-out elegante del texto saliente (180ms)
       setTextVisible(false);
 
-      // Iniciar el wipe horizontal
-      setIncomingIdx(targetIndex);
-      setIsWiping(true);
-
-      // 800ms de Wipe horizontal con curva cubic-bezier(0.16, 1, 0.3, 1)
-      if (wipeTimeoutRef.current) clearTimeout(wipeTimeoutRef.current);
-      wipeTimeoutRef.current = setTimeout(() => {
+      // 2. Transición suave de diapositiva tras fade-out del texto
+      transitionTimeoutRef.current = setTimeout(() => {
         setCurrentIdx(targetIndex);
-        setIncomingIdx(null);
-        setIsWiping(false);
 
-        // Retardo de ~100ms tras completar el wipe para fade-in del texto nuevo
-        if (textTimeoutRef.current) clearTimeout(textTimeoutRef.current);
+        // 3. Fade-in del nuevo texto sincronizado mientras la diapositiva se asienta
         textTimeoutRef.current = setTimeout(() => {
           setTextVisible(true);
-        }, 100);
-      }, 800);
+          setIsTransitioning(false);
+        }, 320);
+      }, 200);
     },
-    [isWiping, currentIdx, totalSlides]
+    [currentIdx, totalSlides]
   );
 
   const nextSlide = useCallback(() => {
@@ -84,7 +81,7 @@ export default function HeroSlider({ slides, onCtaClick }: HeroSliderProps) {
   // Limpieza de timeouts
   useEffect(() => {
     return () => {
-      if (wipeTimeoutRef.current) clearTimeout(wipeTimeoutRef.current);
+      if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
       if (textTimeoutRef.current) clearTimeout(textTimeoutRef.current);
     };
   }, []);
@@ -130,38 +127,33 @@ export default function HeroSlider({ slides, onCtaClick }: HeroSliderProps) {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* 1. SLIDE ACTUAL (Estático detrás durante el wipe) */}
-      <div className="absolute inset-0 z-0">
-        <img
-          src={activeSlide.image_url}
-          alt={activeSlide.title}
-          className="w-full h-full object-cover"
-        />
-        {/* Overlay multicapa para contraste garantizado WCAG AA (> 4.5:1) */}
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-ink-950/85 via-black/25 to-black/35" />
-      </div>
-
-      {/* 2. SLIDE ENTRANTE CON WIPE HORIZONTAL */}
-      {incomingIdx !== null && activeSlides[incomingIdx] && (
-        <div
-          className="absolute inset-0 z-10 overflow-hidden"
-          style={{
-            transform: isWiping ? 'translateX(0%)' : 'translateX(100%)',
-            transition: 'transform 800ms cubic-bezier(0.16, 1, 0.3, 1)',
-            willChange: 'transform',
-          }}
-        >
-          <img
-            src={activeSlides[incomingIdx].image_url}
-            alt={activeSlides[incomingIdx].title}
-            className="w-full h-full object-cover"
-          />
-          {/* Overlay del slide entrante */}
-          <div className="absolute inset-0 bg-black/40" />
-          <div className="absolute inset-0 bg-gradient-to-t from-ink-950/85 via-black/25 to-black/35" />
-        </div>
-      )}
+      {/* 1. SLIDES CON CROSSFADE SUAVE Y SCALE SUTIL */}
+      {activeSlides.map((slide, idx) => {
+        const isActive = idx === safeIdx;
+        return (
+          <div
+            key={slide.id || idx}
+            className="absolute inset-0 transition-all duration-700 ease-out"
+            style={{
+              opacity: isActive ? 1 : 0,
+              transform: isActive ? 'scale(1)' : 'scale(1.03)',
+              transition: 'opacity 750ms cubic-bezier(0.16, 1, 0.3, 1), transform 850ms cubic-bezier(0.16, 1, 0.3, 1)',
+              pointerEvents: isActive ? 'auto' : 'none',
+              zIndex: isActive ? 1 : 0,
+              willChange: 'opacity, transform',
+            }}
+          >
+            <img
+              src={slide.image_url}
+              alt={slide.title}
+              className="w-full h-full object-cover"
+            />
+            {/* Overlay multicapa para contraste garantizado WCAG AA (> 4.5:1) */}
+            <div className="absolute inset-0 bg-black/40" />
+            <div className="absolute inset-0 bg-gradient-to-t from-ink-950/85 via-black/25 to-black/35" />
+          </div>
+        );
+      })}
 
       {/* 3. MARCA DE AGUA DECORATIVA (Watermark Script) */}
       {activeSlide.watermark_text && (

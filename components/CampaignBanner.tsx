@@ -4,11 +4,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/lib/types';
-import {
-  CampaignSettings,
-  getCampaignSettings,
-  DEFAULT_CAMPAIGN_SETTINGS,
-} from '@/lib/campaignSettings';
 import { getActiveCampaign } from '@/lib/campaigns';
 import {
   Sparkles,
@@ -68,10 +63,10 @@ export default function CampaignBanner({
 
     async function init() {
       try {
-        // Consultar primero public.campaigns
+        // Consultar public.campaigns
         const activeCamp = await getActiveCampaign();
-        if (activeCamp && activeCamp.is_active) {
-          if (isMounted) {
+        if (isMounted) {
+          if (activeCamp && activeCamp.is_active) {
             setSettings({
               is_active: true,
               title: activeCamp.title || activeCamp.name || '',
@@ -82,25 +77,8 @@ export default function CampaignBanner({
               target_date: activeCamp.target_date || activeCamp.end_date || '',
               selected_product_ids: activeCamp.selected_product_ids || [],
             });
-          }
-        } else {
-          // Fallback a campaign_settings
-          const campData = await getCampaignSettings();
-          if (isMounted) {
-            if (campData && campData.is_active) {
-              setSettings({
-                is_active: true,
-                title: campData.title,
-                subtitle: campData.subtitle,
-                description: campData.description,
-                badge_text: campData.badge_text,
-                button_text: campData.button_text,
-                target_date: campData.target_date,
-                selected_product_ids: campData.selected_product_ids,
-              });
-            } else {
-              setSettings(null);
-            }
+          } else {
+            setSettings(null);
           }
         }
 
@@ -129,7 +107,7 @@ export default function CampaignBanner({
     window.addEventListener('rozier:campaign-settings-updated', handleSettingsUpdate);
     window.addEventListener('rozier:campaigns-updated', handleSettingsUpdate);
 
-    // Canales en tiempo real de Supabase
+    // Canal en tiempo real de Supabase exclusivamente para public.campaigns
     const campChannel = supabase
       .channel('campaigns_realtime_banner')
       .on(
@@ -141,23 +119,11 @@ export default function CampaignBanner({
       )
       .subscribe();
 
-    const settingsChannel = supabase
-      .channel('campaign_settings_realtime_banner')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'campaign_settings' },
-        () => {
-          init();
-        }
-      )
-      .subscribe();
-
     return () => {
       isMounted = false;
       window.removeEventListener('rozier:campaign-settings-updated', handleSettingsUpdate);
       window.removeEventListener('rozier:campaigns-updated', handleSettingsUpdate);
       supabase.removeChannel(campChannel);
-      supabase.removeChannel(settingsChannel);
     };
   }, [allProducts.length]);
 
@@ -258,7 +224,7 @@ export default function CampaignBanner({
   }
 
   return (
-    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1C1718] via-[#2A1D20] to-[#181314] text-white p-6 sm:p-8 md:p-10 border border-amber-500/20 shadow-xl">
+    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1C1718] via-[#2A1D20] to-[#181314] text-white p-6 sm:p-8 md:p-10 border border-amber-500/20 shadow-xl animate-fade-in-up">
       {/* Resplandor ambiental de lujo */}
       <div className="absolute -top-32 -left-32 w-80 h-80 bg-amber-500/15 blur-[90px] rounded-full pointer-events-none" />
       <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-rose-500/15 blur-[90px] rounded-full pointer-events-none" />
@@ -303,7 +269,10 @@ export default function CampaignBanner({
             <div className="grid grid-cols-4 gap-2.5 sm:gap-4 max-w-md">
               {/* DÍAS */}
               <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-3 sm:p-4 text-center shadow-inner hover:border-amber-400/40 transition">
-                <span className="block text-2xl sm:text-3xl md:text-4xl font-mono font-bold text-white tabular-nums">
+                <span
+                  key={timeLeft.days}
+                  className="block text-2xl sm:text-3xl md:text-4xl font-mono font-bold text-white tabular-nums animate-digit-pulse"
+                >
                   {timeLeft.days}
                 </span>
                 <span className="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-neutral-400">
@@ -313,7 +282,10 @@ export default function CampaignBanner({
 
               {/* HORAS */}
               <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-3 sm:p-4 text-center shadow-inner hover:border-amber-400/40 transition">
-                <span className="block text-2xl sm:text-3xl md:text-4xl font-mono font-bold text-white tabular-nums">
+                <span
+                  key={timeLeft.hours}
+                  className="block text-2xl sm:text-3xl md:text-4xl font-mono font-bold text-white tabular-nums animate-digit-pulse"
+                >
                   {timeLeft.hours}
                 </span>
                 <span className="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-neutral-400">
@@ -323,7 +295,10 @@ export default function CampaignBanner({
 
               {/* MINUTOS */}
               <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-3 sm:p-4 text-center shadow-inner hover:border-amber-400/40 transition">
-                <span className="block text-2xl sm:text-3xl md:text-4xl font-mono font-bold text-white tabular-nums">
+                <span
+                  key={timeLeft.minutes}
+                  className="block text-2xl sm:text-3xl md:text-4xl font-mono font-bold text-white tabular-nums animate-digit-pulse"
+                >
                   {timeLeft.minutes}
                 </span>
                 <span className="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-neutral-400">
@@ -333,7 +308,10 @@ export default function CampaignBanner({
 
               {/* SEGUNDOS */}
               <div className="bg-amber-400/10 backdrop-blur-md border border-amber-400/30 rounded-2xl p-3 sm:p-4 text-center shadow-inner">
-                <span className="block text-2xl sm:text-3xl md:text-4xl font-mono font-bold text-amber-300 tabular-nums">
+                <span
+                  key={timeLeft.seconds}
+                  className="block text-2xl sm:text-3xl md:text-4xl font-mono font-bold text-amber-300 tabular-nums animate-digit-pulse"
+                >
                   {timeLeft.seconds}
                 </span>
                 <span className="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-amber-200/80">

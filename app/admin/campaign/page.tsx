@@ -176,6 +176,12 @@ export default function AdminCampaignPage() {
       return;
     }
 
+    const targetTimestamp = new Date(formTargetDate).getTime();
+    if (isNaN(targetTimestamp) || targetTimestamp <= Date.now()) {
+      showToast('La fecha límite debe ser posterior a la fecha y hora actual.', 'error');
+      return;
+    }
+
     setSaving(true);
     try {
       const isoTargetDate = new Date(formTargetDate).toISOString();
@@ -443,10 +449,13 @@ export default function AdminCampaignPage() {
                       <span className="font-medium">Fecha Límite:</span>
                     </div>
                     <span
-                      className={`font-mono font-bold ${
-                        isFinished ? 'text-rose-600' : 'text-[#2D161C]'
+                      className={`font-mono font-bold inline-flex items-center gap-1.5 ${
+                        isFinished
+                          ? 'text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md text-[11px]'
+                          : 'text-[#2D161C]'
                       }`}
                     >
+                      {isFinished && <AlertCircle className="w-3 h-3 text-amber-600 shrink-0" />}
                       {getReadableCountdown(camp.target_date || camp.end_date)}
                     </span>
                   </div>
@@ -607,10 +616,17 @@ export default function AdminCampaignPage() {
                 <input
                   type="datetime-local"
                   value={formTargetDate}
+                  min={new Date().toISOString().slice(0, 16)}
                   onChange={(e) => setFormTargetDate(e.target.value)}
                   required
                   className="w-full px-3.5 py-2.5 bg-white border border-[#D9B5C0] text-[#3D1E26] rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:border-[#B85D6F]"
                 />
+                {formTargetDate && new Date(formTargetDate).getTime() <= Date.now() && (
+                  <p className="text-[11px] text-amber-700 font-medium flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    La fecha debe ser posterior a la fecha y hora actual para activar la cuenta regresiva.
+                  </p>
+                )}
               </div>
 
               {/* Selector de Arreglos Destacados (3 a 5) */}

@@ -18,10 +18,10 @@
   --accent-carmine: #C94A58; /* ofertas y promociones */
   --success: #6B8F71;        /* verde botánico sutil */
   --error: #B3434A;          /* error semántico */
-  --focus-ring: #D49A9E;     /* foco de accesibilidad */
+  --focus-ring: #B85D6F;     /* foco de accesibilidad */
 
   /* Sombras de Marca */
-  --shadow-rose: 0 10px 25px -5px rgba(212, 154, 158, 0.28);
+  --shadow-rose: 0 10px 25px -5px rgba(184, 93, 111, 0.28);
 
   /* Superficie Base */
   --background: var(--rose-50);
@@ -57,7 +57,7 @@ html, body {
   --surface: #111111;
   --surface-raised: #1C1817; /* superficie cálida elevada */
   --rose-500: #E3B7BB;       /* desaturado para no vibrar sobre oscuro */
-  --rose-600: #D49A9E;
+  --rose-600: #B85D6F;
   --rose-50:  #111111;
   --rose-100: #1C1817;
   --ink-900: #F5F0EF;        /* texto invertido */
@@ -250,7 +250,7 @@ body {
   border-radius: 9999px;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: #E8B4B8;
+  background: #B85D6F;
 }
 
 .scrollbar-thumb-rose-200::-webkit-scrollbar-thumb {
@@ -303,6 +303,41 @@ body.chatbot-window-open aside[aria-label="Atención al cliente por WhatsApp"] {
   animation-play-state: paused;
 }
 
+/* Animaciones de Entrada y Feedback Táctil */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes digitPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-digit-pulse {
+  animation: digitPulse 0.35s cubic-bezier(0.16, 1, 0.3, 1) ease-out;
+}
+
 /* Scrollbar fino para CRM y Tienda */
 .scrollbar-thin {
   scrollbar-width: thin;
@@ -315,4 +350,32 @@ body.chatbot-window-open aside[aria-label="Atención al cliente por WhatsApp"] {
   background-color: #F5E5EA !important;
 }
 
-
+/* Soporte de Accesibilidad: Reducción de Movimiento */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-marquee-infinite {
+    animation: none !important;
+  }
+  .animate-fade-in-up {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .animate-digit-pulse {
+    animation: none !important;
+  }
+}/* ==========================================================================
+   Motion System & GSAP Integration
+   Se integró GSAP + ScrollTrigger específicamente para PinnedScrollUnfold
+   porque CSS position:sticky nativo no permite sincronizar progresivamente
+   escala, border-radius y parallax bidireccional mediante scrub continuo
+   con aceleración por GPU y limpieza estricta de layout en React 19.
+   ========================================================================== */
+.will-change-transform {
+  will-change: transform;
+}

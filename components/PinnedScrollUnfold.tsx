@@ -1,13 +1,137 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Sparkles, ArrowRight } from 'lucide-react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 interface PinnedScrollUnfoldProps {
   onExploreClick?: () => void;
 }
 
 export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfoldProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const leftImageRef = useRef<HTMLDivElement>(null);
+  const rightImageRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !containerRef.current || !cardRef.current) return;
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isMobile = window.innerWidth < 1024;
+
+    const ctx = gsap.context(() => {
+      // 1. Accesibilidad: Si el usuario prefiere movimiento reducido
+      if (prefersReducedMotion) {
+        gsap.from('.unfold-stagger-item', {
+          opacity: 0,
+          y: 16,
+          duration: 0.4,
+          stagger: 0.08,
+          ease: 'power1.out',
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: 'top 85%',
+          },
+        });
+        return;
+      }
+
+      // 2. Degradación elegante en dispositivos móviles / tablets
+      if (isMobile) {
+        gsap.from(cardRef.current, {
+          opacity: 0,
+          y: 28,
+          scale: 0.96,
+          duration: 0.7,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: 'top 80%',
+          },
+        });
+
+        gsap.from('.unfold-stagger-item', {
+          opacity: 0,
+          y: 20,
+          duration: 0.5,
+          stagger: 0.1,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: cardRef.current,
+            start: 'top 75%',
+          },
+        });
+        return;
+      }
+
+      // 3. Desktop: Efecto Pinned Scroll Unfold completo con GSAP ScrollTrigger
+      // Timeline vinculada al scroll (scrub: 1) según timing de la skill ui-ux-pro-max
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: 'top top',
+          end: '+=130%',
+          pin: true,
+          scrub: 1,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+        },
+      });
+
+      // Transformación progresiva: scale 1 -> 0.92 y border-radius 0px -> 28px
+      tl.to(cardRef.current, {
+        scale: 0.92,
+        borderRadius: '28px',
+        ease: 'none',
+      });
+
+      // Parallax vertical sutil en imágenes laterales (rango -10% a 10%)
+      if (leftImageRef.current) {
+        tl.to(
+          leftImageRef.current,
+          {
+            yPercent: -12,
+            ease: 'none',
+          },
+          0
+        );
+      }
+
+      if (rightImageRef.current) {
+        tl.to(
+          rightImageRef.current,
+          {
+            yPercent: 12,
+            ease: 'none',
+          },
+          0
+        );
+      }
+
+      // Entrada escalonada (stagger) del contenido central al asomarse
+      gsap.from('.unfold-stagger-item', {
+        opacity: 0,
+        y: 22,
+        duration: 0.6,
+        stagger: 0.1,
+        ease: 'power2.out',
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: 'top 70%',
+          toggleActions: 'play none none reverse',
+        },
+      });
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, []);
+
   const handleCta = () => {
     if (onExploreClick) {
       onExploreClick();
@@ -20,37 +144,47 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
   return (
     <section
       id="unfold-story"
-      className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full transition-colors"
+      ref={containerRef}
+      className="relative w-full bg-[#F7E8EC] overflow-hidden py-4 sm:py-8 lg:py-10 flex items-center justify-center min-h-[90vh] lg:min-h-screen"
     >
-      {/* Cuadrante Oscuro Compacto Reservado Únicamente a "El Arte de Emocionar" */}
-      <div className="relative bg-[#0B0B0C] rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col lg:flex-row items-center justify-between">
-        {/* Imagen Lateral Izquierda */}
-        <div className="w-full lg:w-1/3 h-64 lg:h-auto min-h-[280px] lg:min-h-[420px] relative overflow-hidden shrink-0">
-          <img
-            src="https://qnrwguxaxcwqzodngztg.supabase.co/storage/v1/object/public/products/boxes/IMG-20260912-WA0044.jpg"
-            alt="Arreglo de lujo ROZIER"
-            className="w-full h-full object-cover hover:scale-105 transition-transform duration-700 ease-out"
-            loading="lazy"
-          />
+      {/* Contenedor Interior con Escala y Bordes Controlados por GSAP */}
+      <div
+        ref={cardRef}
+        className="relative w-full max-w-7xl h-[88vh] md:h-[84vh] bg-[#0E0C0D] rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col lg:flex-row items-center justify-between mx-3 sm:mx-6 will-change-transform"
+      >
+        {/* Imagen Lateral Izquierda con Parallax */}
+        <div className="w-full lg:w-1/3 h-1/4 sm:h-1/3 lg:h-full relative overflow-hidden shrink-0">
+          <div ref={leftImageRef} className="w-full h-[125%] -top-[12%] relative will-change-transform">
+            <img
+              src="https://qnrwguxaxcwqzodngztg.supabase.co/storage/v1/object/public/products/boxes/IMG-20260912-WA0044.jpg"
+              alt="Arreglo de autor ROZIER"
+              className="w-full h-full object-cover [@media(hover:hover)]:hover:scale-105 transition-transform duration-700 ease-out"
+              loading="lazy"
+            />
+          </div>
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/40 lg:to-transparent pointer-events-none" />
         </div>
 
-        {/* Bloque Central Editorial de Alto Impacto */}
-        <div className="flex-1 bg-[#0E0C0D] text-white flex flex-col items-center justify-center p-8 sm:p-10 lg:p-14 text-center z-10 space-y-4 lg:border-x border-white/10">
-          <div className="inline-flex items-center gap-2 bg-[#E5C378]/10 text-[#E5C378] border border-[#E5C378]/30 text-[11px] font-semibold uppercase tracking-[0.25em] px-4 py-1.5 rounded-full shadow-xs">
+        {/* Bloque Central Editorial */}
+        <div className="flex-1 bg-[#120F10] text-white flex flex-col items-center justify-center p-6 sm:p-10 lg:p-14 text-center z-10 space-y-4 lg:border-x border-white/10 h-auto lg:h-full">
+          {/* Badge Manifesto */}
+          <div className="unfold-stagger-item inline-flex items-center gap-2 bg-[#E5C378]/15 text-[#E5C378] border border-[#E5C378]/30 text-[11px] font-semibold uppercase tracking-[0.25em] px-4 py-1.5 rounded-full shadow-xs">
             <Sparkles className="w-3.5 h-3.5 text-[#E5C378]" />
             <span>Manifesto Floral</span>
           </div>
 
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight text-white leading-[1.12]">
+          {/* Título Principal */}
+          <h2 className="unfold-stagger-item font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-normal tracking-tight text-white leading-[1.12]">
             EL ARTE DE EMOCIONAR
           </h2>
 
-          <p className="text-xs sm:text-sm md:text-base text-neutral-300 font-light max-w-xl leading-relaxed">
+          {/* Párrafo Editorial */}
+          <p className="unfold-stagger-item text-xs sm:text-sm md:text-base text-neutral-300 font-light max-w-xl leading-relaxed">
             Cada tallo seleccionado a mano, cada lazo anudado con absoluta precisión. En ROZIER entendemos que no estás enviando simplemente un ramo; estás confiando la entrega de un sentimiento inolvidable.
           </p>
 
-          <div className="pt-2">
+          {/* Botón CTA */}
+          <div className="unfold-stagger-item pt-2">
             <button
               type="button"
               onClick={handleCta}
@@ -62,14 +196,16 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
           </div>
         </div>
 
-        {/* Imagen Lateral Derecha */}
-        <div className="w-full lg:w-1/3 h-64 lg:h-auto min-h-[280px] lg:min-h-[420px] relative overflow-hidden shrink-0">
-          <img
-            src="https://qnrwguxaxcwqzodngztg.supabase.co/storage/v1/object/public/products/ramos/IMG-20260912-WA0045.jpg"
-            alt="Taller floral ROZIER"
-            className="w-full h-full object-cover hover:scale-105 transition-transform duration-700 ease-out"
-            loading="lazy"
-          />
+        {/* Imagen Lateral Derecha con Parallax */}
+        <div className="w-full lg:w-1/3 h-1/4 sm:h-1/3 lg:h-full relative overflow-hidden shrink-0">
+          <div ref={rightImageRef} className="w-full h-[125%] -top-[12%] relative will-change-transform">
+            <img
+              src="https://qnrwguxaxcwqzodngztg.supabase.co/storage/v1/object/public/products/ramos/IMG-20260912-WA0045.jpg"
+              alt="Taller de alta floristería ROZIER"
+              className="w-full h-full object-cover [@media(hover:hover)]:hover:scale-105 transition-transform duration-700 ease-out"
+              loading="lazy"
+            />
+          </div>
           <div className="absolute inset-0 bg-gradient-to-l from-black/60 via-transparent to-black/40 lg:to-transparent pointer-events-none" />
         </div>
       </div>
