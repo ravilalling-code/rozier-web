@@ -70,16 +70,14 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
         return;
       }
 
-      // 3. Desktop: Efecto Pinned Scroll Unfold completo con GSAP ScrollTrigger
-      // Timeline vinculada al scroll (scrub: 1) según timing de la skill ui-ux-pro-max
+      // 3. Desktop / Tablet: Efecto Pinned Scroll Unfold completo con sticky y GSAP ScrollTrigger
+      // Timeline vinculada al scroll (scrub: 1) a lo largo de los 180vh de la sección
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=130%',
-          pin: true,
+          end: 'bottom bottom',
           scrub: 1,
-          anticipatePin: 1,
           invalidateOnRefresh: true,
         },
       });
@@ -91,7 +89,7 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
         ease: 'none',
       });
 
-      // Parallax vertical sutil en imágenes laterales (rango -10% a 10%)
+      // Parallax vertical sutil en imágenes laterales (rango -12% a 12%)
       if (leftImageRef.current) {
         tl.to(
           leftImageRef.current,
@@ -145,13 +143,15 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
     <section
       id="unfold-story"
       ref={containerRef}
-      className="relative w-full bg-[#F7E8EC] overflow-hidden py-4 sm:py-8 lg:py-10 flex items-center justify-center min-h-[90vh] lg:min-h-screen"
+      className="relative h-[180vh] bg-[#F7E8EC] transition-colors w-full max-w-full"
     >
-      {/* Contenedor Interior con Escala y Bordes Controlados por GSAP */}
-      <div
-        ref={cardRef}
-        className="relative w-full max-w-7xl h-[88vh] md:h-[84vh] bg-[#0E0C0D] rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col lg:flex-row items-center justify-between mx-3 sm:mx-6 will-change-transform"
-      >
+      {/* Contenedor sticky que permanece fijo en pantalla durante el scroll progresivo */}
+      <div className="sticky top-0 h-[100dvh] overflow-hidden flex items-center justify-center p-3 sm:p-5 md:p-8">
+        {/* Contenedor Interior con Escala y Bordes Controlados por GSAP */}
+        <div
+          ref={cardRef}
+          className="relative w-full max-w-7xl h-[88vh] md:h-[84vh] bg-[#0E0C0D] rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col lg:flex-row items-center justify-between mx-auto will-change-transform"
+        >
         {/* Imagen Lateral Izquierda con Parallax */}
         <div className="w-full lg:w-1/3 h-1/4 sm:h-1/3 lg:h-full relative overflow-hidden shrink-0">
           <div ref={leftImageRef} className="w-full h-[125%] -top-[12%] relative will-change-transform">
@@ -209,6 +209,7 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
           <div className="absolute inset-0 bg-gradient-to-l from-black/60 via-transparent to-black/40 lg:to-transparent pointer-events-none" />
         </div>
       </div>
-    </section>
-  );
+    </div>
+  </section>
+);
 }
