@@ -13,6 +13,7 @@ module.exports = {
         rose: {
           50: 'var(--rose-50)',
           100: 'var(--rose-100)',
+          300: 'var(--rose-300)',
           500: 'var(--rose-500)',
           600: 'var(--rose-600)',
         },

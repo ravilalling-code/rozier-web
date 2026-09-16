@@ -76,6 +76,8 @@ const INITIAL_SUGGESTIONS = [
 
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<RecommendedProduct | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
@@ -89,6 +91,35 @@ export default function ChatBot() {
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnread, setHasUnread] = useState(true);
   const [copiedPhone, setCopiedPhone] = useState(false);
+
+  // Escuchar cuando el drawer del carrito se abre o cierra para ocultar la Asesora
+  useEffect(() => {
+    const checkCartState = () => {
+      const isBodyCartOpen = typeof document !== 'undefined' && document.body.classList.contains('cart-drawer-open');
+      setIsCartOpen(isBodyCartOpen);
+    };
+
+    checkCartState();
+
+    const handleCartToggle = (e: any) => {
+      setIsCartOpen(Boolean(e.detail?.isOpen));
+    };
+
+    window.addEventListener('rozier:cart-toggle', handleCartToggle);
+
+    const observer = new MutationObserver(() => {
+      checkCartState();
+    });
+
+    if (typeof document !== 'undefined' && document.body) {
+      observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    return () => {
+      window.removeEventListener('rozier:cart-toggle', handleCartToggle);
+      observer.disconnect();
+    };
+  }, []);
 
   const handleCopyPhone = () => {
     navigator.clipboard.writeText('924257784');
@@ -110,6 +141,78 @@ export default function ChatBot() {
       setTimeout(() => inputRef.current?.focus(), 150);
     }
   }, [isOpen, messages]);
+
+  /**
+   * Flujo Secuencial Estricto al pulsar [ Elegir este diseño ]
+   */
+  const handleSelectProduct = (prod: RecommendedProduct) => {
+    setSelectedProduct(prod);
+
+    // 1. Mensaje del usuario seleccionando el producto
+    const userMsg: Message = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: `Deseo elegir el diseño ${prod.name} (S/ ${Number(prod.price).toFixed(2)})`,
+      timestamp: new Date().toLocaleTimeString('es-PE', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    };
+
+    // 2. Paso Inmediato Siguiente (estricto según requerimiento):
+    // "Excelente elección. Para coordinar la entrega exclusiva de tu [Nombre del Producto], indícame tu Nombre y Teléfono de contacto."
+    const assistantPrompt: Message = {
+      id: `assistant-${Date.now() + 1}`,
+      role: 'assistant',
+      content: `Excelente elección. Para coordinar la entrega exclusiva de tu **${prod.name}**, indícame tu Nombre y Teléfono de contacto.`,
+      timestamp: new Date().toLocaleTimeString('es-PE', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    };
+
+    setMessages((prev) => [...prev, userMsg, assistantPrompt]);
+    setTimeout(() => {
+      scrollToBottom();
+      inputRef.current?.focus();
+    }, 100);
+  };
+
+  /**
+   * Limpia descripciones y líneas redundantes cuando ya existen tarjetas visuales del producto
+   */
+  const cleanRedundantProductText = (content: string, prods?: RecommendedProduct[]) => {
+    let text = content
+      .replace(/\[MOSTRAR_QR_YAPE\]/gi, '')
+      .replace(/\[PRODUCTO:\s*[^|\]]+\s*\|\s*([^|\]]+)\s*\|\s*([^\]]+)\]/gi, '')
+      .replace(/\[ADDON:\s*[^|\]]+\s*\|\s*[^|\]]+(?:\s*\|\s*[^\]]+)?\]/gi, '');
+
+    if (prods && prods.length > 0) {
+      const lines = text.split('\n');
+      const filtered = lines.filter((line) => {
+        const trimmed = line.trim().toLowerCase();
+        if (!trimmed) return false;
+        return !prods.some((p) => {
+          const name = p.name.trim().toLowerCase();
+          return (
+            trimmed.includes(name) ||
+            trimmed.includes(`s/ ${Number(p.price).toFixed(2)}`) ||
+            trimmed.includes(`s/${Number(p.price).toFixed(2)}`) ||
+            (trimmed.startsWith('•') && trimmed.includes(name.slice(0, 8))) ||
+            (trimmed.startsWith('-') && trimmed.includes(name.slice(0, 8)))
+          );
+        });
+      });
+      text = filtered.join('\n');
+    }
+
+    const trimmed = text.trim();
+    if (!trimmed && prods && prods.length > 0) {
+      return 'He seleccionado estas opciones exclusivas para ti 🌸:';
+    }
+
+    return trimmed;
+  };
 
   const handleSendMessage = async (textToSend?: string) => {
     const text = (textToSend || inputValue).trim();
@@ -142,7 +245,16 @@ export default function ChatBot() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages }),
+        body: JSON.stringify({
+          messages: apiMessages,
+          selectedProduct: selectedProduct
+            ? {
+                id: selectedProduct.id,
+                name: selectedProduct.name,
+                price: selectedProduct.price,
+              }
+            : undefined,
+        }),
       });
 
       const data = await res.json();
@@ -166,12 +278,22 @@ export default function ChatBot() {
         }
       }
 
+      // Deduplicar productos para garantizar que cada diseño se renderice UNA SOLA VEZ
+      const seenProdMap = new Map<string, RecommendedProduct>();
+      recProds.forEach((p) => {
+        const key = p.name.trim().toLowerCase();
+        if (key && !seenProdMap.has(key)) {
+          seenProdMap.set(key, p);
+        }
+      });
+      const uniqueProds = Array.from(seenProdMap.values());
+
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
         content: rawText || '¿Deseas que te brinde más detalles de alguno de nuestros arreglos? 🌸',
         orderCreated: data.orderCreated,
-        recommendedProducts: recProds.length > 0 ? recProds : undefined,
+        recommendedProducts: uniqueProds.length > 0 ? uniqueProds : undefined,
         recommendedAddons: recAddons.length > 0 ? recAddons : undefined,
         quickReplies: qReplies.length > 0 ? qReplies : undefined,
         timestamp: new Date().toLocaleTimeString('es-PE', {
@@ -232,10 +354,18 @@ export default function ChatBot() {
   };
 
   return (
-    <>
+    <div
+      className={`rozier-chatbot-container transition-all duration-300 ${
+        isCartOpen ? 'hidden opacity-0 pointer-events-none -translate-y-4' : ''
+      }`}
+    >
       {/* Botón Flotante Moderno Palo Rosa & Alta Gama */}
       {!isOpen && (
-        <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 flex items-center gap-2">
+        <div
+          className={`fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 flex items-center gap-2 transition-all duration-300 ${
+            isCartOpen ? 'hidden opacity-0 pointer-events-none -translate-y-4' : ''
+          }`}
+        >
           {hasUnread && (
             <div className="hidden sm:flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-md border border-[#E8B4B8] text-xs text-[#1A1A1A] font-medium animate-bounce">
               <span className="w-2 h-2 rounded-full bg-[#D49A9E] animate-ping" />
@@ -262,7 +392,11 @@ export default function ChatBot() {
 
       {/* Ventana Desplegable del Chatbot */}
       {isOpen && (
-        <div className="fixed inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-4 sm:right-4 md:bottom-6 md:right-6 z-50 w-full sm:w-[400px] md:w-[420px] max-w-full h-[90vh] sm:h-[600px] max-h-[100dvh] bg-white sm:rounded-2xl shadow-2xl border border-[#EFEAE9] card-editorial flex flex-col overflow-hidden animate-spring-modal">
+        <div
+          className={`fixed inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-4 sm:right-4 md:bottom-6 md:right-6 z-50 w-full sm:w-[400px] md:w-[420px] max-w-full h-[90vh] sm:h-[600px] max-h-[100dvh] bg-white sm:rounded-2xl shadow-2xl border border-[#EFEAE9] card-editorial flex flex-col overflow-hidden animate-spring-modal ${
+            isCartOpen ? 'hidden opacity-0 pointer-events-none -translate-y-4' : ''
+          }`}
+        >
           {/* Header Elegante Alta Gama */}
           <div className="bg-[#111111] text-white p-4 flex items-center justify-between shadow-md border-b border-[#1A1A1A]">
             <div className="flex items-center gap-3">
@@ -318,10 +452,10 @@ export default function ChatBot() {
                       }`}
                     >
                       {renderFormattedText(
-                        msg.content
-                          .replace('[MOSTRAR_QR_YAPE]', '')
-                          .replace(/\[PRODUCTO:\s*[^|\]]+\s*\|\s*[^|\]]+\s*\|\s*[^\]]+\]/gi, '')
-                          .replace(/\[ADDON:\s*[^|\]]+\s*\|\s*[^|\]]+(?:\s*\|\s*[^\]]+)?\]/gi, '')
+                        cleanRedundantProductText(
+                          msg.content,
+                          msg.recommendedProducts
+                        )
                       )}
                     </div>
 
@@ -542,11 +676,7 @@ export default function ChatBot() {
 
                               <button
                                 type="button"
-                                onClick={() => {
-                                  handleSendMessage(
-                                    `Deseo elegir el diseño ${prod.name} (S/ ${Number(prod.price).toFixed(2)})`
-                                  );
-                                }}
+                                onClick={() => handleSelectProduct(prod)}
                                 className="w-full bg-ink-900 hover:bg-rose-600 text-white font-semibold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-98"
                               >
                                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
@@ -688,6 +818,6 @@ export default function ChatBot() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

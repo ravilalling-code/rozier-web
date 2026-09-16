@@ -16,6 +16,35 @@ export default function FloatingWhatsApp({
 }: FloatingWhatsAppProps) {
   const pathname = usePathname();
   const [activeNumber, setActiveNumber] = useState(phoneNumber || DEFAULT_WHATSAPP_NUMBER);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  useEffect(() => {
+    const checkCartState = () => {
+      const isBodyCartOpen = typeof document !== 'undefined' && document.body.classList.contains('cart-drawer-open');
+      setIsCartOpen(isBodyCartOpen);
+    };
+
+    checkCartState();
+
+    const handleCartToggle = (e: any) => {
+      setIsCartOpen(Boolean(e.detail?.isOpen));
+    };
+
+    window.addEventListener('rozier:cart-toggle', handleCartToggle);
+
+    const observer = new MutationObserver(() => {
+      checkCartState();
+    });
+
+    if (typeof document !== 'undefined' && document.body) {
+      observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    return () => {
+      window.removeEventListener('rozier:cart-toggle', handleCartToggle);
+      observer.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     if (phoneNumber) {
@@ -30,7 +59,7 @@ export default function FloatingWhatsApp({
     });
   }, [phoneNumber]);
 
-  // No mostrar en panel de administración para evitar superposición con controles operativos
+  // No mostrar en panel de administración
   if (pathname?.startsWith('/admin')) {
     return null;
   }
@@ -40,7 +69,11 @@ export default function FloatingWhatsApp({
   return (
     <aside
       aria-label="Atención al cliente por WhatsApp"
-      className="fixed bottom-20 right-4 md:bottom-24 md:right-6 z-50 pointer-events-auto"
+      className={`fixed bottom-20 right-4 md:bottom-24 md:right-6 z-50 rozier-floating-widget transition-all duration-300 ${
+        isCartOpen
+          ? 'hidden opacity-0 pointer-events-none -translate-y-4'
+          : 'pointer-events-auto opacity-100 translate-y-0'
+      }`}
     >
       <a
         href={whatsappUrl}

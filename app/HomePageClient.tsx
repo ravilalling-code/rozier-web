@@ -105,6 +105,25 @@ export default function HomePage() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
 
+  useEffect(() => {
+    const isAnyCartModalOpen = isCartOpen || isCheckoutModalOpen;
+    if (typeof window !== 'undefined') {
+      if (isAnyCartModalOpen) {
+        document.body.classList.add('cart-drawer-open');
+      } else {
+        document.body.classList.remove('cart-drawer-open');
+      }
+      window.dispatchEvent(
+        new CustomEvent('rozier:cart-toggle', { detail: { isOpen: isAnyCartModalOpen } })
+      );
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        document.body.classList.remove('cart-drawer-open');
+      }
+    };
+  }, [isCartOpen, isCheckoutModalOpen]);
+
   // Cross-selling: Complementos añadidos al carrito { [addonId]: quantity }
   const [selectedAddOns, setSelectedAddOns] = useState<{ [id: string]: number }>({});
 
@@ -1509,8 +1528,13 @@ export default function HomePage() {
 
       {/* DRAWER LATERAL: Carrito de Compras */}
       {isCartOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex justify-end overflow-hidden animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-spring-drawer border-l border-warm-100 overflow-hidden">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsCartOpen(false);
+          }}
+          className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex justify-end overflow-hidden animate-in fade-in duration-200"
+        >
+          <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-spring-drawer border-l border-warm-100 overflow-hidden relative z-[1000]">
             {/* Header del Carrito */}
             <div className="p-4 sm:p-5 border-b border-warm-100 flex items-center justify-between bg-rose-50">
               <div className="flex items-center gap-2.5">
@@ -1711,7 +1735,7 @@ export default function HomePage() {
 
             {/* Footer con Subtotal y Checkout */}
             {cart.length > 0 && (
-              <div className="p-4 sm:p-5 border-t border-warm-100 bg-rose-50 space-y-3">
+              <div className="p-4 sm:p-5 border-t border-warm-100 bg-rose-50 space-y-3 shrink-0 relative z-20">
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center text-xs text-warm-500">
                     <span>Subtotal arreglos:</span>
@@ -1791,7 +1815,7 @@ export default function HomePage() {
 
       {/* MODAL: Checkout Unificado Multi-producto */}
       {isCheckoutModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden animate-in fade-in duration-200">
           <div className="bg-white border border-warm-100 max-w-xl w-full rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[94vh] overflow-y-auto animate-spring-modal card-editorial">
             {orderSuccessData ? (
               /* PANTALLA DE ÉXITO DE COMPRA */
@@ -2289,10 +2313,10 @@ export default function HomePage() {
 
 
       {/* BOTÓN FLOTANTE DEL CARRITO EN MÓVIL/DESKTOP CUANDO TIENE PRODUCTOS */}
-      {totalCartItems > 0 && (
+      {totalCartItems > 0 && !isCartOpen && !isCheckoutModalOpen && (
         <button
           onClick={() => setIsCartOpen(true)}
-          className="btn-tactile fixed bottom-4 left-4 md:bottom-6 md:left-6 z-40 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 px-4 py-3 rounded-full shadow-lg flex items-center gap-2.5 border border-rose-600/60"
+          className="btn-tactile floating-cart-btn fixed bottom-4 left-4 md:bottom-6 md:left-6 z-40 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 px-4 py-3 rounded-full shadow-lg flex items-center gap-2.5 border border-rose-600/60"
           title="Abrir Carrito de Compras"
         >
           <div className="relative">

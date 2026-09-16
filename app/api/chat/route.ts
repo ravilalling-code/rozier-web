@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { messages } = await req.json();
+    const { messages, selectedProduct } = await req.json();
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json(
@@ -196,38 +196,49 @@ ${campaignText}
 
 DIRECTIVAS PRINCIPALES DE ATENCIÓN Y EMBUDO ULTRARRÁPIDO:
 
-1. RECOMENDACIÓN DE ARREGLOS CON TARJETAS VISUALES:
-Cuando el cliente solicite sugerencias ("¿Qué regalo para un aniversario?", "muéstrame opciones"), recomienda de 1 a 3 arreglos reales del catálogo anterior con sus nombres y precios exactos en Soles.
-Para cada producto que recomiendes, escribe en una línea separada la etiqueta:
-[PRODUCTO: Nombre del Arreglo | Precio | URL_Foto]
-(Esto renderizará automáticamente en el chat una tarjeta visual con foto, nombre, precio destacado y botón "Elegir este diseño").
+1. RECOMENDACIÓN DE ARREGLOS CON TARJETAS VISUALES (REGLA ESTRICTA ANTI-DUPLICIDAD):
+Cuando el cliente solicite sugerencias ("¿Qué regalo para un aniversario?", "muéstrame opciones", "catálogo", etc.):
+- Escribe ÚNICAMENTE una introducción cordial, breve y elegante (1 o 2 oraciones máximo) presentando la selección.
+- ¡PROHIBIDO TOTALMENTE! NO escribas listas con viñetas ni enumeres los nombres, descripciones o precios de los productos en el texto ordinario.
+- El chat interactivo convierte automáticamente cada etiqueta [PRODUCTO: ...] en una tarjeta visual de alta definición con foto, precio y botón interactivo "Elegir este diseño". Si repites los nombres o precios en el texto se verá duplicado y tosco.
+- Incluye ÚNICAMENTE las etiquetas al final de tu breve saludo, de 1 a 3 arreglos diferentes del catálogo:
+  [PRODUCTO: Nombre Exacto | Precio | URL_Foto]
+- Cada diseño floral debe renderizarse UNA SOLA VEZ. Nunca repitas el mismo diseño en un mismo mensaje.
 
-2. EMBUDO ULTRARRÁPIDO Y SIMPLIFICADO DE RESERVA EN 4 PASOS:
-No aburras al cliente con preguntas largas ni formularios interminables. Guíalo con agilidad paso a paso:
+2. FLUJO SECUENCIAL ESTRICTO TRAS SELECCIONAR UN DISEÑO:
+${selectedProduct ? `⚠️ CONTEXTO ACTIVO: El cliente ha seleccionado el diseño: "${selectedProduct.name}" (Precio: S/ ${Number(selectedProduct.price).toFixed(2)}).\n` : ''}
+Cuando el usuario pulsa el botón [ Elegir este diseño ], el chat ya registra el producto en sesión y le solicita de inmediato:
+"Excelente elección. Para coordinar la entrega exclusiva de tu [Nombre del Producto], indícame tu Nombre y Teléfono de contacto."
 
-• PASO 1 (Identificación rápida):
-En cuanto el cliente elija un diseño (ej: "Elegir este diseño" o "Quiero este"), solicita ÚNICAMENTE:
-- Su Nombre completo
-- Su Teléfono celular o WhatsApp
-(Con estos 2 datos se inicia de inmediato su ficha en el sistema).
+A partir de ese instante, DEBES seguir RIGUROSAMENTE esta secuencia paso a paso:
 
-• PASO 2 (Bifurcación del destinatario):
-Una vez tengas su nombre y celular, pregunta exactamente:
-"¿Deseas enviarlo como sorpresa a alguien especial o recibirlo tú personalmente? 🎁"
-- Si es para ALGUIEN ESPECIAL: Solicita: Nombre de quien recibe, dirección/distrito en Lima y dedicatoria para la tarjeta impresa.
-- Si es para SÍ MISMO: Omite por completo datos de terceros y dedicatoria, pasando directo a fecha/turno de entrega.
+• PASO 1 (Recepción de Nombre y Teléfono):
+En cuanto el usuario proporcione su Nombre y Teléfono, responde de inmediato con amabilidad y distinción preguntando:
+"¡Un placer, [Nombre]! Para coordinar los detalles de tu ${selectedProduct?.name || '[Nombre del Producto]'}:
+¿Deseas recibirlo tú personalmente o es una sorpresa para alguien especial? 🎁"
 
-• PASO 3 (Toque especial opcional):
-Pregunta exactamente:
-"¿Deseas acompañar tu arreglo con algún toque especial (chocolates, peluche o vino)? ✨"
-- Si responde SÍ: Muestra de 1 a 3 toques especiales del catálogo usando la etiqueta:
-  [ADDON: Nombre | Precio | URL_Foto]
-- Si responde NO: Pasa de inmediato al resumen y método de pago sin insistir.
+• PASO 2 (Bifurcación según Destinatario):
+- Si responde que es para SÍ MISMO (personalmente):
+  AVANZA DIRECTO sin pedir datos de terceros ni dedicatoria. Solicita fecha/horario preferido de entrega y dirección/distrito (o indícale que puede compartir su ubicación/referencia).
+- Si responde que es una SORPRESA PARA ALGUIEN ESPECIAL (o para otra persona):
+  Solicita de forma ordenada y concisa:
+  1. Nombre de quien recibirá el arreglo
+  2. Dirección exacta y Distrito de entrega en Lima (o compartir ubicación/referencia)
+  3. Dedicatoria para la tarjeta floral de cortesía (o indicar si prefiere sin dedicatoria)
+  Una vez brindados, confirma la fecha/horario de entrega si no la mencionó.
 
-• PASO 4 (Ubicación y Derivación a WhatsApp):
-- Pregunta si prefiere compartir su dirección con referencia o compartir su ubicación por GPS en WhatsApp.
-- Pregunta el método de pago preferido (Yape, Plin o Transferencia).
-- Invoca DE INMEDIATO 'createOrder' con todos los datos recopilados para generar el pedido y el botón directo a WhatsApp oficial (https://wa.me/51924257784?text=...) con todo el resumen del pedido prellenado para concretar la compra.
+• PASO 3 (Toque Especial Opcional):
+Pregunta si desea un toque especial opcional (chocolates Ferrero, peluche, vino o globos):
+"¿Deseas acompañar tu arreglo con algún toque especial (chocolates Ferrero, peluche o vino)? ✨"
+- Si responde SÍ (o pide opciones): muestra de 1 a 3 opciones de toques especiales disponibles con [ADDON: Nombre | Precio | URL_Foto].
+- Si responde NO (o continuar): pasa directo al método de pago.
+
+• PASO 4 (Método de Pago y Ubicación / Referencia):
+- Consulta el método de pago preferido (Yape, Plin o Transferencia bancaria) si aún no lo especificó.
+- Ofrece compartir ubicación o referencia exacta para el chofer de entrega.
+
+• PASO 5 (Cierre Oficial y Generación con Botón a WhatsApp 51924257784):
+- Invoca OBLIGATORIAMENTE la herramienta 'createOrder' con todos los datos recopilados para emitir el resumen oficial en el sistema y el botón directo a WhatsApp (51924257784) con el mensaje precargado para el comprobante.
 
 3. RASTREO DE PEDIDOS: Si el cliente pregunta por el estado de su pedido o da un código (ej. PET-8492 o ROZ-8492), DEBES OBLIGATORIAMENTE invocar 'trackOrder'.
 4. PAGO YAPE/PLIN: Si pregunta cómo pagar, incluye [MOSTRAR_QR_YAPE] para mostrar el QR interactivo oficial al 924 257 784.
@@ -742,22 +753,85 @@ Pregunta exactamente:
       });
     }
 
+    // Deduplicar productos recomendados para garantizar que cada diseño aparezca una sola vez
+    const seenProdNames = new Set<string>();
+    const uniqueProducts = recommendedProducts.filter((p) => {
+      const key = p.name.trim().toLowerCase();
+      if (!key || seenProdNames.has(key)) return false;
+      seenProdNames.add(key);
+      return true;
+    });
+
+    // Deduplicar toques especiales
+    const seenAddonNames = new Set<string>();
+    const uniqueAddons = recommendedAddons.filter((a) => {
+      const key = a.name.trim().toLowerCase();
+      if (!key || seenAddonNames.has(key)) return false;
+      seenAddonNames.add(key);
+      return true;
+    });
+
+    // Sanitizar texto para remover nombres y precios de productos recomendados si hay tarjetas
+    let sanitizedText = rawResponseText;
+    if (uniqueProducts.length > 0) {
+      sanitizedText = sanitizedText
+        .replace(/\[MOSTRAR_QR_YAPE\]/gi, '')
+        .replace(/\[PRODUCTO:\s*[^|\]]+\s*\|\s*([^|\]]+)\s*\|\s*([^\]]+)\]/gi, '')
+        .replace(/\[ADDON:\s*[^|\]]+\s*\|\s*[^|\]]+(?:\s*\|\s*[^\]]+)?\]/gi, '');
+
+      const lines = sanitizedText.split('\n').filter((line: string) => {
+        const trimmed = line.trim().toLowerCase();
+        if (!trimmed) return false;
+        return !uniqueProducts.some((p) => {
+          const name = p.name.trim().toLowerCase();
+          return (
+            trimmed.includes(name) ||
+            trimmed.includes(`s/ ${Number(p.price).toFixed(2)}`) ||
+            trimmed.includes(`s/${Number(p.price).toFixed(2)}`) ||
+            (trimmed.startsWith('•') && trimmed.includes(name.slice(0, 8))) ||
+            (trimmed.startsWith('-') && trimmed.includes(name.slice(0, 8)))
+          );
+        });
+      });
+      sanitizedText = lines.join('\n').trim();
+      if (!sanitizedText) {
+        sanitizedText = 'He seleccionado estas opciones exclusivas para ti 🌸:';
+      }
+    }
+
     // Determinar quickReplies sugeridas según el paso de la conversación
     const quickReplies: string[] = [];
     const lowerText = rawResponseText.toLowerCase();
-    if (lowerText.includes('sorpresa a alguien especial') || lowerText.includes('recibirlo tú personalmente')) {
+    if (
+      lowerText.includes('sorpresa') ||
+      lowerText.includes('personalmente') ||
+      lowerText.includes('alguien especial')
+    ) {
       quickReplies.push('🎁 Sorpresa para alguien especial', '👤 Para mí personalmente');
-    } else if (lowerText.includes('toque especial') || lowerText.includes('chocolates, peluche o vino')) {
-      quickReplies.push('✨ Sí, ver toques especiales', '⏩ No, continuar sin adicionales');
-    } else if (lowerText.includes('gps o referencia') || lowerText.includes('ubicación')) {
-      quickReplies.push('📍 Por dirección / referencia', '🗺️ Compartir GPS por WhatsApp');
+    } else if (
+      lowerText.includes('toque especial') ||
+      lowerText.includes('chocolates') ||
+      lowerText.includes('peluche') ||
+      lowerText.includes('adicionales') ||
+      lowerText.includes('complementos')
+    ) {
+      quickReplies.push('🍫 Añadir Ferrero Rocher (+S/ 35)', '🧸 Añadir Peluche (+S/ 45)', '⏩ Continuar sin adicionales');
+    } else if (lowerText.includes('gps') || lowerText.includes('ubicación') || lowerText.includes('referencia')) {
+      quickReplies.push('📍 Por dirección y distrito', '🗺️ Compartir GPS por WhatsApp');
+    } else if (
+      lowerText.includes('método de pago') ||
+      lowerText.includes('forma de pago') ||
+      lowerText.includes('yape') ||
+      lowerText.includes('transferencia')
+    ) {
+      quickReplies.push('💜 Pagar con Yape', '💙 Pagar con Plin', '🏦 Transferencia bancaria');
     }
 
     // Respuesta conversacional estándar enriquecida
     return NextResponse.json({
-      text: response.text || '¿En qué arreglo o detalle floral de ROZIER te puedo asesorar hoy? 🌸',
-      recommendedProducts,
-      recommendedAddons,
+      text: sanitizedText || response.text || '¿En qué arreglo o detalle floral de ROZIER te puedo asesorar hoy? 🌸',
+      recommendedProducts: uniqueProducts,
+      recommendedAddons: uniqueAddons,
       quickReplies,
     });
   } catch (error: any) {

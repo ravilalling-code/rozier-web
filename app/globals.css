@@ -26,6 +26,25 @@
   /* Superficie Base */
   --background: var(--rose-50);
   --foreground: var(--ink-900);
+
+  /* Variables de Color Mapeadas */
+  --color-rose-50: var(--rose-50);
+  --color-rose-100: var(--rose-100);
+  --color-rose-300: var(--rose-300);
+  --color-rose-500: var(--rose-500);
+  --color-rose-600: var(--rose-600);
+
+  --color-ink-900: var(--ink-900);
+  --color-ink-950: var(--ink-950);
+
+  --color-warm-100: var(--warm-100);
+  --color-warm-300: var(--warm-300);
+  --color-warm-500: var(--warm-500);
+
+  --color-accent-carmine: var(--accent-carmine);
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-focus-ring: var(--focus-ring);
 }
 
 html, body {
@@ -54,29 +73,6 @@ html, body {
 
   --background: var(--surface);
   --foreground: var(--ink-900);
-}
-
-@theme {
-  --color-rose-50: var(--rose-50);
-  --color-rose-100: var(--rose-100);
-  --color-rose-300: var(--rose-300);
-  --color-rose-500: var(--rose-500);
-  --color-rose-600: var(--rose-600);
-
-  --color-ink-900: var(--ink-900);
-  --color-ink-950: var(--ink-950);
-
-  --color-warm-100: var(--warm-100);
-  --color-warm-300: var(--warm-300);
-  --color-warm-500: var(--warm-500);
-
-  --color-accent-carmine: var(--accent-carmine);
-  --color-success: var(--success);
-  --color-error: var(--error);
-  --color-focus-ring: var(--focus-ring);
-
-  --shadow-rose: var(--shadow-rose);
-  --font-serif: var(--font-serif), Georgia, Cambria, "Times New Roman", serif;
 }
 
 body {
@@ -262,6 +258,18 @@ body {
 }
 .scrollbar-track-transparent::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* Ocultamiento estricto de elementos flotantes cuando el carrito está abierto */
+body.cart-drawer-open .rozier-floating-widget,
+body.cart-drawer-open aside[aria-label="Atención al cliente por WhatsApp"],
+body.cart-drawer-open .rozier-chatbot-container,
+body.cart-drawer-open .floating-cart-btn {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  z-index: -10 !important;
 }
 
 
