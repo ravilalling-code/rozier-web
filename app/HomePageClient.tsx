@@ -17,6 +17,7 @@ import TopOccasions from '@/components/TopOccasions';
 import PinnedScrollUnfold from '@/components/PinnedScrollUnfold';
 import Footer from '@/components/Footer';
 import CampaignSection from '@/components/CampaignSection';
+import CampaignBanner from '@/components/CampaignBanner';
 import ClientMomentsCarousel from '@/components/ClientMomentsCarousel';
 import {
   MessageCircle,
@@ -1302,22 +1303,23 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Campaña Activa (si existe) */}
-      {activeCampaign && activeCampaign.is_active && (
-        <div className="max-w-6xl mx-auto px-4 pb-12">
-          <CampaignSection
-            campaign={activeCampaign}
-            onCtaClick={(ctaLink) => {
-              const link = ctaLink?.toLowerCase().trim();
-              if (link && activeCategories.some((c) => c.slug.toLowerCase() === link)) {
-                setCategory(link);
-              }
-              const el = document.getElementById('catalogo');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-          />
-        </div>
-      )}
+      {/* Campaña Activa con Contador Regresivo en Vivo */}
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-12">
+        <CampaignBanner
+          allProducts={products}
+          onCtaClick={() => {
+            const el = document.getElementById('catalogo');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }}
+          onProductClick={(product) => {
+            setSelectedProduct(product);
+            setModalQuantity(1);
+          }}
+          onAddToCart={(product) => {
+            addToCart(product, 1);
+          }}
+        />
+      </div>
 
       {/* 4. Hero Secundario — Efecto "Pinned Scroll Unfold" */}
       <PinnedScrollUnfold
