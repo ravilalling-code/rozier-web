@@ -135,6 +135,24 @@ export default function ChatBot() {
   };
 
   useEffect(() => {
+    if (typeof document !== 'undefined') {
+      if (isOpen) {
+        document.body.classList.add('chatbot-window-open');
+      } else {
+        document.body.classList.remove('chatbot-window-open');
+      }
+      window.dispatchEvent(
+        new CustomEvent('rozier:chatbot-toggle', { detail: { isOpen } })
+      );
+    }
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.body.classList.remove('chatbot-window-open');
+      }
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     if (isOpen) {
       scrollToBottom();
       setHasUnread(false);

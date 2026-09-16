@@ -76,7 +76,7 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
     <section
       id="unfold-story"
       ref={containerRef}
-      className="relative h-[180vh] bg-[#F9ECEF] transition-colors w-full max-w-full overflow-hidden"
+      className="relative h-[180vh] bg-[#0E0C0D] transition-colors w-full max-w-full overflow-hidden"
     >
       {/* Contenedor sticky que permanece fijo en pantalla durante el scroll */}
       <div className="sticky top-0 h-screen overflow-hidden flex items-center justify-center">
@@ -97,13 +97,13 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
               className="w-full h-full object-cover"
               loading="lazy"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/30 lg:to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/30 lg:to-transparent" />
           </div>
 
           {/* Bloque Central Editorial de Alto Impacto */}
-          <div className="flex-1 h-auto lg:h-full bg-ink-950 text-white flex flex-col items-center justify-center p-8 sm:p-12 lg:p-16 text-center z-10 space-y-5">
-            <div className="inline-flex items-center gap-2 bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[11px] font-bold uppercase tracking-[0.25em] px-4 py-1.5 rounded-full">
-              <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+          <div className="flex-1 h-auto lg:h-full bg-[#120F10] text-white flex flex-col items-center justify-center p-8 sm:p-12 lg:p-16 text-center z-10 space-y-5 border-y lg:border-y-0 lg:border-x border-warm-100/10">
+            <div className="inline-flex items-center gap-2 bg-[#E5C378]/10 text-[#E5C378] border border-[#E5C378]/30 text-[11px] font-semibold uppercase tracking-[0.25em] px-4 py-1.5 rounded-full shadow-xs">
+              <Sparkles className="w-3.5 h-3.5 text-[#E5C378]" />
               <span>Manifesto Floral</span>
             </div>
 
@@ -119,10 +119,10 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
               <button
                 type="button"
                 onClick={handleCta}
-                className="btn-tactile inline-flex items-center gap-2.5 bg-[var(--rose-300)] text-ink-900 rounded-full px-7 py-3 font-bold text-xs sm:text-sm tracking-wider uppercase hover:scale-105 active:scale-95 transition-all shadow-lg cursor-pointer"
+                className="btn-tactile inline-flex items-center gap-2.5 bg-gradient-to-r from-[#D49A9E] to-[#E8B4B8] hover:from-[#E8B4B8] hover:to-[#F3CED1] text-[#1A1A1A] rounded-full px-8 py-3.5 font-bold text-xs sm:text-sm tracking-wider uppercase hover:scale-105 active:scale-95 transition-all shadow-xl border border-rose-300/40 cursor-pointer"
               >
                 <span>Descubrir Creaciones</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 text-ink-900" />
               </button>
             </div>
           </div>

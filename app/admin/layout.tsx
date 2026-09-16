@@ -20,6 +20,7 @@ import {
   Layers,
   Gift,
   Truck,
+  Camera,
 } from 'lucide-react';
 
 const navigationItems = [
@@ -70,6 +71,12 @@ const navigationItems = [
     href: '/admin/expenses',
     icon: TrendingDown,
     description: 'Flujo de caja y balance',
+  },
+  {
+    name: 'Fotos de Clientes',
+    href: '/admin/clientes',
+    icon: Camera,
+    description: 'Momentos que dejan huella',
   },
   {
     name: 'Redes & Ajustes',

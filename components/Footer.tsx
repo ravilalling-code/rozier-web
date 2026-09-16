@@ -239,19 +239,21 @@ export default function Footer({
               <li className="flex items-start gap-2.5">
                 <Phone className="w-4 h-4 text-[var(--rose-600)] shrink-0 mt-0.5" />
                 <a
-                  href={`tel:+${whatsappNumber}`}
+                  href="https://wa.me/51924257784"
+                  target="_blank"
+                  rel="noreferrer"
                   className="text-xs leading-snug hover:text-[var(--rose-600)] transition-colors"
                 >
-                  +51 987 654 321 / (01) 446 4666
+                  +51 924 257 784 (WhatsApp Oficial)
                 </a>
               </li>
               <li className="flex items-start gap-2.5">
                 <Mail className="w-4 h-4 text-[var(--rose-600)] shrink-0 mt-0.5" />
                 <a
-                  href="mailto:contacto@rozier.pe"
+                  href="mailto:rozier-floreria@outlook.com"
                   className="text-xs leading-snug hover:text-[var(--rose-600)] transition-colors"
                 >
-                  contacto@rozier.pe
+                  rozier-floreria@outlook.com
                 </a>
               </li>
               <li className="pt-1">

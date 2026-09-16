@@ -17,6 +17,7 @@ import TopOccasions from '@/components/TopOccasions';
 import PinnedScrollUnfold from '@/components/PinnedScrollUnfold';
 import Footer from '@/components/Footer';
 import CampaignSection from '@/components/CampaignSection';
+import ClientMomentsCarousel from '@/components/ClientMomentsCarousel';
 import {
   MessageCircle,
   Heart,
@@ -184,15 +185,13 @@ export default function HomePage() {
   // Campaña promocional activa
   const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null);
 
-  // Expansión de categorías en vista compacta (Todos)
-  const [expandedCategories, setExpandedCategories] = useState<{ [slug: string]: boolean }>({});
+  // Expansión de límite de filas (Ver catálogo completo / Mostrar menos)
+  const [isCatalogExpanded, setIsCatalogExpanded] = useState(false);
+  const [isCategoryExpanded, setIsCategoryExpanded] = useState(false);
 
-  const toggleCategoryExpand = (slug: string) => {
-    setExpandedCategories((prev) => ({
-      ...prev,
-      [slug]: !prev[slug],
-    }));
-  };
+  useEffect(() => {
+    setIsCategoryExpanded(false);
+  }, [category]);
 
   // Slides dinámicos del Hero Principal
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(DEFAULT_HERO_SLIDES);
@@ -624,6 +623,29 @@ export default function HomePage() {
     });
   }
 
+  // Arreglos representativos para "Todas" (al menos 2 de cada categoría activa para garantizar variedad visual)
+  const representativeProducts: Product[] = [];
+  const repSeenIds = new Set<string>();
+
+  categoryGroups.forEach((group) => {
+    let count = 0;
+    for (const p of group.products) {
+      if (!repSeenIds.has(p.id) && count < 2) {
+        representativeProducts.push(p);
+        repSeenIds.add(p.id);
+        count++;
+      }
+    }
+  });
+
+  // Completar con el resto de productos de la tienda
+  for (const p of products) {
+    if (!repSeenIds.has(p.id)) {
+      representativeProducts.push(p);
+      repSeenIds.add(p.id);
+    }
+  }
+
   // Enviar pedido consolidado a Supabase y generar comprobante WhatsApp
   const handleCheckoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -941,10 +963,205 @@ export default function HomePage() {
       {/* 3. Trust Bar Concéntrica */}
       <TrustBar />
 
-      {/* 4. Sección "Ocasiones Más Solicitadas" (Cards con Overlay) */}
-      <TopOccasions onSelectOccasion={(slug) => setCategory(slug)} />
+      {/* 1. FILTROS Y SEGMENTACIÓN DE CATEGORÍAS (Pestañas de Navegación Palo Rosa) */}
+      <nav id="catalogo" aria-label="Categorías" className="sticky top-[57px] sm:top-[61px] z-20 bg-rose-50/95 backdrop-blur-md border-y border-warm-100 py-3 shadow-2xs">
+        <div className="max-w-6xl mx-auto px-4 flex gap-2 overflow-x-auto no-scrollbar text-xs">
+          {/* Pestaña "Todas" */}
+          <button
+            onClick={() => setCategory('todos')}
+            className={`btn-tactile px-4 py-2 rounded-full whitespace-nowrap transition-all duration-200 ${
+              category === 'todos'
+                ? 'bg-ink-900 text-white font-semibold shadow-xs'
+                : 'bg-white text-ink-700 border border-warm-200/80 hover:bg-rose-100 hover:text-ink-900 font-medium'
+            }`}
+          >
+            Todas las Colecciones
+          </button>
 
-      {/* 2. Sección "¿Qué quieres celebrar?" (Carrusel Editorial con Flechas de Navegación) */}
+          {/* Pestañas Dinámicas conectadas a public.categories */}
+          {activeCategories.map((tab) => {
+            const isActive = category.toLowerCase() === tab.slug.toLowerCase();
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setCategory(tab.slug)}
+                className={`btn-tactile px-4 py-2 rounded-full whitespace-nowrap transition-all duration-200 ${
+                  isActive
+                    ? 'bg-ink-900 text-white font-semibold shadow-xs'
+                    : 'bg-white text-ink-700 border border-warm-200/80 hover:bg-rose-100 hover:text-ink-900 font-medium'
+                }`}
+              >
+                {tab.name}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* 2. SELECCIÓN EN VIVO (Catálogo de Arreglos Florales con Límite de 2 Filas y Expansión) */}
+      <main id="seleccion-en-vivo" className="max-w-6xl mx-auto px-3 sm:px-4 py-8 sm:py-10 space-y-8">
+        {/* Encabezado Editorial */}
+        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-warm-100 pb-3">
+          <div>
+            <span className="text-[11px] uppercase tracking-widest font-semibold text-rose-600">
+              Selección en Vivo
+            </span>
+            <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl text-ink-900 font-normal tracking-tight">
+              {category === 'todos'
+                ? 'Arreglos Florales Exclusivos'
+                : activeCategories.find((c) => c.slug.toLowerCase() === category.toLowerCase())?.name || category}
+            </h2>
+            <p className="text-xs sm:text-sm text-warm-500 mt-1">
+              Diseños florales de autor elaborados artesanalmente con flores frescas de exportación.
+            </p>
+          </div>
+          <span className="text-xs text-warm-500 font-mono mt-1 sm:mt-0">
+            {category === 'todos' ? representativeProducts.length : filteredProducts.length}{' '}
+            {(category === 'todos' ? representativeProducts.length : filteredProducts.length) === 1 ? 'diseño' : 'diseños'}
+          </span>
+        </div>
+
+        {loading ? (
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6">
+            {Array.from({ length: 8 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="bg-white rounded-2xl border border-warm-100 card-editorial p-2.5 sm:p-3 flex flex-col space-y-3 overflow-hidden"
+              >
+                <div className="aspect-[4/5] w-full rounded-lg skeleton-brand shrink-0" />
+                <div className="space-y-2 flex-1 pt-1">
+                  <div className="h-4 w-3/4 rounded-md skeleton-brand" />
+                  <div className="h-3 w-1/2 rounded-md skeleton-brand" />
+                </div>
+                <div className="pt-2 flex items-center justify-between border-t border-warm-100">
+                  <div className="h-5 w-16 rounded-md skeleton-brand" />
+                  <div className="h-8 w-24 rounded-md skeleton-brand" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : category === 'todos' ? (
+          /* Vista "Todas": Límite de 2 Filas (8 items en desktop / 4 en móvil) con Representatividad */
+          representativeProducts.length === 0 ? (
+            <div className="text-center py-24 bg-white rounded-2xl border border-warm-100 card-editorial p-8 space-y-3 shadow-xs">
+              <Flower2 className="w-12 h-12 text-rose-600 mx-auto stroke-1" />
+              <p className="text-sm font-bold text-ink-900">
+                No hay arreglos disponibles en este momento.
+              </p>
+              <p className="text-xs text-warm-500">
+                Estamos preparando nuevos diseños florales. Consúltanos directamente por WhatsApp.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {/* Grilla de productos: 2 filas compactas (8 items) o catálogo completo */}
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6 animate-in fade-in duration-300">
+                {(isCatalogExpanded ? representativeProducts : representativeProducts.slice(0, 8)).map(
+                  (product) => renderProductCard(product, false)
+                )}
+              </div>
+
+              {/* Botón Central de Expansión / Contracción */}
+              {representativeProducts.length > 8 && (
+                <div className="text-center pt-4 pb-2">
+                  {isCatalogExpanded ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCatalogExpanded(false);
+                        const catNav = document.getElementById('catalogo');
+                        if (catNav) catNav.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="btn-tactile inline-flex items-center gap-2 px-8 py-3 rounded-full border border-ink-900 text-ink-900 hover:bg-rose-100 text-xs sm:text-sm font-semibold shadow-2xs transition-all active:scale-[0.98]"
+                    >
+                      <span>Mostrar menos ↑</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsCatalogExpanded(true)}
+                      className="btn-tactile inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-ink-900 hover:bg-rose-600 text-white text-xs sm:text-sm font-semibold shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
+                    >
+                      <span>Ver catálogo completo ({representativeProducts.length} diseños) ↓</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        ) : (
+          /* Vista de Categoría Específica Seleccionada */
+          <div className="space-y-8">
+            {filteredProducts.length === 0 ? (
+              <div className="text-center py-24 bg-white rounded-2xl border border-warm-100 card-editorial p-8 space-y-3 shadow-xs">
+                <Flower2 className="w-12 h-12 text-rose-600 mx-auto stroke-1" />
+                <p className="text-sm font-bold text-ink-900">
+                  No hay arreglos disponibles en esta categoría.
+                </p>
+                <p className="text-xs text-warm-500">
+                  Explora otras colecciones o consúltanos directamente por WhatsApp.
+                </p>
+                <button
+                  onClick={() => setCategory('todos')}
+                  className="btn-tactile text-xs text-rose-600 font-semibold hover:underline pt-1 inline-block"
+                >
+                  Ver todos los arreglos
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {/* Grilla de productos: 2 filas compactas (8 items) o categoría completa */}
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6 animate-in fade-in duration-300">
+                  {(isCategoryExpanded ? filteredProducts : filteredProducts.slice(0, 8)).map(
+                    (product) => renderProductCard(product, false)
+                  )}
+                </div>
+
+                {/* Botón Central de Expansión por Categoría */}
+                {filteredProducts.length > 8 && (
+                  <div className="text-center pt-4 pb-2">
+                    {isCategoryExpanded ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCategoryExpanded(false);
+                          const catNav = document.getElementById('catalogo');
+                          if (catNav) catNav.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className="btn-tactile inline-flex items-center gap-2 px-8 py-3 rounded-full border border-ink-900 text-ink-900 hover:bg-rose-100 text-xs sm:text-sm font-semibold shadow-2xs transition-all active:scale-[0.98]"
+                      >
+                        <span>Mostrar menos ↑</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setIsCategoryExpanded(true)}
+                        className="btn-tactile inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-ink-900 hover:bg-rose-600 text-white text-xs sm:text-sm font-semibold shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
+                      >
+                        <span>
+                          Ver más arreglos de esta colección ({filteredProducts.length - 8} más) ↓
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+
+      {/* 3. COLECCIONES EXCLUSIVAS / CELEBRACIONES */}
+      {/* Ocasiones Más Solicitadas (Cards con Overlay) */}
+      <TopOccasions
+        onSelectOccasion={(slug) => {
+          setCategory(slug);
+          const catNav = document.getElementById('catalogo');
+          if (catNav) catNav.scrollIntoView({ behavior: 'smooth' });
+        }}
+      />
+
+      {/* Sección "¿Qué quieres celebrar?" (Carrusel Editorial con Flechas de Navegación) */}
       <section className="py-12 md:py-16 max-w-6xl mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           {/* Columna izquierda (~28% en desktop) */}
@@ -1074,7 +1291,6 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {/* Botón circular con flecha diagonal (↗) */}
                     <div className="w-10 h-10 rounded-full bg-white border border-warm-100 text-ink-900 flex items-center justify-center group-hover:bg-ink-900 group-hover:text-white group-hover:border-ink-900 transition-all shadow-2xs shrink-0">
                       <ArrowUpRight className="w-4 h-4" />
                     </div>
@@ -1086,281 +1302,33 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Pestañas de Categoría (Pills de Navegación Palo Rosa) */}
-      <nav id="catalogo" aria-label="Categorías" className="sticky top-[57px] sm:top-[61px] z-20 bg-rose-50/95 backdrop-blur-md border-y border-warm-100 py-2.5">
-        <div className="max-w-6xl mx-auto px-4 flex gap-2 overflow-x-auto no-scrollbar text-xs">
-          {/* Pestaña "Todos" */}
-          <button
-            onClick={() => setCategory('todos')}
-            className={`btn-tactile px-4 py-1.5 rounded-full whitespace-nowrap ${
-              category === 'todos'
-                ? 'bg-rose-500 text-ink-900 font-semibold shadow-xs border border-rose-600'
-                : 'bg-rose-100 text-warm-500 border border-warm-100 hover:bg-rose-50 hover:text-ink-900 font-medium'
-            }`}
-          >
-            Todos los Diseños
-          </button>
-
-          {/* Pestañas Dinámicas conectadas a public.categories */}
-          {activeCategories.map((tab) => {
-            const isActive = category.toLowerCase() === tab.slug.toLowerCase();
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setCategory(tab.slug)}
-                className={`btn-tactile px-4 py-1.5 rounded-full whitespace-nowrap transition-all duration-300 ease-out ${
-                  isActive
-                    ? 'bg-rose-500 text-ink-900 font-semibold shadow-xs border border-rose-600'
-                    : 'bg-rose-100 text-warm-500 border border-warm-100 hover:bg-rose-50 hover:text-ink-900 font-medium'
-                }`}
-              >
-                {tab.name}
-              </button>
-            );
-          })}
+      {/* Campaña Activa (si existe) */}
+      {activeCampaign && activeCampaign.is_active && (
+        <div className="max-w-6xl mx-auto px-4 pb-12">
+          <CampaignSection
+            campaign={activeCampaign}
+            onCtaClick={(ctaLink) => {
+              const link = ctaLink?.toLowerCase().trim();
+              if (link && activeCategories.some((c) => c.slug.toLowerCase() === link)) {
+                setCategory(link);
+              }
+              const el = document.getElementById('catalogo');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+          />
         </div>
-      </nav>
+      )}
 
-      {/* 3. Catálogo de Productos - Carruseles de 1 sola fila por Categoría o Grilla Completa */}
-      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8 space-y-12">
-        {loading ? (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6">
-            {Array.from({ length: 8 }).map((_, idx) => (
-              <div
-                key={idx}
-                className="bg-white rounded-2xl border border-warm-100 card-editorial p-2.5 sm:p-3 flex flex-col space-y-3 overflow-hidden"
-              >
-                {/* Contenedor de Imagen Hijo Directo (máximo rounded-lg, aspect 4/5) */}
-                <div className="aspect-[4/5] w-full rounded-lg skeleton-brand shrink-0" />
-                {/* Placeholders Nietos (máximo rounded-md) */}
-                <div className="space-y-2 flex-1 pt-1">
-                  <div className="h-4 w-3/4 rounded-md skeleton-brand" />
-                  <div className="h-3 w-1/2 rounded-md skeleton-brand" />
-                </div>
-                <div className="pt-2 flex items-center justify-between border-t border-warm-100">
-                  <div className="h-5 w-16 rounded-md skeleton-brand" />
-                  <div className="h-8 w-24 rounded-md skeleton-brand" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : category === 'todos' ? (
-          /* Vista "Todos": Fila 1 (Categorías representativas) + Fila 2 (Campaña Activa) + Diseños */
-          categoryGroups.length === 0 ? (
-            <div className="text-center py-24 bg-white rounded-2xl border border-warm-100 card-editorial p-8 space-y-3 shadow-xs">
-              <Flower2 className="w-12 h-12 text-rose-600 mx-auto stroke-1" />
-              <p className="text-sm font-bold text-ink-900">
-                No hay arreglos disponibles en este momento.
-              </p>
-              <p className="text-xs text-warm-500">
-                Estamos preparando nuevos diseños florales. Consúltanos directamente por WhatsApp.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-12">
-              {/* FILA 1: Colección por Categorías (Exactamente una foto representativa por categoría) */}
-              <section className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-warm-100 pb-2">
-                  <div>
-                    <span className="text-[11px] uppercase tracking-widest font-semibold text-rose-600">
-                      Exploración Rápida
-                    </span>
-                    <h3 className="font-serif text-2xl sm:text-3xl text-ink-900 font-normal tracking-tight">
-                      Colección por Categorías
-                    </h3>
-                    <p className="text-xs text-warm-500 mt-0.5">
-                      Explora cada una de nuestras líneas florales exclusivas. Haz clic para ver toda la colección.
-                    </p>
-                  </div>
-                  <span className="text-xs text-warm-500 font-mono mt-1 sm:mt-0">
-                    {categoryGroups.length} {categoryGroups.length === 1 ? 'colección' : 'colecciones'}
-                  </span>
-                </div>
-
-                <div className="flex gap-4 sm:gap-5 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-3 pt-1">
-                  {categoryGroups.map((group) => {
-                    const repProduct = group.products[0];
-                    const repImage = repProduct?.image_url || '/images/logo.jpg';
-
-                    return (
-                      <div
-                        key={group.id || group.slug}
-                        onClick={() => {
-                          setCategory(group.slug);
-                          const catNav = document.getElementById('catalogo');
-                          if (catNav) catNav.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                        className="snap-start shrink-0 min-w-[220px] sm:min-w-[260px] md:min-w-[280px] w-[220px] sm:w-[260px] md:w-[280px] group cursor-pointer"
-                      >
-                        <div className="aspect-[4/5] rounded-2xl overflow-hidden relative border border-warm-100 card-editorial shadow-xs">
-                          <img
-                            src={repImage}
-                            alt={group.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                            loading="lazy"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-ink-950/85 via-ink-950/25 to-transparent pointer-events-none" />
-
-                          {/* Badge de cantidad */}
-                          <div className="absolute top-3.5 right-3.5">
-                            <span className="bg-white/95 backdrop-blur-md text-ink-900 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-2xs">
-                              {group.products.length} {group.products.length === 1 ? 'diseño' : 'diseños'}
-                            </span>
-                          </div>
-
-                          {/* Info en base de tarjeta */}
-                          <div className="absolute bottom-4 left-4 right-4 text-white space-y-0.5">
-                            <span className="text-[10px] uppercase font-semibold text-rose-300 tracking-wider">
-                              Línea Floral
-                            </span>
-                            <h4 className="font-bold text-xl text-white tracking-tight leading-snug drop-shadow-xs group-hover:text-rose-200 transition">
-                              {group.name}
-                            </h4>
-                            <p className="text-[11px] text-neutral-200 line-clamp-1">
-                              {repProduct?.description || 'Flores frescas de corte de exportación'}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Botón inferior Ver Colección */}
-                        <div className="pt-2.5 flex items-center justify-between text-xs font-semibold text-ink-900 group-hover:text-rose-600 transition">
-                          <span>Ver todos los diseños</span>
-                          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-
-              {/* FILA 2: Campaña Activa (Promocional / Flores Amarillas / Carrusel dinámico) */}
-              {activeCampaign && activeCampaign.is_active && (
-                <CampaignSection
-                  campaign={activeCampaign}
-                  onCtaClick={(ctaLink) => {
-                    const link = ctaLink?.toLowerCase().trim();
-                    if (link && activeCategories.some((c) => c.slug.toLowerCase() === link)) {
-                      setCategory(link);
-                    } else {
-                      const el = document.getElementById('catalogo');
-                      if (el) el.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}
-                />
-              )}
-
-              {/* SECCIONES DE PRODUCTOS POR CATEGORÍA */}
-              <div className="space-y-12 pt-4">
-                <div className="border-b border-warm-100 pb-2">
-                  <span className="text-[11px] uppercase tracking-widest font-semibold text-rose-600">
-                    Catálogo Completo
-                  </span>
-                  <h3 className="font-serif text-2xl sm:text-3xl text-ink-900 font-normal tracking-tight">
-                    Todos los Diseños Florales
-                  </h3>
-                </div>
-
-                {categoryGroups.map((group) => {
-                  const isExpanded = !!expandedCategories[group.slug];
-                  return (
-                    <section key={group.id || group.slug} className="space-y-4">
-                      {/* Encabezado elegante de categoría con descripción sutil */}
-                      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-warm-100 pb-2">
-                        <div>
-                          <h3 className="font-serif text-2xl sm:text-3xl text-ink-900 font-normal tracking-tight">
-                            {group.name}
-                          </h3>
-                          <p className="text-xs text-warm-500 mt-0.5">
-                            Selección floral artesanal de alta gama con flores de corte fresco.
-                          </p>
-                        </div>
-                        <span className="text-xs text-warm-500 font-mono mt-1 sm:mt-0">
-                          {group.products.length} {group.products.length === 1 ? 'diseño' : 'diseños'}
-                        </span>
-                      </div>
-
-                      {/* Fila Horizontal Continua o Grilla Expandida */}
-                      {isExpanded ? (
-                        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6 animate-in fade-in duration-300">
-                          {group.products.map((product) => renderProductCard(product, false))}
-                        </div>
-                      ) : (
-                        <div className="flex gap-5 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-4 pt-1">
-                          {group.products.map((product) => renderProductCard(product, true))}
-                        </div>
-                      )}
-
-                      {/* Botón Editorial para Alternar Vista (Ver todos los diseños ↓ / Mostrar menos ↑) */}
-                      {group.products.length > 2 && (
-                        <div className="text-center pt-2 pb-4">
-                          <button
-                            type="button"
-                            onClick={() => toggleCategoryExpand(group.slug)}
-                            className="btn-tactile inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-ink-900 text-ink-900 hover:bg-rose-100 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
-                          >
-                            <span>
-                              {isExpanded
-                                ? 'Mostrar menos ↑'
-                                : `Ver todos los diseños de ${group.name} ↓`}
-                            </span>
-                          </button>
-                        </div>
-                      )}
-                    </section>
-                  );
-                })}
-              </div>
-            </div>
-          )
-        ) : (
-          /* Vista de Categoría Específica Seleccionada */
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-warm-100 pb-2">
-              <div>
-                <h3 className="font-serif text-2xl sm:text-3xl text-ink-900 font-normal tracking-tight">
-                  {activeCategories.find((c) => c.slug.toLowerCase() === category.toLowerCase())?.name || category}
-                </h3>
-                <p className="text-xs text-warm-500 mt-0.5">
-                  Arreglos y complementos exclusivos preparados al momento.
-                </p>
-              </div>
-              <span className="text-xs text-warm-500 font-mono mt-1 sm:mt-0">
-                {filteredProducts.length} {filteredProducts.length === 1 ? 'diseño' : 'diseños'}
-              </span>
-            </div>
-
-            {filteredProducts.length === 0 ? (
-              <div className="text-center py-24 bg-white rounded-2xl border border-warm-100 card-editorial p-8 space-y-3 shadow-xs">
-                <Flower2 className="w-12 h-12 text-rose-600 mx-auto stroke-1" />
-                <p className="text-sm font-bold text-ink-900">
-                  No hay arreglos disponibles en esta categoría.
-                </p>
-                <p className="text-xs text-warm-500">
-                  Explora otras colecciones o consúltanos directamente por WhatsApp.
-                </p>
-                <button
-                  onClick={() => setCategory('todos')}
-                  className="btn-tactile text-xs text-rose-600 font-semibold hover:underline pt-1 inline-block"
-                >
-                  Ver todos los arreglos
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6">
-                {filteredProducts.map((product) => renderProductCard(product, false))}
-              </div>
-            )}
-          </div>
-        )}
-      </main>
-
-      {/* 5. Hero Secundario — Efecto "Pinned Scroll Unfold" */}
+      {/* 4. Hero Secundario — Efecto "Pinned Scroll Unfold" */}
       <PinnedScrollUnfold
         onExploreClick={() => {
           const el = document.getElementById('catalogo');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
       />
+
+      {/* 5. Sección Momentos Reales — Carrusel Continuo de Clientes Felices */}
+      <ClientMomentsCarousel />
 
       {/* MODAL: Vista Previa y Personalización de Producto */}
       {selectedProduct && (

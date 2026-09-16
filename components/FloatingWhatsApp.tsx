@@ -17,23 +17,31 @@ export default function FloatingWhatsApp({
   const pathname = usePathname();
   const [activeNumber, setActiveNumber] = useState(phoneNumber || DEFAULT_WHATSAPP_NUMBER);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
 
   useEffect(() => {
-    const checkCartState = () => {
-      const isBodyCartOpen = typeof document !== 'undefined' && document.body.classList.contains('cart-drawer-open');
-      setIsCartOpen(isBodyCartOpen);
+    const checkFloatingStates = () => {
+      if (typeof document !== 'undefined') {
+        setIsCartOpen(document.body.classList.contains('cart-drawer-open'));
+        setIsChatbotOpen(document.body.classList.contains('chatbot-window-open'));
+      }
     };
 
-    checkCartState();
+    checkFloatingStates();
 
     const handleCartToggle = (e: any) => {
       setIsCartOpen(Boolean(e.detail?.isOpen));
     };
 
+    const handleChatbotToggle = (e: any) => {
+      setIsChatbotOpen(Boolean(e.detail?.isOpen));
+    };
+
     window.addEventListener('rozier:cart-toggle', handleCartToggle);
+    window.addEventListener('rozier:chatbot-toggle', handleChatbotToggle);
 
     const observer = new MutationObserver(() => {
-      checkCartState();
+      checkFloatingStates();
     });
 
     if (typeof document !== 'undefined' && document.body) {
@@ -42,6 +50,7 @@ export default function FloatingWhatsApp({
 
     return () => {
       window.removeEventListener('rozier:cart-toggle', handleCartToggle);
+      window.removeEventListener('rozier:chatbot-toggle', handleChatbotToggle);
       observer.disconnect();
     };
   }, []);
@@ -64,13 +73,14 @@ export default function FloatingWhatsApp({
     return null;
   }
 
+  const isHidden = isCartOpen || isChatbotOpen;
   const whatsappUrl = createWhatsAppLink(activeNumber, defaultMessage);
 
   return (
     <aside
       aria-label="Atención al cliente por WhatsApp"
       className={`fixed bottom-20 right-4 md:bottom-24 md:right-6 z-50 rozier-floating-widget transition-all duration-300 ${
-        isCartOpen
+        isHidden
           ? 'hidden opacity-0 pointer-events-none -translate-y-4'
           : 'pointer-events-auto opacity-100 translate-y-0'
       }`}

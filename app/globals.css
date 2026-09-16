@@ -4,14 +4,14 @@
   --rose-300: #EBB6BC;   /* acento pill / dots */
   --rose-500: #E8B4B8;   /* palo rosa principal */
   --rose-600: #D49A9E;   /* palo rosa oscuro (hover, bordes activos) */
-  --rose-50:  #F6E2E6;   /* fondo general palo rosa visible, refinado y con cuerpo */
-  --rose-100: #ECD3D8;   /* fondo de tarjeta / badges delicados */
+  --rose-50:  #FDF7F7;   /* fondo marfil / porcelana blush suave y de alta gama */
+  --rose-100: #F9ECEE;   /* fondo de tarjeta / badges delicados */
 
   /* Neutros alta gama */
   --ink-900: #1A1A1A;    /* texto principal, botón primario (evitar negro puro #000) */
   --ink-950: #111111;    /* superficies profundas */
   --warm-500: #686161;   /* texto secundario ajustado para contraste WCAG AA > 4.5:1 */
-  --warm-100: #E2C4CB;   /* bordes sutiles con matiz palo rosa */
+  --warm-100: #EFEAE9;   /* bordes sutiles y elegantes */
   --warm-300: #A09898;   /* precios tachados, disabled */
 
   /* Acento y Semántica */
@@ -270,6 +270,37 @@ body.cart-drawer-open .floating-cart-btn {
   pointer-events: none !important;
   visibility: hidden !important;
   z-index: -10 !important;
+}
+
+/* Ocultar botón de WhatsApp cuando la Asesora ROZIER está abierta */
+body.chatbot-window-open .rozier-floating-widget,
+body.chatbot-window-open aside[aria-label="Atención al cliente por WhatsApp"] {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  z-index: -10 !important;
+}
+
+/* Animación Marquee Continuo Infinito para Fotos de Clientes */
+@keyframes marqueeLeft {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee-infinite {
+  display: flex;
+  width: max-content;
+  animation: marqueeLeft 48s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-infinite:hover {
+  animation-play-state: paused;
 }
 
 
