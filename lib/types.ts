@@ -157,6 +157,12 @@ export interface Campaign {
   cta_link?: string;
   start_date?: string | null;
   end_date?: string | null;
+  target_date?: string | null;
+  description?: string;
+  button_text?: string;
+  selected_product_ids?: string[];
+  category_filter?: string;
+  accent_color?: string;
   is_active: boolean;
   updated_at?: string;
   slug?: string;

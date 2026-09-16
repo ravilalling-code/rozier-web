@@ -9,6 +9,7 @@ import {
   getCampaignSettings,
   DEFAULT_CAMPAIGN_SETTINGS,
 } from '@/lib/campaignSettings';
+import { getActiveCampaign } from '@/lib/campaigns';
 import {
   Sparkles,
   ArrowRight,
@@ -25,13 +26,24 @@ interface CampaignBannerProps {
   allProducts?: Product[];
 }
 
+interface BannerActiveData {
+  is_active: boolean;
+  title: string;
+  subtitle?: string;
+  description?: string;
+  badge_text?: string;
+  button_text?: string;
+  target_date?: string;
+  selected_product_ids?: string[];
+}
+
 export default function CampaignBanner({
   onCtaClick,
   onProductClick,
   onAddToCart,
   allProducts = [],
 }: CampaignBannerProps) {
-  const [settings, setSettings] = useState<CampaignSettings>(DEFAULT_CAMPAIGN_SETTINGS);
+  const [settings, setSettings] = useState<BannerActiveData | null>(null);
   const [loadedProducts, setLoadedProducts] = useState<Product[]>(allProducts);
   const [loading, setLoading] = useState(true);
 
@@ -56,9 +68,40 @@ export default function CampaignBanner({
 
     async function init() {
       try {
-        const campData = await getCampaignSettings();
-        if (isMounted) {
-          setSettings(campData);
+        // Consultar primero public.campaigns
+        const activeCamp = await getActiveCampaign();
+        if (activeCamp && activeCamp.is_active) {
+          if (isMounted) {
+            setSettings({
+              is_active: true,
+              title: activeCamp.title || activeCamp.name || '',
+              subtitle: activeCamp.subtitle || '',
+              description: activeCamp.description || '',
+              badge_text: activeCamp.badge_text || 'Campaña Especial',
+              button_text: activeCamp.button_text || activeCamp.cta_text || 'Ver colección',
+              target_date: activeCamp.target_date || activeCamp.end_date || '',
+              selected_product_ids: activeCamp.selected_product_ids || [],
+            });
+          }
+        } else {
+          // Fallback a campaign_settings
+          const campData = await getCampaignSettings();
+          if (isMounted) {
+            if (campData && campData.is_active) {
+              setSettings({
+                is_active: true,
+                title: campData.title,
+                subtitle: campData.subtitle,
+                description: campData.description,
+                badge_text: campData.badge_text,
+                button_text: campData.button_text,
+                target_date: campData.target_date,
+                selected_product_ids: campData.selected_product_ids,
+              });
+            } else {
+              setSettings(null);
+            }
+          }
         }
 
         if (allProducts.length === 0) {
@@ -80,26 +123,31 @@ export default function CampaignBanner({
     init();
 
     // Escuchar eventos en vivo desde el CRM en la misma ventana o tabs
-    const handleSettingsUpdate = (e: any) => {
-      if (e.detail) {
-        setSettings(e.detail);
-      }
+    const handleSettingsUpdate = () => {
+      init();
     };
     window.addEventListener('rozier:campaign-settings-updated', handleSettingsUpdate);
+    window.addEventListener('rozier:campaigns-updated', handleSettingsUpdate);
 
-    // Canal en tiempo real de Supabase
-    const channel = supabase
-      .channel('campaign_settings_realtime')
+    // Canales en tiempo real de Supabase
+    const campChannel = supabase
+      .channel('campaigns_realtime_banner')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'campaigns' },
+        () => {
+          init();
+        }
+      )
+      .subscribe();
+
+    const settingsChannel = supabase
+      .channel('campaign_settings_realtime_banner')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'campaign_settings' },
-        (payload: any) => {
-          if (payload.new) {
-            setSettings((prev) => ({
-              ...prev,
-              ...payload.new,
-            }));
-          }
+        () => {
+          init();
         }
       )
       .subscribe();
@@ -107,7 +155,9 @@ export default function CampaignBanner({
     return () => {
       isMounted = false;
       window.removeEventListener('rozier:campaign-settings-updated', handleSettingsUpdate);
-      supabase.removeChannel(channel);
+      window.removeEventListener('rozier:campaigns-updated', handleSettingsUpdate);
+      supabase.removeChannel(campChannel);
+      supabase.removeChannel(settingsChannel);
     };
   }, [allProducts.length]);
 
@@ -120,10 +170,10 @@ export default function CampaignBanner({
 
   // 2. Contador en vivo que se actualiza cada segundo
   useEffect(() => {
-    if (!settings.target_date) return;
+    if (!settings?.target_date) return;
 
     const updateTimer = () => {
-      const targetTime = new Date(settings.target_date).getTime();
+      const targetTime = new Date(settings.target_date!).getTime();
       const now = Date.now();
       const diff = targetTime - now;
 
@@ -155,12 +205,12 @@ export default function CampaignBanner({
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [settings.target_date]);
+  }, [settings?.target_date]);
 
   // 3. Obtener los productos seleccionados para la columna derecha
   const featuredProducts = useMemo(() => {
     const list: Product[] = [];
-    const ids = settings.selected_product_ids || [];
+    const ids = settings?.selected_product_ids || [];
 
     // Priorizar los seleccionados en el CRM
     ids.forEach((id) => {
@@ -200,10 +250,10 @@ export default function CampaignBanner({
     }
 
     return list.slice(0, 4);
-  }, [settings.selected_product_ids, loadedProducts]);
+  }, [settings?.selected_product_ids, loadedProducts]);
 
-  // Si la campaña está desactivada (is_active === false), ocultar por completo
-  if (!settings.is_active) {
+  // Si no hay campaña o está desactivada (is_active === false), ocultar por completo
+  if (!settings || !settings.is_active) {
     return null;
   }
 

@@ -311,6 +311,34 @@ export default function AdminLayout({
           </div>
         </header>
 
+        {/* Horizontal Navigation Tabs Bar with Custom Scrollbar & Fade Masks */}
+        <div className="relative border-b border-[#E4CAD2]/60 bg-[#FAF2F4]/90 backdrop-blur-md z-10 px-4 sm:px-8 py-2.5">
+          {/* Lateral Fade Masks */}
+          <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#FAF2F4] to-transparent pointer-events-none z-10" />
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#FAF2F4] to-transparent pointer-events-none z-10" />
+
+          <nav className="flex items-center gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-[#C67080] scrollbar-track-[#F5E5EA] whitespace-nowrap pb-1.5 pt-0.5 px-2">
+            {navigationItems.map((item) => {
+              const isActive = pathname.startsWith(item.href);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 shrink-0 ${
+                    isActive
+                      ? 'bg-[#C67080] text-white shadow-xs scale-105'
+                      : 'bg-[#F5E5EA] text-[#3D1E26] hover:bg-[#EBD2DA] border border-[#E4CAD2]/50'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{item.name}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
         <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">{children}</div>
       </main>
     </div>

@@ -4,15 +4,19 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Product } from '@/lib/types';
+import { Product, Campaign } from '@/lib/types';
 import {
-  CampaignSettings,
-  getCampaignSettings,
-  updateCampaignSettings,
-} from '@/lib/campaignSettings';
+  getAllCampaigns,
+  createCampaign,
+  updateCampaign,
+  toggleCampaignStatus,
+  deleteCampaign,
+} from '@/lib/campaigns';
 import {
   Sparkles,
-  Save,
+  Plus,
+  Edit2,
+  Trash2,
   CheckCircle2,
   AlertCircle,
   Clock,
@@ -27,44 +31,45 @@ import {
   EyeOff,
   Flame,
   Tag,
+  X,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function AdminCampaignPage() {
-  const [settings, setSettings] = useState<CampaignSettings | null>(null);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [productSearch, setProductSearch] = useState('');
-
-  // Notificaciones Toast
   const [toast, setToast] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
-  // Campos de formulario
-  const [isActive, setIsActive] = useState(true);
-  const [title, setTitle] = useState('');
-  const [subtitle, setSubtitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [buttonText, setButtonText] = useState('Ver colección');
-  const [badgeText, setBadgeText] = useState('Campaña Especial');
-  const [targetDateInput, setTargetDateInput] = useState('');
-  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
 
-  // Tiempo restante para el preview en vivo
-  const [timeLeft, setTimeLeft] = useState<{
-    days: number;
-    hours: number;
-    minutes: number;
-    seconds: number;
-    isExpired: boolean;
-  }>({ days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: false });
+  // Form Fields
+  const [formTitle, setFormTitle] = useState('');
+  const [formSubtitle, setFormSubtitle] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formButtonText, setFormButtonText] = useState('Ver colección');
+  const [formBadgeText, setFormBadgeText] = useState('Campaña Especial');
+  const [formTargetDate, setFormTargetDate] = useState('');
+  const [formSelectedProductIds, setFormSelectedProductIds] = useState<string[]>([]);
+  const [formIsActive, setFormIsActive] = useState(true);
+
+  // Modal Delete State
+  const [deletingCampaign, setDeletingCampaign] = useState<Campaign | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Search in product picker
+  const [productSearch, setProductSearch] = useState('');
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setToast({ text, type });
     setTimeout(() => setToast(null), 4000);
   };
 
-  // Convertir ISO string a formato para input datetime-local (YYYY-MM-DDTHH:mm)
-  const formatForDateTimeInput = (isoString?: string) => {
+  const formatForDateTimeInput = (isoString?: string | null) => {
     if (!isoString) return '';
     try {
       const date = new Date(isoString);
@@ -76,111 +81,141 @@ export default function AdminCampaignPage() {
     }
   };
 
-  // Cargar configuración de campaña y catálogo de productos
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      try {
-        const [campData, prodsRes] = await Promise.all([
-          getCampaignSettings(),
-          supabase
-            .from('products')
-            .select('*')
-            .eq('is_active', true)
-            .order('name', { ascending: true }),
-        ]);
-
-        setSettings(campData);
-        setIsActive(campData.is_active);
-        setTitle(campData.title || '');
-        setSubtitle(campData.subtitle || '');
-        setDescription(campData.description || '');
-        setButtonText(campData.button_text || 'Ver colección');
-        setBadgeText(campData.badge_text || 'Campaña Especial');
-        setTargetDateInput(formatForDateTimeInput(campData.target_date));
-        setSelectedProductIds(campData.selected_product_ids || []);
-
-        if (!prodsRes.error && prodsRes.data) {
-          setProducts(prodsRes.data as Product[]);
-        }
-      } catch (err: any) {
-        showToast('Error al cargar datos de campaña: ' + (err.message || err), 'error');
-      } finally {
-        setLoading(false);
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [campsData, prodsRes] = await Promise.all([
+        getAllCampaigns(),
+        supabase.from('products').select('*').eq('is_active', true).order('name', { ascending: true }),
+      ]);
+      setCampaigns(campsData);
+      if (!prodsRes.error && prodsRes.data) {
+        setProducts(prodsRes.data as Product[]);
       }
-    }
-
-    loadData();
-  }, []);
-
-  // Timer en vivo para la previsualización del contador
-  useEffect(() => {
-    if (!targetDateInput) return;
-
-    const calculateTime = () => {
-      const targetTime = new Date(targetDateInput).getTime();
-      const now = Date.now();
-      const diff = targetTime - now;
-
-      if (isNaN(targetTime) || diff <= 0) {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true });
-        return;
-      }
-
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((diff / (1000 * 60)) % 60);
-      const seconds = Math.floor((diff / 1000) % 60);
-
-      setTimeLeft({ days, hours, minutes, seconds, isExpired: false });
-    };
-
-    calculateTime();
-    const interval = setInterval(calculateTime, 1000);
-    return () => clearInterval(interval);
-  }, [targetDateInput]);
-
-  // Alternar selección de producto destacado (límite recomendado de 3 a 5)
-  const toggleProductSelection = (id: string) => {
-    if (selectedProductIds.includes(id)) {
-      setSelectedProductIds(selectedProductIds.filter((pId) => pId !== id));
-    } else {
-      if (selectedProductIds.length >= 5) {
-        showToast('Puedes destacar un máximo de 5 productos en el banner de campaña.', 'error');
-        return;
-      }
-      setSelectedProductIds([...selectedProductIds, id]);
+    } catch (err: any) {
+      showToast('Error al cargar datos: ' + (err.message || err), 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Guardar Cambios
-  const handleSave = async (e: React.FormEvent) => {
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // Abrir Modal de Creación
+  const handleOpenCreate = () => {
+    const defaultDate = new Date();
+    defaultDate.setDate(defaultDate.getDate() + 7);
+    defaultDate.setHours(23, 59, 0, 0);
+
+    setModalMode('create');
+    setEditingCampaignId(null);
+    setFormTitle('');
+    setFormSubtitle('El regalo perfecto que genera Wooow.');
+    setFormDescription('Arreglos florales radiantes seleccionados artesanalmente.');
+    setFormButtonText('Ver colección');
+    setFormBadgeText('Campaña Especial');
+    setFormTargetDate(formatForDateTimeInput(defaultDate.toISOString()));
+    setFormSelectedProductIds([]);
+    setFormIsActive(campaigns.length === 0);
+    setIsModalOpen(true);
+  };
+
+  // Abrir Modal de Edición
+  const handleOpenEdit = (camp: Campaign) => {
+    setModalMode('edit');
+    setEditingCampaignId(camp.id);
+    setFormTitle(camp.title || '');
+    setFormSubtitle(camp.subtitle || '');
+    setFormDescription(camp.description || '');
+    setFormButtonText(camp.button_text || camp.cta_text || 'Ver colección');
+    setFormBadgeText(camp.badge_text || 'Campaña Especial');
+    setFormTargetDate(formatForDateTimeInput(camp.target_date || camp.end_date));
+    setFormSelectedProductIds(camp.selected_product_ids || []);
+    setFormIsActive(camp.is_active);
+    setIsModalOpen(true);
+  };
+
+  // Switch de activación exclusiva
+  const handleToggleActive = async (id: string, currentActive: boolean) => {
+    const newActiveState = !currentActive;
+    try {
+      await toggleCampaignStatus(id, newActiveState);
+      setCampaigns((prev) =>
+        prev.map((c) => {
+          if (c.id === id) {
+            return { ...c, is_active: newActiveState };
+          }
+          if (newActiveState) {
+            return { ...c, is_active: false };
+          }
+          return c;
+        })
+      );
+      showToast(
+        newActiveState
+          ? '¡Campaña activada exclusivamente en la tienda web!'
+          : 'Campaña pausada.',
+        'success'
+      );
+    } catch (err: any) {
+      showToast('Error al cambiar estado: ' + (err.message || err), 'error');
+    }
+  };
+
+  // Guardar (Crear o Editar)
+  const handleSaveForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      showToast('Ingresa un título para la campaña.', 'error');
+    if (!formTitle.trim()) {
+      showToast('Por favor ingresa un título para la campaña.', 'error');
       return;
     }
-    if (!targetDateInput) {
-      showToast('Selecciona la fecha y hora de finalización de la campaña.', 'error');
+    if (!formTargetDate) {
+      showToast('Selecciona la fecha y hora de finalización.', 'error');
       return;
     }
 
     setSaving(true);
     try {
-      const isoTargetDate = new Date(targetDateInput).toISOString();
-      const updated = await updateCampaignSettings({
-        is_active: isActive,
-        title: title.trim(),
-        subtitle: subtitle.trim(),
-        description: description.trim(),
-        button_text: buttonText.trim() || 'Ver colección',
-        badge_text: badgeText.trim() || 'Campaña Especial',
+      const isoTargetDate = new Date(formTargetDate).toISOString();
+      const payload: any = {
+        title: formTitle.trim(),
+        name: formTitle.trim(),
+        subtitle: formSubtitle.trim(),
+        description: formDescription.trim(),
+        button_text: formButtonText.trim() || 'Ver colección',
+        cta_text: formButtonText.trim() || 'Ver colección',
+        badge_text: formBadgeText.trim() || 'Campaña Especial',
         target_date: isoTargetDate,
-        selected_product_ids: selectedProductIds,
-      });
+        end_date: isoTargetDate,
+        selected_product_ids: formSelectedProductIds,
+        is_active: formIsActive,
+      };
 
-      setSettings(updated);
-      showToast('¡Campaña guardada y sincronizada con éxito!', 'success');
+      if (modalMode === 'create') {
+        const created = await createCampaign(payload);
+        if (formIsActive) {
+          setCampaigns([created, ...campaigns.map((c) => ({ ...c, is_active: false }))]);
+        } else {
+          setCampaigns([created, ...campaigns]);
+        }
+        showToast('¡Nueva campaña creada con éxito!', 'success');
+      } else if (editingCampaignId) {
+        const updated = await updateCampaign(editingCampaignId, payload);
+        if (formIsActive) {
+          setCampaigns(
+            campaigns.map((c) =>
+              c.id === editingCampaignId ? updated : { ...c, is_active: false }
+            )
+          );
+        } else {
+          setCampaigns(campaigns.map((c) => (c.id === editingCampaignId ? updated : c)));
+        }
+        showToast('¡Campaña actualizada con éxito!', 'success');
+      }
+
+      setIsModalOpen(false);
     } catch (err: any) {
       showToast('Error al guardar: ' + (err.message || err), 'error');
     } finally {
@@ -188,59 +223,92 @@ export default function AdminCampaignPage() {
     }
   };
 
-  // Filtrar productos para la lista
+  // Confirmar y Eliminar
+  const handleConfirmDelete = async () => {
+    if (!deletingCampaign) return;
+    setDeleteLoading(true);
+    try {
+      await deleteCampaign(deletingCampaign.id);
+      setCampaigns(campaigns.filter((c) => c.id !== deletingCampaign.id));
+      showToast('Campaña eliminada correctamente.', 'success');
+      setDeletingCampaign(null);
+    } catch (err: any) {
+      showToast('Error al eliminar campaña: ' + (err.message || err), 'error');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  // Alternar selección de producto destacado (3 a 5)
+  const toggleProductSelection = (id: string) => {
+    if (formSelectedProductIds.includes(id)) {
+      setFormSelectedProductIds(formSelectedProductIds.filter((pId) => pId !== id));
+    } else {
+      if (formSelectedProductIds.length >= 5) {
+        showToast('Máximo 5 arreglos destacados permitidos.', 'error');
+        return;
+      }
+      setFormSelectedProductIds([...formSelectedProductIds, id]);
+    }
+  };
+
+  // Filtrar productos
   const filteredProducts = useMemo(() => {
     if (!productSearch.trim()) return products;
     const q = productSearch.toLowerCase().trim();
     return products.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        (p.category || '').toLowerCase().includes(q)
+      (p) => p.name.toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q)
     );
   }, [products, productSearch]);
 
-  if (loading) {
-    return (
-      <div className="py-24 flex flex-col items-center justify-center gap-3 text-ink-500">
-        <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
-        <p className="text-sm font-medium">Cargando panel de Campañas...</p>
-      </div>
-    );
-  }
+  // Formato de countdown legible para las tarjetas
+  const getReadableCountdown = (targetDateStr?: string | null) => {
+    if (!targetDateStr) return 'Sin fecha límite';
+    const diff = new Date(targetDateStr).getTime() - Date.now();
+    if (isNaN(diff)) return 'Fecha inválida';
+    if (diff <= 0) return 'Finalizada';
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diff / (1000 * 60)) % 60);
+
+    if (days > 0) return `${days}d ${hours}h restantes`;
+    return `${hours}h ${minutes}m restantes`;
+  };
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-8">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 bg-[#FAF2F4] min-h-screen text-[#3D1E26]">
       {/* Toast Notificación */}
       {toast && (
         <div
           className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl border backdrop-blur-md transition-all animate-in fade-in slide-in-from-top-4 ${
             toast.type === 'success'
-              ? 'bg-emerald-900/90 text-white border-emerald-500/40'
-              : 'bg-rose-900/90 text-white border-rose-500/40'
+              ? 'bg-[#2D161C] text-white border-[#B85D6F]'
+              : 'bg-rose-950 text-white border-rose-600'
           }`}
         >
           {toast.type === 'success' ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-300 shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
           ) : (
-            <AlertCircle className="w-5 h-5 text-rose-300 shrink-0" />
+            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
           )}
           <span className="text-sm font-medium">{toast.text}</span>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-warm-200/80 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E4CAD2] pb-6">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700">
+            <div className="w-10 h-10 rounded-xl bg-[#F4D9E1] flex items-center justify-center text-[#B85D6F]">
               <Flame className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-2xl font-serif font-bold text-ink-900 tracking-tight">
-                Gestión de Campaña Activa
+              <h1 className="text-2xl font-serif font-bold text-[#2D161C] tracking-tight">
+                Gestión de Campañas & Promociones
               </h1>
-              <p className="text-xs sm:text-sm text-ink-500">
-                Configura la fecha límite, contador regresivo y arreglos destacados en el banner principal.
+              <p className="text-xs sm:text-sm text-[#7D535E]">
+                Crea y administra múltiples campañas con cuenta regresiva para el banner principal.
               </p>
             </div>
           </div>
@@ -250,339 +318,453 @@ export default function AdminCampaignPage() {
           <Link
             href="/"
             target="_blank"
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-warm-100 text-ink-700 rounded-xl text-xs font-medium transition border border-warm-200 shadow-2xs"
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-[#F7E8EC] text-[#3D1E26] rounded-xl text-xs font-semibold transition border border-[#D9B5C0] shadow-xs"
           >
-            <Store className="w-3.5 h-3.5" />
+            <Store className="w-4 h-4 text-[#B85D6F]" />
             <span>Ver Tienda</span>
-            <ExternalLink className="w-3 h-3 text-ink-400" />
+            <ExternalLink className="w-3 h-3 text-[#7D535E]" />
           </Link>
           <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-5 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-sm font-medium transition shadow-sm hover:shadow-md disabled:opacity-50"
+            onClick={handleOpenCreate}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#B85D6F] hover:bg-[#9B4858] text-white rounded-xl text-sm font-semibold transition shadow-sm hover:shadow-md cursor-pointer"
           >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Guardando...</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                <span>Guardar Cambios</span>
-              </>
-            )}
+            <Plus className="w-4 h-4" />
+            <span>Nueva Campaña</span>
           </button>
         </div>
       </div>
 
-      <form onSubmit={handleSave} className="space-y-8">
-        {/* 1. Switch de Visibilidad y Estado General */}
-        <div className="bg-white rounded-2xl border border-warm-200/80 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h3 className="font-serif font-bold text-base text-ink-900">
-                Visibilidad en la Tienda Web
-              </h3>
-              <span
-                className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                  isActive
-                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                    : 'bg-neutral-100 text-neutral-600 border border-neutral-300'
+      {/* Resumen de Campañas */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white p-5 rounded-2xl border border-[#E4CAD2] shadow-xs">
+          <span className="text-xs font-bold text-[#7D535E] uppercase tracking-wider">
+            Total Campañas
+          </span>
+          <p className="text-2xl font-serif font-bold text-[#2D161C] mt-1">{campaigns.length}</p>
+        </div>
+        <div className="bg-white p-5 rounded-2xl border border-[#E4CAD2] shadow-xs">
+          <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">
+            Campaña Activa en Tienda
+          </span>
+          <p className="text-lg font-serif font-bold text-emerald-800 mt-1 truncate">
+            {campaigns.find((c) => c.is_active)?.title || 'Ninguna activa'}
+          </p>
+        </div>
+        <div className="bg-white p-5 rounded-2xl border border-[#E4CAD2] shadow-xs">
+          <span className="text-xs font-bold text-[#7D535E] uppercase tracking-wider">
+            En Pausa
+          </span>
+          <p className="text-2xl font-serif font-bold text-[#7D535E] mt-1">
+            {campaigns.filter((c) => !c.is_active).length}
+          </p>
+        </div>
+      </div>
+
+      {/* Listado de Campañas */}
+      {loading ? (
+        <div className="py-24 flex flex-col items-center justify-center gap-3 text-[#7D535E]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#B85D6F]" />
+          <p className="text-sm font-medium">Cargando campañas registradas...</p>
+        </div>
+      ) : campaigns.length === 0 ? (
+        <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-[#D9B5C0] p-8 space-y-4">
+          <Flame className="w-12 h-12 text-[#B85D6F]/60 mx-auto" />
+          <h3 className="text-lg font-serif font-bold text-[#2D161C]">No hay campañas creadas</h3>
+          <p className="text-xs text-[#7D535E] max-w-md mx-auto">
+            Crea tu primera campaña con cuenta regresiva y arreglos destacados para la portada de ROZIER.
+          </p>
+          <button
+            onClick={handleOpenCreate}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#B85D6F] text-white rounded-xl text-xs font-semibold hover:bg-[#9B4858] transition"
+          >
+            <Plus className="w-4 h-4" />
+            Crear Campaña
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {campaigns.map((camp) => {
+            const isFinished =
+              camp.target_date && new Date(camp.target_date).getTime() <= Date.now();
+
+            return (
+              <div
+                key={camp.id}
+                className={`bg-white rounded-3xl border transition-all duration-300 shadow-sm hover:shadow-md flex flex-col justify-between overflow-hidden ${
+                  camp.is_active
+                    ? 'border-[#B85D6F] ring-2 ring-[#B85D6F]/20'
+                    : 'border-[#E4CAD2]'
                 }`}
               >
-                {isActive ? 'Activa y Visible' : 'Oculta / Desactivada'}
-              </span>
-            </div>
-            <p className="text-xs text-ink-500">
-              Si desactivas la campaña, el banner y el contador regresivo desaparecerán por completo de la página de inicio.
-            </p>
-          </div>
+                {/* Header de la tarjeta */}
+                <div className="p-5 sm:p-6 space-y-3.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                        camp.is_active
+                          ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                          : 'bg-[#F4D9E1] text-[#7D535E] border border-[#E4CAD2]'
+                      }`}
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          camp.is_active ? 'bg-emerald-600 animate-pulse' : 'bg-[#7D535E]'
+                        }`}
+                      />
+                      {camp.is_active ? 'Activa en Tienda' : 'En Pausa'}
+                    </span>
 
-          <label className="relative inline-flex items-center cursor-pointer shrink-0">
-            <input
-              type="checkbox"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="w-14 h-7 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[4px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-amber-600"></div>
-          </label>
-        </div>
-
-        {/* 2. Temporizador y Fecha Límite */}
-        <div className="bg-gradient-to-br from-amber-500/10 via-rose-500/5 to-white rounded-2xl border border-amber-300/60 p-6 shadow-sm space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-amber-600" />
-                <h3 className="font-serif font-bold text-base text-ink-900">
-                  Fecha y Hora Límite de la Campaña (Target Date)
-                </h3>
-              </div>
-              <p className="text-xs text-ink-500 mt-0.5">
-                Define el momento exacto en que termina la cuenta regresiva.
-              </p>
-            </div>
-
-            {/* Input de Fecha y Hora */}
-            <div className="w-full sm:w-auto">
-              <input
-                type="datetime-local"
-                value={targetDateInput}
-                onChange={(e) => setTargetDateInput(e.target.value)}
-                className="w-full sm:w-auto px-4 py-2.5 bg-white border border-amber-300 rounded-xl text-xs sm:text-sm font-medium text-ink-900 shadow-2xs focus:outline-none focus:ring-2 focus:ring-amber-500"
-              />
-            </div>
-          </div>
-
-          {/* Previsualización en Vivo del Contador */}
-          <div className="bg-neutral-900 text-white rounded-xl p-5 border border-neutral-800 shadow-md">
-            <div className="flex items-center justify-between mb-3 border-b border-neutral-800 pb-2.5">
-              <span className="text-xs text-amber-400 uppercase tracking-widest font-mono font-semibold flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                Previsualización en tiempo real del contador
-              </span>
-              {timeLeft.isExpired && (
-                <span className="text-[11px] font-bold text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-800">
-                  ¡Campaña Expirada!
-                </span>
-              )}
-            </div>
-
-            <div className="grid grid-cols-4 gap-2 sm:gap-4 text-center">
-              <div className="bg-neutral-800/80 rounded-xl p-3 border border-neutral-700/60">
-                <span className="block text-2xl sm:text-3xl font-mono font-bold text-white tabular-nums">
-                  {String(timeLeft.days).padStart(2, '0')}
-                </span>
-                <span className="text-[10px] uppercase font-semibold text-neutral-400 tracking-wider">
-                  Días
-                </span>
-              </div>
-              <div className="bg-neutral-800/80 rounded-xl p-3 border border-neutral-700/60">
-                <span className="block text-2xl sm:text-3xl font-mono font-bold text-white tabular-nums">
-                  {String(timeLeft.hours).padStart(2, '0')}
-                </span>
-                <span className="text-[10px] uppercase font-semibold text-neutral-400 tracking-wider">
-                  Horas
-                </span>
-              </div>
-              <div className="bg-neutral-800/80 rounded-xl p-3 border border-neutral-700/60">
-                <span className="block text-2xl sm:text-3xl font-mono font-bold text-white tabular-nums">
-                  {String(timeLeft.minutes).padStart(2, '0')}
-                </span>
-                <span className="text-[10px] uppercase font-semibold text-neutral-400 tracking-wider">
-                  Minutos
-                </span>
-              </div>
-              <div className="bg-neutral-800/80 rounded-xl p-3 border border-neutral-700/60">
-                <span className="block text-2xl sm:text-3xl font-mono font-bold text-amber-400 tabular-nums">
-                  {String(timeLeft.seconds).padStart(2, '0')}
-                </span>
-                <span className="text-[10px] uppercase font-semibold text-neutral-400 tracking-wider">
-                  Segundos
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 3. Textos Editoriales del Banner */}
-        <div className="bg-white rounded-2xl border border-warm-200/80 p-6 shadow-sm space-y-5">
-          <div className="border-b border-warm-100 pb-3">
-            <h3 className="font-serif font-bold text-base text-ink-900">
-              Contenido y Textos del Banner
-            </h3>
-            <p className="text-xs text-ink-500">
-              Personaliza los encabezados que acompañarán al contador en la columna izquierda.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-ink-700 mb-1.5 uppercase tracking-wider">
-                Subtítulo Superior (Slogan)
-              </label>
-              <input
-                type="text"
-                value={subtitle}
-                onChange={(e) => setSubtitle(e.target.value)}
-                placeholder="El regalo perfecto que genera Wooow."
-                className="w-full px-3.5 py-2.5 border border-warm-300 rounded-xl text-xs sm:text-sm text-ink-800 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-ink-700 mb-1.5 uppercase tracking-wider">
-                Badge / Etiqueta Flotante
-              </label>
-              <input
-                type="text"
-                value={badgeText}
-                onChange={(e) => setBadgeText(e.target.value)}
-                placeholder="Edición Limitada o Campaña Especial"
-                className="w-full px-3.5 py-2.5 border border-warm-300 rounded-xl text-xs sm:text-sm text-ink-800 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-ink-700 mb-1.5 uppercase tracking-wider">
-              Título Principal de la Campaña *
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Los Top premium de Flores Amarillas"
-              required
-              className="w-full px-3.5 py-2.5 border border-warm-300 rounded-xl text-xs sm:text-sm font-serif font-medium text-ink-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-ink-700 mb-1.5 uppercase tracking-wider">
-                Descripción Breve
-              </label>
-              <textarea
-                rows={2}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Edición artesanal con flores frescas de exportación..."
-                className="w-full px-3.5 py-2.5 border border-warm-300 rounded-xl text-xs text-ink-800 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-ink-700 mb-1.5 uppercase tracking-wider">
-                Texto del Botón CTA
-              </label>
-              <input
-                type="text"
-                value={buttonText}
-                onChange={(e) => setButtonText(e.target.value)}
-                placeholder="Ver colección"
-                className="w-full px-3.5 py-2.5 border border-warm-300 rounded-xl text-xs sm:text-sm text-ink-800 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* 4. Selección de Arreglos Destacados */}
-        <div className="bg-white rounded-2xl border border-warm-200/80 p-6 shadow-sm space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-warm-100 pb-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <Tag className="w-4 h-4 text-amber-600" />
-                <h3 className="font-serif font-bold text-base text-ink-900">
-                  Arreglos Destacados en la Columna Derecha
-                </h3>
-              </div>
-              <p className="text-xs text-ink-500">
-                Selecciona entre 3 y 5 productos del catálogo. Se mostrarán como tarjetas interactivas junto al temporizador.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  selectedProductIds.length >= 3 && selectedProductIds.length <= 5
-                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                    : 'bg-amber-100 text-amber-800 border border-amber-300'
-                }`}
-              >
-                {selectedProductIds.length} de 5 seleccionados
-              </span>
-            </div>
-          </div>
-
-          {/* Buscador de Productos */}
-          <div className="relative">
-            <input
-              type="text"
-              value={productSearch}
-              onChange={(e) => setProductSearch(e.target.value)}
-              placeholder="Buscar arreglo por nombre o categoría..."
-              className="w-full pl-9 pr-4 py-2 border border-warm-200 rounded-xl text-xs text-ink-800 focus:outline-none focus:border-amber-500"
-            />
-            <Search className="w-4 h-4 text-warm-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          </div>
-
-          {/* Cuadrícula de Selección con Checkbox */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto pr-1">
-            {filteredProducts.map((prod) => {
-              const isSelected = selectedProductIds.includes(prod.id);
-              const price = prod.promotional_price || prod.price;
-
-              return (
-                <div
-                  key={prod.id}
-                  onClick={() => toggleProductSelection(prod.id)}
-                  className={`flex items-center gap-3 p-2.5 rounded-xl border cursor-pointer transition-all duration-200 ${
-                    isSelected
-                      ? 'bg-amber-50/70 border-amber-400 shadow-xs'
-                      : 'bg-white border-warm-200/80 hover:bg-warm-50/60'
-                  }`}
-                >
-                  <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-warm-100 shrink-0 border border-warm-100">
-                    <Image
-                      src={prod.image_url}
-                      alt={prod.name}
-                      fill
-                      sizes="48px"
-                      className="object-cover"
-                    />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-xs font-semibold text-ink-900 truncate">
-                      {prod.name}
-                    </h4>
-                    <p className="text-[11px] text-warm-500 truncate">
-                      {prod.category || 'Sin categoría'}
-                    </p>
-                    <span className="text-xs font-bold text-ink-900 tabular-nums">
-                      S/ {price.toFixed(2)}
+                    <span className="text-[11px] font-semibold text-[#7D535E] bg-[#FAF2F4] px-2.5 py-1 rounded-lg border border-[#E4CAD2]">
+                      {camp.badge_text || 'Campaña Especial'}
                     </span>
                   </div>
 
-                  <div
-                    className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all ${
-                      isSelected
-                        ? 'bg-amber-600 border-amber-600 text-white'
-                        : 'border-warm-300 bg-white'
-                    }`}
-                  >
-                    {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                  <div>
+                    <h3 className="text-lg font-serif font-bold text-[#2D161C] leading-snug line-clamp-2">
+                      {camp.title}
+                    </h3>
+                    {camp.subtitle && (
+                      <p className="text-xs text-[#7D535E] font-medium mt-1 line-clamp-1">
+                        {camp.subtitle}
+                      </p>
+                    )}
+                  </div>
+
+                  {camp.description && (
+                    <p className="text-xs text-[#5E3640] line-clamp-2 font-light leading-relaxed">
+                      {camp.description}
+                    </p>
+                  )}
+
+                  {/* Contador / Fecha límite */}
+                  <div className="p-3 bg-[#FAF2F4] rounded-xl border border-[#E4CAD2] flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 text-[#7D535E]">
+                      <Clock className="w-4 h-4 text-[#B85D6F]" />
+                      <span className="font-medium">Fecha Límite:</span>
+                    </div>
+                    <span
+                      className={`font-mono font-bold ${
+                        isFinished ? 'text-rose-600' : 'text-[#2D161C]'
+                      }`}
+                    >
+                      {getReadableCountdown(camp.target_date || camp.end_date)}
+                    </span>
+                  </div>
+
+                  {/* Arreglos destacados */}
+                  <div className="flex items-center justify-between text-xs text-[#7D535E] pt-1">
+                    <span className="flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5 text-[#B85D6F]" />
+                      Arreglos destacados:
+                    </span>
+                    <span className="font-bold text-[#2D161C]">
+                      {camp.selected_product_ids?.length || 0} productos
+                    </span>
                   </div>
                 </div>
-              );
-            })}
+
+                {/* Footer con Switch de Activación Exclusiva y Acciones */}
+                <div className="p-4 bg-[#FAF2F4] border-t border-[#E4CAD2] flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={camp.is_active}
+                        onChange={() => handleToggleActive(camp.id, camp.is_active)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-10 h-5 bg-neutral-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#B85D6F]"></div>
+                    </label>
+                    <span className="text-[11px] font-bold text-[#5E3640]">
+                      {camp.is_active ? 'Activa' : 'Pausada'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleOpenEdit(camp)}
+                      title="Editar campaña"
+                      className="p-2 text-[#5E3640] hover:text-[#B85D6F] hover:bg-white rounded-lg transition border border-transparent hover:border-[#D9B5C0]"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setDeletingCampaign(camp)}
+                      title="Eliminar campaña"
+                      className="p-2 text-[#7D535E] hover:text-rose-600 hover:bg-rose-50 rounded-lg transition border border-transparent hover:border-rose-200"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* MODAL CREAR / EDITAR CAMPAÑA */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-[#D9B5C0] shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-[#E4CAD2] sticky top-0 bg-white z-10">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[#F4D9E1] text-[#B85D6F] flex items-center justify-center font-bold">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <h3 className="font-serif font-bold text-lg text-[#2D161C]">
+                  {modalMode === 'create' ? 'Crear Nueva Campaña' : 'Editar Campaña'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="p-1.5 rounded-lg text-[#7D535E] hover:text-[#2D161C] hover:bg-[#FAF2F4]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveForm} className="p-6 space-y-5">
+              {/* Título & Badge */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-[#3D1E26] uppercase tracking-wider mb-1.5">
+                    Título Principal de Campaña *
+                  </label>
+                  <input
+                    type="text"
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                    placeholder="Ej. Día de las Flores Amarillas"
+                    required
+                    className="w-full px-3.5 py-2.5 bg-[#F7E8EC] border border-[#D9B5C0] text-[#3D1E26] rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:border-[#B85D6F]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#3D1E26] uppercase tracking-wider mb-1.5">
+                    Badge Flotante
+                  </label>
+                  <input
+                    type="text"
+                    value={formBadgeText}
+                    onChange={(e) => setFormBadgeText(e.target.value)}
+                    placeholder="Ej. EDICIÓN LIMITADA"
+                    className="w-full px-3.5 py-2.5 bg-[#F7E8EC] border border-[#D9B5C0] text-[#3D1E26] rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:border-[#B85D6F]"
+                  />
+                </div>
+              </div>
+
+              {/* Subtítulo & Botón CTA */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#3D1E26] uppercase tracking-wider mb-1.5">
+                    Subtítulo / Slogan
+                  </label>
+                  <input
+                    type="text"
+                    value={formSubtitle}
+                    onChange={(e) => setFormSubtitle(e.target.value)}
+                    placeholder="El regalo perfecto que genera Wooow."
+                    className="w-full px-3.5 py-2.5 bg-[#F7E8EC] border border-[#D9B5C0] text-[#3D1E26] rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#B85D6F]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#3D1E26] uppercase tracking-wider mb-1.5">
+                    Texto del Botón CTA
+                  </label>
+                  <input
+                    type="text"
+                    value={formButtonText}
+                    onChange={(e) => setFormButtonText(e.target.value)}
+                    placeholder="Ver colección"
+                    className="w-full px-3.5 py-2.5 bg-[#F7E8EC] border border-[#D9B5C0] text-[#3D1E26] rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#B85D6F]"
+                  />
+                </div>
+              </div>
+
+              {/* Descripción Breve */}
+              <div>
+                <label className="block text-xs font-bold text-[#3D1E26] uppercase tracking-wider mb-1.5">
+                  Descripción Breve
+                </label>
+                <textarea
+                  rows={2}
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  placeholder="Arreglos florales radiantes en tonos dorados y girasoles seleccionados."
+                  className="w-full px-3.5 py-2.5 bg-[#F7E8EC] border border-[#D9B5C0] text-[#3D1E26] rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#B85D6F]"
+                />
+              </div>
+
+              {/* Fecha y Hora Límite */}
+              <div className="p-4 bg-[#FAF2F4] rounded-2xl border border-[#E4CAD2] space-y-2">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#B85D6F]" />
+                  <label className="text-xs font-bold text-[#3D1E26] uppercase tracking-wider">
+                    Fecha y Hora Límite del Contador (Target Date) *
+                  </label>
+                </div>
+                <input
+                  type="datetime-local"
+                  value={formTargetDate}
+                  onChange={(e) => setFormTargetDate(e.target.value)}
+                  required
+                  className="w-full px-3.5 py-2.5 bg-white border border-[#D9B5C0] text-[#3D1E26] rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:border-[#B85D6F]"
+                />
+              </div>
+
+              {/* Selector de Arreglos Destacados (3 a 5) */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-[#3D1E26] uppercase tracking-wider">
+                    Arreglos Destacados para la Columna Derecha (3 a 5)
+                  </label>
+                  <span className="text-xs font-bold text-[#B85D6F] bg-[#F4D9E1] px-2.5 py-0.5 rounded-full">
+                    {formSelectedProductIds.length} seleccionados
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    placeholder="Buscar producto por nombre..."
+                    className="w-full pl-9 pr-3.5 py-2 bg-[#F7E8EC] border border-[#D9B5C0] text-[#3D1E26] rounded-xl text-xs focus:outline-none focus:border-[#B85D6F]"
+                  />
+                  <Search className="w-4 h-4 text-[#7D535E] absolute left-3 top-1/2 -translate-y-1/2" />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-56 overflow-y-auto pr-1">
+                  {filteredProducts.map((prod) => {
+                    const isSelected = formSelectedProductIds.includes(prod.id);
+                    const price = prod.promotional_price || prod.price;
+
+                    return (
+                      <div
+                        key={prod.id}
+                        onClick={() => toggleProductSelection(prod.id)}
+                        className={`flex items-center gap-2.5 p-2 rounded-xl border cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-[#F4D9E1] border-[#B85D6F]'
+                            : 'bg-white border-[#E4CAD2] hover:bg-[#FAF2F4]'
+                        }`}
+                      >
+                        <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-neutral-100 shrink-0 border border-[#E4CAD2]">
+                          <Image
+                            src={prod.image_url}
+                            alt={prod.name}
+                            fill
+                            sizes="40px"
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-[#2D161C] truncate">{prod.name}</p>
+                          <p className="text-[11px] text-[#7D535E]">S/ {price.toFixed(2)}</p>
+                        </div>
+                        <div
+                          className={`w-4 h-4 rounded flex items-center justify-center border transition-all ${
+                            isSelected
+                              ? 'bg-[#B85D6F] border-[#B85D6F] text-white'
+                              : 'border-[#D9B5C0] bg-white'
+                          }`}
+                        >
+                          {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Switch de activación al guardar */}
+              <div className="pt-2 flex items-center justify-between border-t border-[#E4CAD2]">
+                <span className="text-xs font-bold text-[#3D1E26]">
+                  Activar como campaña principal en la tienda al guardar
+                </span>
+                <input
+                  type="checkbox"
+                  checked={formIsActive}
+                  onChange={(e) => setFormIsActive(e.target.checked)}
+                  className="w-4 h-4 text-[#B85D6F] rounded border-[#D9B5C0] focus:ring-[#B85D6F]"
+                />
+              </div>
+
+              {/* Botones de acción del Modal */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E4CAD2]">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  disabled={saving}
+                  className="px-4 py-2 text-xs font-semibold text-[#7D535E] hover:bg-[#FAF2F4] rounded-xl transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[#B85D6F] hover:bg-[#9B4858] text-white rounded-xl text-xs font-semibold shadow-sm transition cursor-pointer disabled:opacity-50"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Guardando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>{modalMode === 'create' ? 'Crear Campaña' : 'Guardar Cambios'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
+      )}
 
-        {/* Botón inferior Guardar */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-warm-200">
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex items-center gap-2 px-6 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-sm font-medium transition shadow-sm hover:shadow-md disabled:opacity-50"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Guardando configuración...</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                <span>Guardar Campaña</span>
-              </>
-            )}
-          </button>
+      {/* MODAL CONFIRMAR ELIMINACIÓN */}
+      {deletingCampaign && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-[#E4CAD2] shadow-2xl space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div className="text-center space-y-1">
+              <h3 className="font-serif font-bold text-lg text-[#2D161C]">¿Eliminar campaña?</h3>
+              <p className="text-xs text-[#7D535E]">
+                Estás por eliminar &ldquo;{deletingCampaign.title}&rdquo;. Esta acción no se puede deshacer.
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeletingCampaign(null)}
+                disabled={deleteLoading}
+                className="px-4 py-2 text-xs font-semibold text-[#7D535E] hover:bg-[#FAF2F4] rounded-xl transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={deleteLoading}
+                className="flex items-center gap-2 px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold transition shadow-sm"
+              >
+                {deleteLoading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Eliminando...</span>
+                  </>
+                ) : (
+                  <span>Sí, Eliminar</span>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
-      </form>
+      )}
     </div>
   );
 }

@@ -152,19 +152,19 @@ export default function AdminClientesPage() {
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 bg-[#FAF2F4] min-h-screen text-[#3D1E26] rounded-3xl">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-warm-200/80 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E4CAD2] pb-6">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-700">
+            <div className="w-10 h-10 rounded-xl bg-[#F4D9E1] flex items-center justify-center text-[#B85D6F]">
               <Camera className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-2xl font-serif font-bold text-ink-900 tracking-tight">
+              <h1 className="text-2xl font-serif font-bold text-[#2D161C] tracking-tight">
                 Fotos de Clientes
               </h1>
-              <p className="text-xs sm:text-sm text-ink-500">
+              <p className="text-xs sm:text-sm text-[#7D535E]">
                 Administra las fotografías del carrusel continuo &ldquo;Momentos que Dejan Huella&rdquo; en la tienda.
               </p>
             </div>
@@ -174,7 +174,7 @@ export default function AdminClientesPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={handleOpenModal}
-            className="flex items-center gap-2 px-4 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-sm font-medium transition shadow-sm hover:shadow-md"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#B85D6F] hover:bg-[#9B4858] text-white rounded-xl text-sm font-semibold transition shadow-sm hover:shadow-md cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Añadir Foto</span>
@@ -184,34 +184,34 @@ export default function AdminClientesPage() {
 
       {/* Notifications */}
       {successMsg && (
-        <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm animate-fadeIn">
-          <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-600" />
+        <div className="flex items-center gap-3 p-4 bg-[#2D161C] border border-[#B85D6F] text-white rounded-xl text-sm animate-fadeIn shadow-md">
+          <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-400" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {errorMsg && (
-        <div className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-sm animate-fadeIn">
-          <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-600" />
+        <div className="flex items-center gap-3 p-4 bg-rose-950 border border-rose-600 text-white rounded-xl text-sm animate-fadeIn shadow-md">
+          <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-400" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {/* Summary Info */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-warm-200/80 shadow-sm">
-          <span className="text-xs font-medium text-ink-500 uppercase tracking-wider">Total Fotografías</span>
-          <p className="text-2xl font-serif font-bold text-ink-900 mt-1">{reviews.length}</p>
+        <div className="bg-white p-5 rounded-2xl border border-[#E4CAD2] shadow-xs">
+          <span className="text-xs font-bold text-[#7D535E] uppercase tracking-wider">Total Fotografías</span>
+          <p className="text-2xl font-serif font-bold text-[#2D161C] mt-1">{reviews.length}</p>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-warm-200/80 shadow-sm">
-          <span className="text-xs font-medium text-emerald-600 uppercase tracking-wider">Visibles en Tienda</span>
-          <p className="text-2xl font-serif font-bold text-emerald-700 mt-1">
+        <div className="bg-white p-5 rounded-2xl border border-[#E4CAD2] shadow-xs">
+          <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Visibles en Tienda</span>
+          <p className="text-2xl font-serif font-bold text-emerald-800 mt-1">
             {reviews.filter((r) => r.is_active).length}
           </p>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-warm-200/80 shadow-sm">
-          <span className="text-xs font-medium text-amber-600 uppercase tracking-wider">Ocultas</span>
-          <p className="text-2xl font-serif font-bold text-amber-700 mt-1">
+        <div className="bg-white p-5 rounded-2xl border border-[#E4CAD2] shadow-xs">
+          <span className="text-xs font-bold text-[#7D535E] uppercase tracking-wider">Ocultas</span>
+          <p className="text-2xl font-serif font-bold text-[#7D535E] mt-1">
             {reviews.filter((r) => !r.is_active).length}
           </p>
         </div>
@@ -243,12 +243,12 @@ export default function AdminClientesPage() {
           {reviews.map((item, index) => (
             <div
               key={item.id}
-              className={`group relative bg-white rounded-2xl border overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md flex flex-col ${
-                item.is_active ? 'border-warm-200/80' : 'border-neutral-200 opacity-60 bg-neutral-50'
+              className={`group relative bg-white rounded-3xl border overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md flex flex-col ${
+                item.is_active ? 'border-[#E4CAD2]' : 'border-[#E4CAD2]/60 opacity-60 bg-[#FAF2F4]'
               }`}
             >
               {/* Image Container */}
-              <div className="relative aspect-[3/4] w-full bg-warm-100 overflow-hidden">
+              <div className="relative aspect-[3/4] w-full bg-[#FAF0F3] overflow-hidden">
                 <Image
                   src={item.photo_url || item.image_url}
                   alt={item.client_name || `Cliente #${index + 1}`}
@@ -260,9 +260,9 @@ export default function AdminClientesPage() {
                 {/* Status Badge */}
                 <div className="absolute top-2.5 left-2.5">
                   <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold backdrop-blur-md shadow-sm ${
+                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md shadow-xs ${
                       item.is_active
-                        ? 'bg-emerald-500/90 text-white'
+                        ? 'bg-emerald-600/90 text-white'
                         : 'bg-neutral-800/80 text-white/80'
                     }`}
                   >
@@ -279,35 +279,35 @@ export default function AdminClientesPage() {
               </div>
 
               {/* Info & Actions */}
-              <div className="p-3.5 flex flex-col flex-grow justify-between gap-3">
+              <div className="p-4 flex flex-col flex-grow justify-between gap-3">
                 <div>
-                  <h4 className="font-medium text-xs sm:text-sm text-ink-900 truncate">
+                  <h4 className="font-serif font-bold text-xs sm:text-sm text-[#2D161C] truncate">
                     {item.client_name || 'Sin nombre especificado'}
                   </h4>
                   {item.occasion && (
-                    <p className="text-[11px] text-ink-500 truncate mt-0.5">{item.occasion}</p>
+                    <p className="text-[11px] text-[#7D535E] truncate mt-0.5 font-medium">{item.occasion}</p>
                   )}
                   {item.testimonial && (
-                    <p className="text-[10px] text-ink-400 italic line-clamp-2 mt-1">
+                    <p className="text-[10px] text-[#5E3640] italic line-clamp-2 mt-1">
                       &ldquo;{item.testimonial}&rdquo;
                     </p>
                   )}
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-warm-100 gap-1.5">
+                <div className="flex items-center justify-between pt-2.5 border-t border-[#E4CAD2] gap-1.5">
                   {/* Toggle Active Button */}
                   <button
                     onClick={() => handleToggleActive(item.id, item.is_active)}
                     title={item.is_active ? 'Ocultar de la tienda' : 'Mostrar en la tienda'}
-                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition ${
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
                       item.is_active
-                        ? 'text-neutral-600 hover:bg-neutral-100'
-                        : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                        ? 'text-[#5E3640] hover:bg-[#FAF2F4]'
+                        : 'text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200'
                     }`}
                   >
                     {item.is_active ? (
                       <>
-                        <EyeOff className="w-3.5 h-3.5 text-neutral-500" />
+                        <EyeOff className="w-3.5 h-3.5 text-[#7D535E]" />
                         <span className="text-[11px]">Ocultar</span>
                       </>
                     ) : (

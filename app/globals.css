@@ -2,10 +2,10 @@
 
 :root {
   --rose-300: #EBB6BC;   /* acento pill / dots */
-  --rose-500: #E8B4B8;   /* palo rosa principal */
-  --rose-600: #D49A9E;   /* palo rosa oscuro (hover, bordes activos) */
-  --rose-50:  #FDF7F7;   /* fondo marfil / porcelana blush suave y de alta gama */
-  --rose-100: #F9ECEE;   /* fondo de tarjeta / badges delicados */
+  --rose-500: #B85D6F;   /* palo rosa principal / vino suave */
+  --rose-600: #9B4858;   /* palo rosa oscuro (hover, bordes activos) */
+  --rose-50:  #F7E8EC;   /* fondo palo rosa cálido notorio sin fondo blanco plano */
+  --rose-100: #EED8DF;   /* fondo de tarjeta / badges delicados contrastados */
 
   /* Neutros alta gama */
   --ink-900: #1A1A1A;    /* texto principal, botón primario (evitar negro puro #000) */
@@ -301,6 +301,18 @@ body.chatbot-window-open aside[aria-label="Atención al cliente por WhatsApp"] {
 
 .animate-marquee-infinite:hover {
   animation-play-state: paused;
+}
+
+/* Scrollbar fino para CRM y Tienda */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+.scrollbar-thumb-\[\#C67080\]::-webkit-scrollbar-thumb {
+  background-color: #C67080 !important;
+  border-radius: 9999px !important;
+}
+.scrollbar-track-\[\#F5E5EA\]::-webkit-scrollbar-track {
+  background-color: #F5E5EA !important;
 }
 
 

@@ -298,14 +298,14 @@ export default function AdminAddonsPage() {
   const uniqueCategories = Array.from(new Set(addons.map((a) => a.category)));
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+    <div className="space-y-6 max-w-7xl mx-auto pb-16 bg-[#FAF0F3] p-4 sm:p-6 rounded-3xl min-h-screen text-[#3D1E26]">
       {/* Toast Notification */}
       {toastMessage && (
         <div
           className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl border animate-spring-modal ${
             toastMessage.type === 'success'
-              ? 'bg-emerald-950/90 text-emerald-100 border-emerald-800'
-              : 'bg-rose-950/90 text-rose-100 border-rose-800'
+              ? 'bg-[#2D161C] text-emerald-100 border-[#B85D6F]'
+              : 'bg-rose-950 text-rose-100 border-rose-800'
           }`}
         >
           {toastMessage.type === 'success' ? (
@@ -318,16 +318,16 @@ export default function AdminAddonsPage() {
       )}
 
       {/* Cabecera Principal */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-100 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-[#E4CAD2] shadow-xs">
         <div>
-          <div className="flex items-center gap-2 text-rose-600 font-bold text-xs uppercase tracking-widest">
+          <div className="flex items-center gap-2 text-[#B85D6F] font-bold text-xs uppercase tracking-widest">
             <Gift className="w-4 h-4" />
             <span>Cross-Selling & Experiencia</span>
           </div>
-          <h1 className="font-serif text-2xl sm:text-3xl text-ink-900 font-normal mt-1">
+          <h1 className="font-serif text-2xl sm:text-3xl text-[#2D161C] font-bold mt-1">
             Toques Especiales
           </h1>
-          <p className="text-xs text-warm-500 mt-1 max-w-xl">
+          <p className="text-xs text-[#7D535E] mt-1 max-w-xl">
             Gestiona los complementos sugeridos en el carrito de compras (Chocolates, Peluches,
             Vinos, Globos y Tarjetas). Los cambios se reflejan al instante en la tienda web.
           </p>
@@ -338,7 +338,7 @@ export default function AdminAddonsPage() {
             type="button"
             onClick={loadData}
             title="Refrescar catálogo"
-            className="btn-tactile p-2.5 rounded-xl border border-warm-100 text-warm-500 hover:text-ink-900 hover:bg-rose-50"
+            className="btn-tactile p-2.5 rounded-xl border border-[#E4CAD2] text-[#7D535E] hover:text-[#2D161C] hover:bg-[#F9EFF2]"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -346,7 +346,7 @@ export default function AdminAddonsPage() {
           <button
             type="button"
             onClick={handleOpenCreateModal}
-            className="btn-tactile flex items-center gap-2 bg-ink-900 hover:bg-black text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xs"
+            className="btn-tactile flex items-center gap-2 bg-[#B85D6F] hover:bg-[#9B4858] text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xs"
           >
             <Plus className="w-4 h-4" />
             <span>Nuevo Toque Especial</span>
@@ -356,54 +356,54 @@ export default function AdminAddonsPage() {
 
       {/* Tarjetas de Métricas Rápidas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-warm-100 shadow-xs flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+        <div className="bg-white p-5 rounded-2xl border border-[#E4CAD2] shadow-xs flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-[#F4D9E1] text-[#B85D6F] flex items-center justify-center">
             <Gift className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-xs text-warm-500">Total Complementos</span>
-            <p className="text-lg font-bold text-ink-900 tabular-nums">{addons.length}</p>
+            <span className="text-xs font-bold text-[#7D535E] uppercase tracking-wider">Total Complementos</span>
+            <p className="text-xl font-serif font-bold text-[#2D161C] tabular-nums">{addons.length}</p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-warm-100 shadow-xs flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+        <div className="bg-white p-5 rounded-2xl border border-[#E4CAD2] shadow-xs flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
             <Check className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-xs text-warm-500">Activos en Tienda</span>
-            <p className="text-lg font-bold text-ink-900 tabular-nums">{totalActive}</p>
+            <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Activos en Tienda</span>
+            <p className="text-xl font-serif font-bold text-emerald-900 tabular-nums">{totalActive}</p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-warm-100 shadow-xs flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+        <div className="bg-white p-5 rounded-2xl border border-[#E4CAD2] shadow-xs flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-[#FAF0F3] text-[#7D535E] flex items-center justify-center border border-[#E4CAD2]">
             <Layers className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-xs text-warm-500">Categorías Disponibles</span>
-            <p className="text-lg font-bold text-ink-900 tabular-nums">{uniqueCategories.length}</p>
+            <span className="text-xs font-bold text-[#7D535E] uppercase tracking-wider">Categorías Disponibles</span>
+            <p className="text-xl font-serif font-bold text-[#2D161C] tabular-nums">{uniqueCategories.length}</p>
           </div>
         </div>
       </div>
 
       {/* Barra de Búsqueda y Filtro de Categoría */}
-      <div className="flex flex-col sm:flex-row gap-3 bg-white p-4 rounded-xl border border-warm-100 shadow-xs">
+      <div className="flex flex-col sm:flex-row gap-3 bg-white p-4 rounded-2xl border border-[#E4CAD2] shadow-xs">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-warm-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-[#7D535E] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Buscar por nombre o categoría..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs bg-rose-50/50 border border-warm-100 rounded-lg outline-none focus:border-rose-500 text-ink-900"
+            className="w-full pl-9 pr-3.5 py-2.5 text-xs bg-[#F7E8EC] border border-[#D9B5C0] rounded-xl outline-none focus:border-[#B85D6F] text-[#3D1E26] font-medium"
           />
         </div>
 
         <select
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value)}
-          className="text-xs px-3 py-2 bg-rose-50/50 border border-warm-100 rounded-lg outline-none focus:border-rose-500 text-ink-900 font-medium sm:w-56"
+          className="text-xs px-3.5 py-2.5 bg-[#F7E8EC] border border-[#D9B5C0] rounded-xl outline-none focus:border-[#B85D6F] text-[#3D1E26] font-semibold sm:w-56"
         >
           <option value="todos">Todas las categorías</option>
           {ADDON_CATEGORIES.map((cat) => (
@@ -415,16 +415,16 @@ export default function AdminAddonsPage() {
       </div>
 
       {/* Tabla / Listado de Toques Especiales */}
-      <div className="bg-white rounded-2xl border border-warm-100 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-3xl border border-[#E4CAD2] shadow-xs overflow-hidden">
         {loading ? (
-          <div className="py-20 flex flex-col items-center justify-center gap-3 text-warm-500">
-            <Loader2 className="w-7 h-7 animate-spin text-rose-500" />
+          <div className="py-20 flex flex-col items-center justify-center gap-3 text-[#7D535E]">
+            <Loader2 className="w-7 h-7 animate-spin text-[#B85D6F]" />
             <span className="text-xs font-medium">Cargando toques especiales...</span>
           </div>
         ) : filteredAddons.length === 0 ? (
-          <div className="py-16 text-center text-warm-500 space-y-2">
-            <Gift className="w-10 h-10 mx-auto text-rose-300 stroke-[1.5]" />
-            <h4 className="text-sm font-semibold text-ink-900">No se encontraron complementos</h4>
+          <div className="py-16 text-center text-[#7D535E] space-y-2">
+            <Gift className="w-10 h-10 mx-auto text-[#B85D6F] stroke-[1.5]" />
+            <h4 className="text-sm font-serif font-bold text-[#2D161C]">No se encontraron complementos</h4>
             <p className="text-xs max-w-sm mx-auto">
               {searchQuery || filterCategory !== 'todos'
                 ? 'Prueba modificando tus filtros de búsqueda.'
@@ -433,8 +433,8 @@ export default function AdminAddonsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-ink-900">
-              <thead className="bg-rose-50/70 border-b border-warm-100 text-[11px] font-bold text-warm-500 uppercase tracking-wider">
+            <table className="w-full text-left text-xs text-[#3D1E26]">
+              <thead className="bg-[#F7E8EC] border-b border-[#E4CAD2] text-[11px] font-bold text-[#5E3640] uppercase tracking-wider">
                 <tr>
                   <th className="py-3.5 px-4">Complemento</th>
                   <th className="py-3.5 px-4">Categoría</th>
@@ -444,16 +444,16 @@ export default function AdminAddonsPage() {
                   <th className="py-3.5 px-4 text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-warm-100/60 font-sans">
+              <tbody className="divide-y divide-[#E4CAD2]/60 font-sans">
                 {filteredAddons.map((addon) => (
                   <tr
                     key={addon.id}
-                    className="hover:bg-rose-50/30 transition-colors duration-150 group"
+                    className="hover:bg-[#FAF2F4] transition-colors duration-150 group"
                   >
                     {/* Foto y Nombre */}
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-rose-100 shrink-0 border border-warm-100 relative">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-[#FAF0F3] shrink-0 border border-[#E4CAD2] relative">
                           <img
                             src={addon.image_url}
                             alt={addon.name}
@@ -465,29 +465,29 @@ export default function AdminAddonsPage() {
                           />
                         </div>
                         <div>
-                          <p className="font-bold text-sm text-ink-900">{addon.name}</p>
-                          <span className="text-[10px] text-warm-500">ID: {addon.id.slice(0, 8)}...</span>
+                          <p className="font-serif font-bold text-sm text-[#2D161C]">{addon.name}</p>
+                          <span className="text-[10px] text-[#7D535E]">ID: {addon.id.slice(0, 8)}...</span>
                         </div>
                       </div>
                     </td>
 
                     {/* Categoría */}
                     <td className="py-3 px-4">
-                      <span className="inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold bg-rose-100/80 text-rose-700 border border-rose-200/50">
+                      <span className="inline-block px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#F4D9E1] text-[#9B324D] border border-[#E4CAD2]">
                         {addon.category}
                       </span>
                     </td>
 
-                    {/* Precio */}
+                    {/* Precio en vino */}
                     <td className="py-3 px-4 text-right">
-                      <span className="font-bold text-sm text-ink-900 tabular-nums">
+                      <span className="font-mono font-bold text-sm text-[#9B324D] tabular-nums">
                         S/ {Number(addon.price).toFixed(2)}
                       </span>
                     </td>
 
                     {/* Orden */}
                     <td className="py-3 px-4 text-center">
-                      <span className="inline-block px-2 py-0.5 rounded-md bg-warm-100 text-warm-500 font-bold tabular-nums text-[11px]">
+                      <span className="inline-block px-2 py-0.5 rounded-md bg-[#FAF0F3] border border-[#E4CAD2] text-[#5E3640] font-bold tabular-nums text-[11px]">
                         #{addon.sort_order || 1}
                       </span>
                     </td>
@@ -498,7 +498,7 @@ export default function AdminAddonsPage() {
                         type="button"
                         onClick={() => handleToggleActive(addon)}
                         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                          addon.is_active ? 'bg-emerald-600' : 'bg-warm-300'
+                          addon.is_active ? 'bg-[#B85D6F]' : 'bg-neutral-300'
                         }`}
                         title={addon.is_active ? 'Pausar en tienda' : 'Activar en tienda'}
                       >
@@ -517,7 +517,7 @@ export default function AdminAddonsPage() {
                           type="button"
                           onClick={() => handleOpenEditModal(addon)}
                           title="Editar complemento"
-                          className="btn-tactile p-2 rounded-lg text-warm-500 hover:text-ink-900 hover:bg-rose-100 transition-colors"
+                          className="btn-tactile p-2 rounded-xl text-[#5E3640] hover:text-[#B85D6F] hover:bg-white border border-transparent hover:border-[#D9B5C0] transition-colors"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
@@ -525,7 +525,7 @@ export default function AdminAddonsPage() {
                           type="button"
                           onClick={() => setDeletingAddon(addon)}
                           title="Eliminar complemento"
-                          className="btn-tactile p-2 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-100 transition-colors"
+                          className="btn-tactile p-2 rounded-xl text-rose-500 hover:text-rose-700 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

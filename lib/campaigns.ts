@@ -43,6 +43,9 @@ function normalizeCampaign(camp: any): Campaign {
     banner_images: images,
     images,
     banner_url: camp.banner_url || images[0] || null,
+    target_date: camp.target_date || camp.end_date || null,
+    button_text: camp.button_text || camp.cta_text || 'Ver colección',
+    selected_product_ids: Array.isArray(camp.selected_product_ids) ? camp.selected_product_ids : [],
   };
 }
 

@@ -98,7 +98,7 @@ export default function StoreHeader({
                 : 'hover:bg-white/20 text-white'
             }`}
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-6 h-6" />
           </button>
         </div>
 
@@ -138,7 +138,7 @@ export default function StoreHeader({
         </Link>
 
         {/* NAVEGACIÓN DESKTOP */}
-        <nav className="hidden lg:flex items-center gap-8 font-semibold text-xs tracking-wider uppercase mx-auto">
+        <nav className="hidden lg:flex items-center gap-7 xl:gap-9 font-semibold text-base xl:text-lg tracking-normal mx-auto">
           {/* Submenú COLECCIONES */}
           <div
             ref={collectionRef}
@@ -149,13 +149,13 @@ export default function StoreHeader({
             <button
               type="button"
               onClick={() => setCollectionMenuOpen(!collectionMenuOpen)}
-              className={`flex items-center gap-1.5 py-2 hover:opacity-80 transition cursor-pointer font-semibold ${
+              className={`flex items-center gap-1.5 py-2 hover:opacity-80 transition cursor-pointer font-semibold text-base xl:text-lg ${
                 isScrolled ? 'text-[#2A2422]' : 'text-white'
               }`}
             >
               <span>Colección</span>
               <ChevronDown
-                className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                className={`w-4 h-4 transition-transform duration-200 ${
                   isScrolled ? 'text-[#2A2422]' : 'text-white'
                 } ${
                   collectionMenuOpen ? 'rotate-180' : ''
@@ -203,13 +203,13 @@ export default function StoreHeader({
             <button
               type="button"
               onClick={() => setOccasionsMenuOpen(!occasionsMenuOpen)}
-              className={`flex items-center gap-1.5 py-2 hover:opacity-80 transition cursor-pointer font-semibold ${
+              className={`flex items-center gap-1.5 py-2 hover:opacity-80 transition cursor-pointer font-semibold text-base xl:text-lg ${
                 isScrolled ? 'text-[#2A2422]' : 'text-white'
               }`}
             >
               <span>Ocasiones</span>
               <ChevronDown
-                className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                className={`w-4 h-4 transition-transform duration-200 ${
                   isScrolled ? 'text-[#2A2422]' : 'text-white'
                 } ${
                   occasionsMenuOpen ? 'rotate-180' : ''
@@ -263,7 +263,7 @@ export default function StoreHeader({
 
           <button
             onClick={() => handleScrollToSection('catalogo')}
-            className={`hover:opacity-80 transition cursor-pointer font-semibold ${
+            className={`hover:opacity-80 transition cursor-pointer font-semibold text-base xl:text-lg ${
               isScrolled ? 'text-[#2A2422]' : 'text-white'
             }`}
           >
@@ -272,7 +272,7 @@ export default function StoreHeader({
 
           <button
             onClick={() => handleScrollToSection('unfold-story')}
-            className={`hover:opacity-80 transition cursor-pointer font-semibold ${
+            className={`hover:opacity-80 transition cursor-pointer font-semibold text-base xl:text-lg ${
               isScrolled ? 'text-[#2A2422]' : 'text-white'
             }`}
           >
@@ -281,30 +281,30 @@ export default function StoreHeader({
 
           <button
             onClick={onOpenTracking}
-            className={`flex items-center gap-1.5 hover:opacity-80 transition cursor-pointer font-semibold ${
+            className={`flex items-center gap-2 hover:opacity-80 transition cursor-pointer font-semibold text-base xl:text-lg ${
               isScrolled ? 'text-[#2A2422]' : 'text-white'
             }`}
           >
-            <Truck className="w-3.5 h-3.5 text-rose-600" />
+            <Truck className="w-5 h-5 text-rose-600" />
             <span>Rastreo</span>
           </button>
         </nav>
 
         {/* EXTREMO DERECHO: ShoppingBag en Mobile, Search + Admin + ShoppingBag en Desktop */}
-        <div className="flex items-center justify-end gap-2 sm:gap-4 shrink-0 w-10 lg:w-auto">
+        <div className="flex items-center justify-end gap-2 sm:gap-3 shrink-0">
           {/* Botón Buscar (Desktop) */}
           <div className="relative hidden lg:block">
             <button
               type="button"
               onClick={() => setSearchOpen(!searchOpen)}
               aria-label="Buscar productos"
-              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
                 isScrolled
                   ? 'hover:bg-rose-200/60 text-[#2A2422]'
                   : 'hover:bg-white/20 text-white'
               }`}
             >
-              <Search className="w-4 h-4" />
+              <Search className="w-6 h-6" />
             </button>
 
             {searchOpen && (
@@ -331,13 +331,13 @@ export default function StoreHeader({
           <Link
             href="/admin/products"
             title="Panel de Administración"
-            className={`hidden lg:flex w-9 h-9 rounded-full items-center justify-center transition-all ${
+            className={`hidden lg:flex w-10 h-10 rounded-full items-center justify-center transition-all ${
               isScrolled
                 ? 'hover:bg-rose-200/60 text-[#2A2422]'
                 : 'hover:bg-white/20 text-white'
             }`}
           >
-            <User className="w-4 h-4" />
+            <User className="w-6 h-6" />
           </Link>
 
           {/* Botón ShoppingBag con Badge Dinámico (Extremo derecho en mobile y desktop) */}
@@ -345,15 +345,15 @@ export default function StoreHeader({
             type="button"
             onClick={onOpenCart}
             aria-label="Ver carrito"
-            className={`relative w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+            className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all ${
               isScrolled
                 ? 'hover:bg-rose-200/60 text-[#2A2422]'
                 : 'hover:bg-white/20 text-white'
             }`}
           >
-            <ShoppingBag className="w-4 h-4" />
+            <ShoppingBag className="w-6 h-6" />
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-accent-carmine text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center tabular-nums shadow-xs">
+              <span className="absolute -top-1 -right-1 bg-accent-carmine text-white text-[11px] font-bold h-5 w-5 rounded-full flex items-center justify-center tabular-nums shadow-xs">
                 {cartCount}
               </span>
             )}
