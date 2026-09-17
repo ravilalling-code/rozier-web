@@ -6,8 +6,7 @@ import { Star, MapPin, Sparkles, CheckCircle2 } from 'lucide-react';
 import { getClientReviews, ClientReview, DEFAULT_CLIENT_REVIEWS } from '@/lib/clientReviews';
 
 export default function ClientReviewsCarousel() {
-  const [reviews, setReviews] = useState<ClientReview[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState<ClientReview[]>(DEFAULT_CLIENT_REVIEWS);
   const [isInView, setIsInView] = useState(false);
   const [isMarqueeStarted, setIsMarqueeStarted] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
@@ -38,8 +37,6 @@ export default function ClientReviewsCarousel() {
       } catch (err) {
         console.error('Error loading client reviews:', err);
         setReviews(DEFAULT_CLIENT_REVIEWS);
-      } finally {
-        setLoading(false);
       }
     }
     loadReviews();
@@ -74,18 +71,12 @@ export default function ClientReviewsCarousel() {
     }
   }, [isInView]);
 
-  if (loading) {
-    return (
-      <section className="py-20 bg-[#FAF2F4] border-t border-[#E8D5DC] overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <div className="h-8 w-64 bg-[#EBD2DA]/60 rounded-full mx-auto animate-pulse mb-3" />
-          <div className="h-4 w-96 bg-[#EBD2DA]/40 rounded-full mx-auto animate-pulse" />
-        </div>
-      </section>
-    );
+  const displayList = reviews && reviews.length > 0 ? reviews : DEFAULT_CLIENT_REVIEWS;
+  
+  if (!displayList || displayList.length === 0) {
+    return null;
   }
 
-  const displayList = reviews.length > 0 ? reviews : DEFAULT_CLIENT_REVIEWS;
   // Duplicar para carrusel infinito continuo
   const duplicatedReviews = [...displayList, ...displayList];
 

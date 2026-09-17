@@ -19,6 +19,13 @@ import Footer from '@/components/Footer';
 import CampaignSection from '@/components/CampaignSection';
 import CampaignBanner from '@/components/CampaignBanner';
 import ClientReviewsCarousel from '@/components/ClientReviewsCarousel';
+import EditorialProductImage from '@/components/EditorialProductImage';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger);
+}
 import {
   MessageCircle,
   Heart,
@@ -176,6 +183,8 @@ export default function HomePage() {
   const [celebrationBanners, setCelebrationBanners] = useState<CategoryBanner[]>(DEFAULT_CATEGORY_BANNERS);
   const celebrationCarouselRef = useRef<HTMLDivElement>(null);
   const categoriesNavRef = useRef<HTMLDivElement>(null);
+  const catalogSectionRef = useRef<HTMLElement>(null);
+  const isInitialScrollTriggerDone = useRef(false);
 
   const scrollCelebration = (direction: 'left' | 'right') => {
     if (celebrationCarouselRef.current) {
@@ -708,6 +717,65 @@ export default function HomePage() {
     }
   }
 
+  // Entrada escalonada con GSAP ScrollTrigger para las tarjetas de productos
+  useEffect(() => {
+    if (typeof window === 'undefined' || loading) return;
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const sectionEl = catalogSectionRef.current;
+    if (!sectionEl) return;
+
+    const cards = sectionEl.querySelectorAll('.product-grid-card');
+    if (cards.length === 0) return;
+
+    if (prefersReducedMotion) {
+      gsap.set(cards, { opacity: 1, y: 0 });
+      return;
+    }
+
+    if (!isInitialScrollTriggerDone.current) {
+      // Entrada inicial con ScrollTrigger al entrar al viewport (stagger ~0.06s, duración ~0.38s)
+      const st = ScrollTrigger.create({
+        trigger: sectionEl,
+        start: 'top 85%',
+        once: true,
+        onEnter: () => {
+          isInitialScrollTriggerDone.current = true;
+          gsap.fromTo(
+            cards,
+            { opacity: 0, y: 16 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: 0.38,
+              stagger: 0.06,
+              ease: 'power1.out',
+              clearProps: 'transform',
+            }
+          );
+        },
+      });
+
+      return () => {
+        st.kill();
+      };
+    } else {
+      // Transición sutil al cambiar de categoría (sin re-disparar ScrollTrigger brusco)
+      gsap.fromTo(
+        cards,
+        { opacity: 0, y: 8 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.25,
+          stagger: 0.03,
+          ease: 'power1.out',
+          clearProps: 'transform',
+        }
+      );
+    }
+  }, [category, isCatalogExpanded, isCategoryExpanded, loading, representativeProducts.length, filteredProducts.length]);
+
   // Enviar pedido consolidado a Supabase y generar comprobante WhatsApp
   const handleCheckoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -876,41 +944,39 @@ export default function HomePage() {
     return (
       <div
         key={product.id}
-        className={`group bg-white/95 rounded-2xl border border-[#E8D5DC] card-editorial p-3 flex flex-col justify-between overflow-hidden transition-all duration-300 hover:border-[#B85D6F] hover:shadow-lg h-full ${
+        className={`product-grid-card group bg-white/95 rounded-2xl border border-[#E8D5DC] card-editorial p-3 flex flex-col justify-between overflow-hidden transition-all duration-300 hover:border-[#B85D6F] hover:shadow-lg h-full ${
           inCarousel
             ? 'snap-start shrink-0 min-w-[220px] md:min-w-[260px] w-[220px] md:w-[260px]'
             : 'w-full'
         }`}
       >
-        {/* Contenedor de Imagen Hijo Directo: aspect-[4/5], rounded-lg */}
-        <div
+        {/* Contenedor de Imagen Editorial con Shimmer y Ken Burns */}
+        <EditorialProductImage
+          src={product.image_url}
+          alt={product.name}
+          aspect="aspect-[4/5]"
+          rounded="rounded-xl"
+          className="border border-[#F0E0E6]"
+          loading="lazy"
           onClick={() => {
             setSelectedProduct(product);
             setModalQuantity(1);
             setDeliveryDate('');
             setDedication('');
           }}
-          className="relative aspect-[4/5] w-full bg-[#FAF2F4] overflow-hidden cursor-pointer rounded-xl shrink-0 border border-[#F0E0E6]"
         >
-          <img
-            src={product.image_url}
-            alt={product.name}
-            className="w-full h-full object-cover [@media(hover:hover)]:group-hover:scale-[1.03] transition-transform duration-500 ease-out"
-            loading="lazy"
-          />
-
-          {/* Insignia Oferta (Nieto: rounded-md) */}
+          {/* Insignia Oferta */}
           {hasPromo && (
             <span className="absolute top-2 left-2 bg-[#FDE8EC] text-[#9B324D] border border-[#F0B8C6] text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md shadow-xs">
               OFERTA
             </span>
           )}
 
-          {/* Insignia Categoría (Nieto: rounded-md) */}
+          {/* Insignia Categoría */}
           <span className="absolute bottom-2 right-2 bg-black/75 backdrop-blur-md text-white text-[10px] font-semibold tracking-wider px-2 py-0.5 rounded-md uppercase">
             {catBadgeName}
           </span>
-        </div>
+        </EditorialProductImage>
 
         {/* Detalle del Arreglo Floral */}
         <div className="pt-3 flex-1 flex flex-col justify-between space-y-2.5">
@@ -1089,7 +1155,7 @@ export default function HomePage() {
       </nav>
 
       {/* 2. SELECCIÓN EN VIVO (Catálogo de Arreglos Florales con Límite de 2 Filas y Expansión) */}
-      <main id="seleccion-en-vivo" className="max-w-6xl mx-auto px-3 sm:px-4 py-8 sm:py-10 space-y-8">
+      <main id="seleccion-en-vivo" ref={catalogSectionRef} className="max-w-6xl mx-auto px-3 sm:px-4 py-8 sm:py-10 space-y-8">
         {/* Encabezado Editorial */}
         <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-[#E8D5DC] pb-3">
           <div>
@@ -1367,19 +1433,22 @@ export default function HomePage() {
                   className="snap-start shrink-0 min-w-[260px] md:min-w-[300px] w-[260px] md:w-[300px] group cursor-pointer"
                 >
                   {/* Tarjeta con imagen aspect-[3/4] */}
-                  <div className="aspect-[3/4] min-w-[260px] md:min-w-[300px] rounded-2xl overflow-hidden relative border border-warm-100 card-editorial shadow-xs">
-                    <img
+                  <div className="min-w-[260px] md:min-w-[300px]">
+                    <EditorialProductImage
                       src={banner.image_url}
                       alt={banner.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                      aspect="aspect-[3/4]"
+                      rounded="rounded-2xl"
+                      className="border border-[#E8D5DC] card-editorial shadow-xs"
                       loading="lazy"
-                    />
-                    {/* Badge flotante en la foto */}
-                    <div className="absolute top-4 left-4">
-                      <span className="bg-rose-600/90 backdrop-blur-sm text-white text-xs font-medium px-3.5 py-1.5 rounded-full shadow-xs">
-                        {banner.badge_text}
-                      </span>
-                    </div>
+                    >
+                      {/* Badge flotante en la foto */}
+                      <div className="absolute top-4 left-4">
+                        <span className="bg-[#B85D6F]/90 backdrop-blur-sm text-white text-xs font-medium px-3.5 py-1.5 rounded-full shadow-xs">
+                          {banner.badge_text}
+                        </span>
+                      </div>
+                    </EditorialProductImage>
                   </div>
 
                   {/* Zona externa inferior */}
@@ -1450,24 +1519,38 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Arreglo Preview */}
-            <div className="flex gap-3.5 items-center bg-white p-3 rounded-xl border border-[#DFC0CB] shadow-xs">
-              <img
+            {/* Arreglo Preview Editorial */}
+            <div className="space-y-3 bg-white p-3.5 rounded-xl border border-[#DFC0CB] shadow-xs">
+              <EditorialProductImage
                 src={selectedProduct.image_url}
                 alt={selectedProduct.name}
-                className="w-20 h-20 rounded-lg object-cover border border-[#DFC0CB] shadow-2xs shrink-0"
-              />
-              <div className="flex-1">
-                <p className="text-xs text-warm-500">
-                  {selectedProduct.description || 'Diseño floral artesanal con flores frescas de primera calidad'}
-                </p>
-                <div className="flex items-baseline gap-1.5 mt-2">
-                  <span className="text-[#8B3B4D] font-bold text-lg tabular-nums">
-                    S/{' '}
-                    {(selectedProduct.promotional_price || selectedProduct.price).toFixed(2)}
+                aspect="aspect-[16/10]"
+                rounded="rounded-lg"
+                loading="eager"
+                className="shadow-2xs border border-[#DFC0CB]"
+              >
+                {selectedProduct.promotional_price && (
+                  <span className="absolute top-2.5 left-2.5 bg-[#FDE8EC] text-[#9B324D] border border-[#F0B8C6] text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md shadow-xs">
+                    OFERTA ESPECIAL
                   </span>
+                )}
+                <span className="absolute bottom-2.5 right-2.5 bg-black/75 backdrop-blur-md text-white text-[10px] font-semibold tracking-wider px-2.5 py-0.5 rounded-md uppercase">
+                  {selectedProduct.category || 'Colección ROZIER'}
+                </span>
+              </EditorialProductImage>
+
+              <div className="flex items-start justify-between gap-3 pt-1">
+                <p className="text-xs text-warm-500 leading-relaxed flex-1">
+                  {selectedProduct.description || 'Diseño floral artesanal con flores frescas de exportación seleccionadas a mano.'}
+                </p>
+                <div className="text-right shrink-0">
+                  <div className="flex items-baseline gap-1.5 justify-end">
+                    <span className="text-[#8B3B4D] font-bold text-xl tabular-nums">
+                      S/ {(selectedProduct.promotional_price || selectedProduct.price).toFixed(2)}
+                    </span>
+                  </div>
                   {selectedProduct.promotional_price && (
-                    <span className="text-xs text-warm-500 line-through tabular-nums">
+                    <span className="text-xs text-warm-500 line-through tabular-nums block">
                       S/ {selectedProduct.price.toFixed(2)}
                     </span>
                   )}
