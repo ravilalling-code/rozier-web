@@ -72,13 +72,13 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
       }
 
       // 3. Desktop (>= 1024px): Efecto Pinned Scroll Unfold completo con sticky y GSAP ScrollTrigger
-      // Altura contenida a 140vh: recorrido exacto de 40vh de scroll sin remanente ni espacio muerto
+      // Altura compacta a 116vh: recorrido conciso (~16vh) que elimina cualquier pozo o espacio vacío al terminar
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
           end: 'bottom bottom',
-          scrub: 1,
+          scrub: 0.8,
           invalidateOnRefresh: true,
         },
       });
@@ -152,9 +152,9 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
     <section
       id="unfold-story"
       ref={containerRef}
-      className="relative lg:h-[140vh] bg-[#F7E8EC] transition-colors w-full max-w-full py-8 sm:py-10 lg:py-0"
+      className="relative lg:h-[116vh] bg-[#F7E8EC] transition-colors w-full max-w-full py-6 sm:py-8 lg:py-0"
     >
-      {/* Contenedor sticky solo en desktop durante los 40vh exactos de recorrido progresivo */}
+      {/* Contenedor sticky solo en desktop durante el recorrido progresivo */}
       <div className="relative lg:sticky lg:top-0 h-auto min-h-0 lg:h-[100dvh] overflow-hidden flex items-center justify-center p-3 sm:p-5 md:p-8">
         {/* Contenedor Interior con Escala y Bordes Controlados por GSAP */}
         <div

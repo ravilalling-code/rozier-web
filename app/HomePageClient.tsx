@@ -1498,7 +1498,7 @@ export default function HomePage() {
       />
 
       {/* Video Banner de Marca ROZIER */}
-      <section className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 my-10 overflow-hidden">
+      <section className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 mt-2 sm:mt-4 lg:-mt-8 mb-10 overflow-hidden">
         <div className="relative w-full aspect-[16/9] max-h-[70vh] sm:max-h-[75vh] rounded-3xl overflow-hidden border border-[#E8CCD5] shadow-xl bg-[#2A161C] flex items-center justify-center">
           <video
             autoPlay
