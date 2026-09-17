@@ -1501,16 +1501,20 @@ export default function HomePage() {
       <section className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 my-10 overflow-hidden">
         <div className="relative w-full aspect-[16/9] max-h-[70vh] sm:max-h-[75vh] rounded-3xl overflow-hidden border border-[#E8CCD5] shadow-xl bg-[#2A161C] flex items-center justify-center">
           <video
-            src="/banner.mp4"
             autoPlay
             loop
             muted
             playsInline
             preload="metadata"
+            poster="/banner.png"
+            onLoadedMetadata={() => {
+              if (typeof window !== 'undefined') {
+                ScrollTrigger.refresh();
+              }
+            }}
             className="w-full h-full object-contain sm:object-cover object-center"
           >
             <source src="/banner.mp4" type="video/mp4" />
-            <source src="/video%20banner.mp4" type="video/mp4" />
           </video>
         </div>
       </section>

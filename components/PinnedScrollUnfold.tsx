@@ -23,6 +23,7 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
     if (typeof window === 'undefined' || !containerRef.current || !cardRef.current) return;
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isMobile = window.innerWidth < 1024;
 
     const ctx = gsap.context(() => {
       // 1. Accesibilidad: Si el usuario prefiere movimiento reducido
@@ -41,29 +42,96 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
         return;
       }
 
-      // Animación suave de aparición y escala en viewport
-      gsap.from(cardRef.current, {
-        opacity: 0,
-        y: 28,
-        scale: 0.97,
-        duration: 0.8,
-        ease: 'power2.out',
+      // 2. Degradación elegante en dispositivos móviles / tablets (< 1024px)
+      // Sin pin forzado para evitar cualquier salto o espacio muerto en pantallas táctiles
+      if (isMobile) {
+        gsap.from(cardRef.current, {
+          opacity: 0,
+          y: 28,
+          scale: 0.96,
+          duration: 0.7,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: 'top 80%',
+          },
+        });
+
+        gsap.from('.unfold-stagger-item', {
+          opacity: 0,
+          y: 20,
+          duration: 0.5,
+          stagger: 0.1,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: cardRef.current,
+            start: 'top 75%',
+          },
+        });
+        return;
+      }
+
+      // 3. Desktop (>= 1024px): Efecto Pinned Scroll Unfold completo con sticky y GSAP ScrollTrigger
+      // Altura contenida a 140vh: recorrido exacto de 40vh de scroll sin remanente ni espacio muerto
+      const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
-          start: 'top 80%',
+          start: 'top top',
+          end: 'bottom bottom',
+          scrub: 1,
+          invalidateOnRefresh: true,
         },
       });
 
-      // Entrada escalonada de textos y CTA
+      // Transformación progresiva: scale 1 -> 0.93 y border-radius 0px -> 28px
+      tl.fromTo(
+        cardRef.current,
+        {
+          scale: 1,
+          borderRadius: '0px',
+        },
+        {
+          scale: 0.93,
+          borderRadius: '28px',
+          ease: 'none',
+        },
+        0
+      );
+
+      // Parallax vertical sutil en imágenes laterales
+      if (leftImageRef.current) {
+        tl.to(
+          leftImageRef.current,
+          {
+            yPercent: -12,
+            ease: 'none',
+          },
+          0
+        );
+      }
+
+      if (rightImageRef.current) {
+        tl.to(
+          rightImageRef.current,
+          {
+            yPercent: 12,
+            ease: 'none',
+          },
+          0
+        );
+      }
+
+      // Entrada escalonada del contenido central al asomarse
       gsap.from('.unfold-stagger-item', {
         opacity: 0,
-        y: 20,
+        y: 22,
         duration: 0.6,
         stagger: 0.1,
         ease: 'power2.out',
         scrollTrigger: {
-          trigger: cardRef.current,
-          start: 'top 75%',
+          trigger: containerRef.current,
+          start: 'top 70%',
+          toggleActions: 'play none none reverse',
         },
       });
     }, containerRef);
@@ -84,17 +152,18 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
     <section
       id="unfold-story"
       ref={containerRef}
-      className="relative bg-[#F7E8EC] transition-colors w-full max-w-full py-8 sm:py-12 px-4 sm:px-6 lg:px-8"
+      className="relative lg:h-[140vh] bg-[#F7E8EC] transition-colors w-full max-w-full py-8 sm:py-10 lg:py-0"
     >
-      <div className="relative w-full max-w-7xl mx-auto">
-        {/* Contenedor Interior de Manifiesto */}
+      {/* Contenedor sticky solo en desktop durante los 40vh exactos de recorrido progresivo */}
+      <div className="relative lg:sticky lg:top-0 h-auto min-h-0 lg:h-[100dvh] overflow-hidden flex items-center justify-center p-3 sm:p-5 md:p-8">
+        {/* Contenedor Interior con Escala y Bordes Controlados por GSAP */}
         <div
           ref={cardRef}
-          className="relative w-full bg-[#0E0C0D] rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col lg:flex-row items-center justify-between mx-auto will-change-transform"
+          className="relative w-full max-w-7xl h-auto min-h-0 lg:h-[86vh] bg-[#0E0C0D] rounded-2xl lg:rounded-none overflow-hidden shadow-2xl border border-white/10 flex flex-col lg:flex-row items-center justify-between mx-auto will-change-transform"
         >
-          {/* Imagen Lateral Izquierda */}
-          <div className="w-full lg:w-1/3 h-56 sm:h-72 lg:h-[440px] relative overflow-hidden shrink-0">
-            <div ref={leftImageRef} className="w-full h-full relative">
+          {/* Imagen Lateral Izquierda con Parallax */}
+          <div className="w-full lg:w-1/3 h-56 sm:h-72 lg:h-full relative overflow-hidden shrink-0">
+            <div ref={leftImageRef} className="w-full h-[125%] -top-[12%] relative will-change-transform">
               <img
                 src="https://qnrwguxaxcwqzodngztg.supabase.co/storage/v1/object/public/products/boxes/IMG-20260912-WA0044.jpg"
                 alt="Arreglo de autor ROZIER"
@@ -106,7 +175,7 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
           </div>
 
           {/* Bloque Central Editorial */}
-          <div className="flex-1 bg-[#120F10] text-white flex flex-col items-center justify-center p-6 sm:p-10 lg:p-12 text-center z-10 space-y-4 lg:border-x border-white/10 h-auto lg:h-[440px]">
+          <div className="flex-1 bg-[#120F10] text-white flex flex-col items-center justify-center p-6 sm:p-10 lg:p-14 text-center z-10 space-y-4 lg:border-x border-white/10 h-auto lg:h-full">
             {/* Badge Manifesto */}
             <div className="unfold-stagger-item inline-flex items-center gap-2 bg-[#E5C378]/15 text-[#E5C378] border border-[#E5C378]/30 text-[11px] font-semibold uppercase tracking-[0.25em] px-4 py-1.5 rounded-full shadow-xs">
               <Sparkles className="w-3.5 h-3.5 text-[#E5C378]" />
@@ -136,9 +205,9 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
             </div>
           </div>
 
-          {/* Imagen Lateral Derecha */}
-          <div className="w-full lg:w-1/3 h-56 sm:h-72 lg:h-[440px] relative overflow-hidden shrink-0">
-            <div ref={rightImageRef} className="w-full h-full relative">
+          {/* Imagen Lateral Derecha con Parallax */}
+          <div className="w-full lg:w-1/3 h-56 sm:h-72 lg:h-full relative overflow-hidden shrink-0">
+            <div ref={rightImageRef} className="w-full h-[125%] -top-[12%] relative will-change-transform">
               <img
                 src="https://qnrwguxaxcwqzodngztg.supabase.co/storage/v1/object/public/products/ramos/IMG-20260912-WA0045.jpg"
                 alt="Taller de alta floristería ROZIER"
