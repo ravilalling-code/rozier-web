@@ -8,6 +8,7 @@ interface EditorialProductImageProps {
   aspect?: string;
   rounded?: string;
   className?: string;
+  imgClassName?: string;
   loading?: 'lazy' | 'eager';
   children?: React.ReactNode;
   onClick?: (e: React.MouseEvent) => void;
@@ -20,6 +21,7 @@ export default function EditorialProductImage({
   aspect = 'aspect-[4/5]',
   rounded = 'rounded-xl',
   className = '',
+  imgClassName = '',
   loading = 'lazy',
   children,
   onClick,
@@ -31,7 +33,7 @@ export default function EditorialProductImage({
   return (
     <div
       onClick={onClick}
-      className={`editorial-photo-wrapper relative w-full ${aspect} ${rounded} shrink-0 cursor-pointer select-none ${className}`}
+      className={`editorial-photo-wrapper relative w-full ${aspect && aspect !== 'none' ? aspect : ''} ${rounded} shrink-0 cursor-pointer select-none ${className}`}
     >
       {/* 1. Placeholder Shimmer de Marca (.skeleton-brand) */}
       <div
@@ -41,7 +43,7 @@ export default function EditorialProductImage({
         aria-hidden="true"
       />
 
-      {/* 2. Fotografía Editorial con reveal scale-in (0.97 -> 1) y Ken Burns en hover */}
+      {/* 2. Fotografía Editorial con reveal scale-in (0.95 -> 1) y Ken Burns en hover */}
       <img
         src={hasError ? '/placeholder.jpg' : src}
         alt={alt}
@@ -51,7 +53,9 @@ export default function EditorialProductImage({
           setHasError(true);
           setIsLoaded(true);
         }}
-        className={`w-full h-full object-cover editorial-img-reveal editorial-ken-burns ${
+        className={`${
+          imgClassName || 'w-full h-full object-cover'
+        } editorial-img-reveal editorial-ken-burns ${
           isLoaded ? 'is-loaded' : ''
         }`}
       />

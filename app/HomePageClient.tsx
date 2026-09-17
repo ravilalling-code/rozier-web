@@ -1500,72 +1500,86 @@ export default function HomePage() {
       {/* 5. Sección Momentos Reales — Carrusel Continuo de Clientes Felices */}
       <ClientReviewsCarousel />
 
-      {/* MODAL: Vista Previa y Personalización de Producto */}
+      {/* MODAL: Vista Previa y Personalización de Producto (Mobile-First) */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden animate-in fade-in duration-200">
-          <div className="bg-[#FAF2F4] w-full sm:max-w-md rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto border border-[#DFC0CB] card-editorial animate-spring-modal">
-            <div className="flex justify-between items-center border-b border-[#DFC0CB] pb-3">
-              <div>
-                <h3 className="font-bold text-base text-ink-900 tracking-tight">{selectedProduct.name}</h3>
-                <p className="text-xs text-warm-500">
-                  {selectedProduct.category ? `Colección: ${selectedProduct.category}` : 'Alta Floristería ROZIER'}
-                </p>
-              </div>
-              <button
-                onClick={() => setSelectedProduct(null)}
-                className="btn-tactile p-1.5 rounded-lg text-[#8B3B4D] hover:text-[#2D1B22] hover:bg-[#F5E5EA] transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedProduct(null);
+          }}
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden animate-in fade-in duration-200"
+        >
+          <div className="bg-[#FAF1F4] w-full sm:max-w-md max-h-[90dvh] overflow-y-auto rounded-3xl p-4 sm:p-6 space-y-3.5 sm:space-y-4 shadow-2xl border border-[#E4CAD2] card-editorial animate-spring-modal flex flex-col relative">
+            {/* Botón de Cerrar Flotante */}
+            <button
+              type="button"
+              onClick={() => setSelectedProduct(null)}
+              className="btn-tactile absolute top-3.5 right-3.5 sm:top-5 sm:right-5 z-20 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-[#8B3B4D] hover:text-[#2D1B22] flex items-center justify-center shadow-md transition border border-[#E4CAD2] cursor-pointer"
+              aria-label="Cerrar vista previa"
+            >
+              <X className="w-4 h-4" />
+            </button>
 
-            {/* Arreglo Preview Editorial */}
-            <div className="space-y-3 bg-white p-3.5 rounded-xl border border-[#DFC0CB] shadow-xs">
-              <EditorialProductImage
-                src={selectedProduct.image_url}
-                alt={selectedProduct.name}
-                aspect="aspect-[16/10]"
-                rounded="rounded-lg"
-                loading="eager"
-                className="shadow-2xs border border-[#DFC0CB]"
-              >
+            {/* 1. Ajuste y Centrado Visual de la Foto */}
+            <EditorialProductImage
+              src={selectedProduct.image_url}
+              alt={selectedProduct.name}
+              aspect="none"
+              rounded="rounded-2xl"
+              className="w-full max-h-[42vh] sm:max-h-[50vh] flex items-center justify-center overflow-hidden bg-[#F7E8EC] border border-[#E4CAD2] shadow-xs group shrink-0"
+              imgClassName="w-full h-full object-contain sm:object-cover object-center transition-transform duration-500"
+              loading="eager"
+              showHoverVignette={false}
+            >
+              {selectedProduct.promotional_price && (
+                <span className="absolute top-2.5 left-2.5 bg-[#FDE8EC] text-[#8B3B4D] border border-[#F0B8C6] text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-xs">
+                  OFERTA ESPECIAL
+                </span>
+              )}
+              <span className="absolute bottom-2.5 right-2.5 bg-black/75 backdrop-blur-md text-white text-[10px] font-semibold tracking-wider px-2.5 py-0.5 rounded-md uppercase">
+                {selectedProduct.category || 'Colección ROZIER'}
+              </span>
+            </EditorialProductImage>
+
+            {/* 2. Título, Colección y Precio en Vino Institucional */}
+            <div className="space-y-1 pt-1 animate-fade-in-up" style={{ animationDelay: '60ms' }}>
+              <div className="flex items-center justify-between gap-2 pr-8">
+                <span className="text-[11px] font-semibold text-[#8B3B4D] uppercase tracking-wider truncate">
+                  {selectedProduct.category ? `Colección: ${selectedProduct.category}` : 'Alta Floristería ROZIER'}
+                </span>
+                <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-medium shrink-0">
+                  Disponible
+                </span>
+              </div>
+              <h3 className="font-bold text-lg sm:text-xl text-ink-900 tracking-tight leading-snug">
+                {selectedProduct.name}
+              </h3>
+              <div className="flex items-baseline gap-2 pt-0.5">
+                <span className="text-[#8B3B4D] font-bold text-2xl sm:text-3xl tabular-nums">
+                  S/ {(selectedProduct.promotional_price || selectedProduct.price).toFixed(2)}
+                </span>
                 {selectedProduct.promotional_price && (
-                  <span className="absolute top-2.5 left-2.5 bg-[#FDE8EC] text-[#9B324D] border border-[#F0B8C6] text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md shadow-xs">
-                    OFERTA ESPECIAL
+                  <span className="text-xs sm:text-sm text-warm-500 line-through tabular-nums">
+                    S/ {selectedProduct.price.toFixed(2)}
                   </span>
                 )}
-                <span className="absolute bottom-2.5 right-2.5 bg-black/75 backdrop-blur-md text-white text-[10px] font-semibold tracking-wider px-2.5 py-0.5 rounded-md uppercase">
-                  {selectedProduct.category || 'Colección ROZIER'}
-                </span>
-              </EditorialProductImage>
-
-              <div className="flex items-start justify-between gap-3 pt-1">
-                <p className="text-xs text-warm-500 leading-relaxed flex-1">
-                  {selectedProduct.description || 'Diseño floral artesanal con flores frescas de exportación seleccionadas a mano.'}
-                </p>
-                <div className="text-right shrink-0">
-                  <div className="flex items-baseline gap-1.5 justify-end">
-                    <span className="text-[#8B3B4D] font-bold text-xl tabular-nums">
-                      S/ {(selectedProduct.promotional_price || selectedProduct.price).toFixed(2)}
-                    </span>
-                  </div>
-                  {selectedProduct.promotional_price && (
-                    <span className="text-xs text-warm-500 line-through tabular-nums block">
-                      S/ {selectedProduct.price.toFixed(2)}
-                    </span>
-                  )}
-                </div>
               </div>
+              <p className="text-xs text-warm-500 leading-relaxed pt-1">
+                {selectedProduct.description || 'Diseño floral artesanal con flores frescas de exportación seleccionadas a mano.'}
+              </p>
             </div>
 
-            {/* Selector de Cantidad */}
-            <div className="bg-white p-3.5 rounded-xl border border-[#DFC0CB] shadow-xs flex items-center justify-between">
+            {/* 3. Selector de Cantidad */}
+            <div
+              className="bg-white/90 p-3 sm:p-3.5 rounded-xl border border-[#E4CAD2] shadow-xs flex items-center justify-between animate-fade-in-up"
+              style={{ animationDelay: '120ms' }}
+            >
               <span className="text-xs font-semibold text-ink-900">Cantidad deseada:</span>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setModalQuantity((prev) => Math.max(1, prev - 1))}
-                  className="btn-tactile w-8 h-8 rounded-lg bg-[#FAF2F4] border border-[#DFC0CB] text-[#3D1E26] hover:bg-[#F5E5EA] flex items-center justify-center font-bold transition"
+                  className="btn-tactile w-8 h-8 rounded-lg bg-[#FAF1F4] border border-[#E4CAD2] text-[#3D1E26] hover:bg-[#F5E5EA] flex items-center justify-center font-bold transition cursor-pointer"
+                  aria-label="Reducir cantidad"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
@@ -1575,22 +1589,23 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => setModalQuantity((prev) => prev + 1)}
-                  className="btn-tactile w-8 h-8 rounded-lg bg-[#B85D6F] text-white hover:bg-[#9B4858] flex items-center justify-center font-bold transition shadow-xs"
+                  className="btn-tactile w-8 h-8 rounded-lg bg-[#8B3B4D] text-white hover:bg-[#732F3E] flex items-center justify-center font-bold transition shadow-xs cursor-pointer"
+                  aria-label="Aumentar cantidad"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
 
-            {/* Toques Especiales dentro del Modal de Arreglo */}
+            {/* 4. Toques Especiales dentro del Modal */}
             {specialAddons.length > 0 && (
-              <div className="space-y-1.5 pt-1">
+              <div className="space-y-1.5 pt-0.5 animate-fade-in-up" style={{ animationDelay: '180ms' }}>
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-ink-900 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-rose-600" />
+                    <Sparkles className="w-3.5 h-3.5 text-[#8B3B4D]" />
                     <span>Añade un toque especial:</span>
                   </span>
-                  <span className="text-[10px] text-warm-500">Cross-selling</span>
+                  <span className="text-[10px] text-warm-500">Opcional</span>
                 </div>
                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
                   {specialAddons.map((addon) => {
@@ -1602,12 +1617,12 @@ export default function HomePage() {
                         onClick={() => toggleAddOn(addon.id)}
                         className={`shrink-0 w-32 p-2 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
                           isSelected
-                            ? 'bg-rose-100 border-rose-500 shadow-xs ring-1 ring-rose-500/40'
-                            : 'bg-rose-50/60 border-warm-100 hover:border-rose-400'
+                            ? 'bg-[#FDE8EC] border-[#8B3B4D] shadow-xs ring-1 ring-[#8B3B4D]/40'
+                            : 'bg-white/80 border-[#E4CAD2] hover:border-[#8B3B4D]'
                         }`}
                       >
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg overflow-hidden bg-white shrink-0 border border-warm-100">
+                          <div className="w-8 h-8 rounded-lg overflow-hidden bg-white shrink-0 border border-[#E4CAD2]">
                             <img
                               src={addon.image_url}
                               alt={addon.name}
@@ -1622,13 +1637,13 @@ export default function HomePage() {
                             <p className="font-bold text-[11px] text-ink-900 leading-tight truncate">
                               {addon.name}
                             </p>
-                            <span className="text-[10px] font-bold text-ink-900 tabular-nums">
+                            <span className="text-[10px] font-bold text-[#8B3B4D] tabular-nums">
                               +S/ {Number(addon.price).toFixed(2)}
                             </span>
                           </div>
                         </div>
                         {isSelected && (
-                          <span className="mt-1.5 text-[9px] font-bold text-center bg-rose-600 text-white rounded-md py-0.5">
+                          <span className="mt-1.5 text-[9px] font-bold text-center bg-[#8B3B4D] text-white rounded-md py-0.5">
                             Seleccionado (x{qty})
                           </span>
                         )}
@@ -1639,20 +1654,23 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* Botones de Acción */}
-            <div className="space-y-2 pt-2">
+            {/* 5. Botones de Acción Fijos / Accesibles al Pulgar */}
+            <div
+              className="sticky bottom-0 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 p-4 sm:p-5 bg-[#FAF1F4]/95 backdrop-blur-md border-t border-[#E4CAD2] space-y-2 z-30 animate-fade-in-up"
+              style={{ animationDelay: '220ms' }}
+            >
               <button
                 type="button"
                 onClick={() => {
                   addToCart(selectedProduct, modalQuantity);
                   setSelectedProduct(null);
-                  setIsCartOpen(true);
+                  setIsCheckoutModalOpen(true);
                 }}
-                className="btn-tactile w-full bg-[#B85D6F] hover:bg-[#9B4858] text-white font-bold py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 text-xs border border-[#A85062] transition-all"
+                className="btn-tactile w-full bg-[#8B3B4D] hover:bg-[#732F3E] active:scale-[0.98] text-white font-bold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2 text-xs sm:text-sm border border-[#7A3242] transition-all cursor-pointer"
               >
-                <ShoppingCart className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 text-white" />
                 <span>
-                  Agregar al Carrito • S/{' '}
+                  Comprar Ahora • S/{' '}
                   <span className="tabular-nums">
                     {(
                       (selectedProduct.promotional_price || selectedProduct.price) * modalQuantity
@@ -1666,12 +1684,12 @@ export default function HomePage() {
                 onClick={() => {
                   addToCart(selectedProduct, modalQuantity);
                   setSelectedProduct(null);
-                  setIsCheckoutModalOpen(true);
+                  setIsCartOpen(true);
                 }}
-                className="btn-tactile w-full bg-[#8B3B4D] hover:bg-[#732F3E] text-white font-bold py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 text-xs border border-[#7A3242] transition-all"
+                className="btn-tactile w-full bg-white hover:bg-[#F5E5EA] active:scale-[0.98] text-[#8B3B4D] font-bold py-2.5 rounded-xl border border-[#E4CAD2] shadow-xs flex items-center justify-center gap-2 text-xs transition-all cursor-pointer"
               >
-                <ArrowRight className="w-4 h-4 text-white" />
-                <span>Comprar Ahora</span>
+                <ShoppingCart className="w-4 h-4 text-[#8B3B4D]" />
+                <span>Agregar al Carrito</span>
               </button>
             </div>
           </div>

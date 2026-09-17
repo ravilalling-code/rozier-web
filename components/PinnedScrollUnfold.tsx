@@ -143,14 +143,14 @@ export default function PinnedScrollUnfold({ onExploreClick }: PinnedScrollUnfol
     <section
       id="unfold-story"
       ref={containerRef}
-      className="relative h-[180vh] bg-[#F7E8EC] transition-colors w-full max-w-full"
+      className="relative lg:h-[180vh] bg-[#F7E8EC] transition-colors w-full max-w-full py-6 sm:py-8 lg:py-0"
     >
-      {/* Contenedor sticky que permanece fijo en pantalla durante el scroll progresivo */}
-      <div className="sticky top-0 h-[100dvh] overflow-hidden flex items-center justify-center p-3 sm:p-5 md:p-8">
+      {/* Contenedor sticky solo en desktop durante el scroll progresivo */}
+      <div className="relative lg:sticky lg:top-0 h-auto min-h-0 lg:h-[100dvh] overflow-hidden flex items-center justify-center p-3 sm:p-5 md:p-8">
         {/* Contenedor Interior con Escala y Bordes Controlados por GSAP */}
         <div
           ref={cardRef}
-          className="relative w-full max-w-7xl h-[88vh] md:h-[84vh] bg-[#0E0C0D] rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col lg:flex-row items-center justify-between mx-auto will-change-transform"
+          className="relative w-full max-w-7xl h-auto min-h-0 lg:h-[84vh] bg-[#0E0C0D] rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col lg:flex-row items-center justify-between mx-auto will-change-transform"
         >
         {/* Imagen Lateral Izquierda con Parallax */}
         <div className="w-full lg:w-1/3 h-1/4 sm:h-1/3 lg:h-full relative overflow-hidden shrink-0">

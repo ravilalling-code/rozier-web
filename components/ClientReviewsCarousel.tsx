@@ -83,13 +83,13 @@ export default function ClientReviewsCarousel() {
   return (
     <section
       ref={sectionRef}
-      className="py-20 sm:py-24 bg-gradient-to-b from-[#F7E8EC] via-[#FAF2F4] to-[#F7E8EC] border-t border-[#E8D5DC] relative overflow-hidden"
+      className="py-10 sm:py-14 bg-gradient-to-b from-[#F7E8EC] via-[#FAF2F4] to-[#F7E8EC] border-t border-[#E8D5DC] relative overflow-hidden"
     >
       {/* Resplandor ambiental de fondo */}
       <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#E8B8C4]/25 blur-[100px] rounded-full pointer-events-none" />
 
       <div
-        className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-12 relative z-10 transition-all duration-700 ${
+        className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-8 sm:mb-10 relative z-10 transition-all duration-700 ${
           isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
         }`}
       >
