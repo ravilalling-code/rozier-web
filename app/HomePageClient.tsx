@@ -1498,21 +1498,20 @@ export default function HomePage() {
       />
 
       {/* Video Banner de Marca ROZIER */}
-      <section className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 my-8 overflow-hidden">
-        <div className="relative w-full h-[240px] sm:h-[360px] md:h-[480px] rounded-3xl overflow-hidden border border-[#E8CCD5] shadow-lg bg-[#2A161C]">
+      <section className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 my-10 overflow-hidden">
+        <div className="relative w-full aspect-[16/9] max-h-[70vh] sm:max-h-[75vh] rounded-3xl overflow-hidden border border-[#E8CCD5] shadow-xl bg-[#2A161C] flex items-center justify-center">
           <video
-            src="/video%20banner.mp4"
+            src="/banner.mp4"
             autoPlay
             loop
             muted
             playsInline
             preload="metadata"
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-contain sm:object-cover object-center"
           >
+            <source src="/banner.mp4" type="video/mp4" />
             <source src="/video%20banner.mp4" type="video/mp4" />
           </video>
-          {/* Overlay sutil para mantener armonía visual */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
         </div>
       </section>
 
