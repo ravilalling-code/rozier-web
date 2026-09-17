@@ -650,7 +650,7 @@ export default function ChatBot() {
                     {/* TARJETAS VISUALES DE ARREGLOS RECOMENDADOS */}
                     {!isUser && msg.recommendedProducts && msg.recommendedProducts.length > 0 && (
                       <div className="space-y-2.5 pt-1 animate-in fade-in">
-                        <div className="text-[11px] font-semibold text-rose-800 flex items-center gap-1.5 px-0.5">
+                        <div className="text-[11px] font-semibold text-[#8B3B4D] flex items-center gap-1.5 px-0.5">
                           <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                           <span>Diseños Florales Sugeridos:</span>
                         </div>
@@ -658,9 +658,9 @@ export default function ChatBot() {
                           {msg.recommendedProducts.map((prod, pIdx) => (
                             <div
                               key={pIdx}
-                              className="bg-white rounded-2xl border border-warm-200/90 p-3 shadow-xs hover:shadow-md transition-all space-y-2.5 overflow-hidden group"
+                              className="bg-[#FAF2F4] rounded-2xl border border-[#DFC0CB] p-3 shadow-xs hover:shadow-md transition-all space-y-2.5 overflow-hidden group"
                             >
-                              <div className="relative w-full h-36 rounded-xl overflow-hidden bg-rose-50 border border-warm-100">
+                              <div className="relative w-full h-36 rounded-xl overflow-hidden bg-white border border-[#DFC0CB]">
                                 <img
                                   src={prod.image_url || '/images/logo web.jpg'}
                                   alt={prod.name}
@@ -669,24 +669,24 @@ export default function ChatBot() {
                                     (e.target as HTMLImageElement).src = '/images/logo web.jpg';
                                   }}
                                 />
-                                <span className="absolute top-2 right-2 bg-black/70 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs">
+                                <span className="absolute top-2 right-2 bg-black/75 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs">
                                   ROZIER
                                 </span>
                               </div>
 
                               <div className="flex items-start justify-between gap-2">
                                 <div>
-                                  <h4 className="font-bold text-xs text-ink-900 leading-snug">
+                                  <h4 className="font-bold text-xs text-[#2D1B22] leading-snug">
                                     {prod.name}
                                   </h4>
                                   {prod.description && (
-                                    <p className="text-[10px] text-warm-500 line-clamp-1 mt-0.5">
+                                    <p className="text-[10px] text-[#7A4B58] line-clamp-1 mt-0.5">
                                       {prod.description}
                                     </p>
                                   )}
                                 </div>
                                 <div className="text-right shrink-0">
-                                  <span className="text-xs font-bold font-mono text-rose-600 tabular-nums">
+                                  <span className="text-xs font-bold font-mono text-[#B85D6F] tabular-nums">
                                     S/ {Number(prod.price).toFixed(2)}
                                   </span>
                                 </div>
@@ -695,9 +695,9 @@ export default function ChatBot() {
                               <button
                                 type="button"
                                 onClick={() => handleSelectProduct(prod)}
-                                className="w-full bg-ink-900 hover:bg-rose-600 text-white font-semibold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-98"
+                                className="w-full bg-gradient-to-r from-[#B85D6F] to-[#9B4858] hover:from-[#9B4858] hover:to-[#8B3B4D] text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.98] cursor-pointer"
                               >
-                                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                                <Sparkles className="w-3.5 h-3.5 text-[#E5C378]" />
                                 <span>Elegir este diseño</span>
                               </button>
                             </div>
@@ -709,7 +709,7 @@ export default function ChatBot() {
                     {/* TARJETAS DE TOQUES ESPECIALES / COMPLEMENTOS */}
                     {!isUser && msg.recommendedAddons && msg.recommendedAddons.length > 0 && (
                       <div className="space-y-2 pt-1 animate-in fade-in">
-                        <div className="text-[11px] font-semibold text-amber-800 flex items-center gap-1.5 px-0.5">
+                        <div className="text-[11px] font-semibold text-[#8B3B4D] flex items-center gap-1.5 px-0.5">
                           <Gift className="w-3.5 h-3.5 text-amber-600" />
                           <span>Toques Especiales Disponibles:</span>
                         </div>
@@ -717,23 +717,23 @@ export default function ChatBot() {
                           {msg.recommendedAddons.map((addon, aIdx) => (
                             <div
                               key={aIdx}
-                              className="bg-warm-50/90 rounded-xl border border-warm-200/80 p-2.5 flex items-center justify-between gap-2.5 shadow-2xs"
+                              className="bg-[#FAF2F4] rounded-xl border border-[#DFC0CB] p-2.5 flex items-center justify-between gap-2.5 shadow-2xs"
                             >
                               {addon.image_url && (
                                 <img
                                   src={addon.image_url}
                                   alt={addon.name}
-                                  className="w-10 h-10 rounded-lg object-cover border border-warm-200 shrink-0"
+                                  className="w-10 h-10 rounded-lg object-cover border border-[#DFC0CB] shrink-0"
                                   onError={(e) => {
                                     (e.target as HTMLElement).style.display = 'none';
                                   }}
                                 />
                               )}
                               <div className="flex-1 min-w-0">
-                                <h5 className="text-[11px] font-bold text-ink-900 truncate">
+                                <h5 className="text-[11px] font-bold text-[#2D1B22] truncate">
                                   {addon.name}
                                 </h5>
-                                <span className="text-[10px] font-semibold font-mono text-amber-700">
+                                <span className="text-[10px] font-semibold font-mono text-[#8B3B4D]">
                                   + S/ {Number(addon.price).toFixed(2)}
                                 </span>
                               </div>
@@ -744,7 +744,7 @@ export default function ChatBot() {
                                     `Sí, deseo agregar el toque especial: ${addon.name} (S/ ${Number(addon.price).toFixed(2)})`
                                   );
                                 }}
-                                className="px-2.5 py-1.5 rounded-lg bg-white border border-warm-200 hover:bg-rose-50 text-[10px] font-semibold text-ink-900 transition shadow-2xs"
+                                className="px-3 py-1.5 rounded-lg bg-[#B85D6F] hover:bg-[#9B4858] text-[11px] font-bold text-white transition shadow-xs cursor-pointer active:scale-95"
                               >
                                 Añadir
                               </button>
@@ -762,7 +762,7 @@ export default function ChatBot() {
                             key={qIdx}
                             type="button"
                             onClick={() => handleSendMessage(qr)}
-                            className="px-3 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 border border-rose-200 text-ink-900 text-xs font-semibold shadow-2xs transition transform active:scale-95 text-left"
+                            className="px-3 py-1.5 rounded-full bg-[#FAF2F4] hover:bg-[#F5E5EA] border border-[#DFC0CB] text-[#3D1E26] text-xs font-semibold shadow-2xs transition transform active:scale-95 text-left cursor-pointer"
                           >
                             {qr}
                           </button>

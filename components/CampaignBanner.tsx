@@ -224,7 +224,8 @@ export default function CampaignBanner({
   }
 
   return (
-    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1C1718] via-[#2A1D20] to-[#181314] text-white p-6 sm:p-8 md:p-10 border border-amber-500/20 shadow-xl animate-fade-in-up">
+    <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-12">
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1C1718] via-[#2A1D20] to-[#181314] text-white p-6 sm:p-8 md:p-10 border border-amber-500/20 shadow-xl animate-fade-in-up">
       {/* Resplandor ambiental de lujo */}
       <div className="absolute -top-32 -left-32 w-80 h-80 bg-amber-500/15 blur-[90px] rounded-full pointer-events-none" />
       <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-rose-500/15 blur-[90px] rounded-full pointer-events-none" />
@@ -416,5 +417,6 @@ export default function CampaignBanner({
         </div>
       </div>
     </section>
+    </div>
   );
 }

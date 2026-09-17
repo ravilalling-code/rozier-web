@@ -515,8 +515,8 @@ export default function AdminCampaignPage() {
       {/* MODAL CREAR / EDITAR CAMPAÑA */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-[#D9B5C0] shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-[#E4CAD2] sticky top-0 bg-white z-10">
+          <div className="bg-[#FAF0F3] rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-[#DFC0CB] shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-[#DFC0CB] sticky top-0 bg-[#F5E5EA] z-10">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-[#F4D9E1] text-[#B85D6F] flex items-center justify-center font-bold">
                   <Sparkles className="w-4 h-4" />
@@ -743,7 +743,7 @@ export default function AdminCampaignPage() {
       {/* MODAL CONFIRMAR ELIMINACIÓN */}
       {deletingCampaign && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-[#E4CAD2] shadow-2xl space-y-4">
+          <div className="bg-[#FAF0F3] rounded-3xl max-w-md w-full p-6 border border-[#DFC0CB] shadow-2xl space-y-4">
             <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />
             </div>

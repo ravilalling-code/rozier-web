@@ -828,9 +828,9 @@ export default function AdminProductsPage() {
       {/* MODAL 1: Crear Nuevo Producto */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-ink-950/70 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[90vh] flex flex-col overflow-hidden border border-rose-100 animate-spring-modal text-ink-900">
+          <div className="bg-[#FAF0F3] rounded-2xl sm:rounded-3xl shadow-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[90vh] flex flex-col overflow-hidden border border-[#DFC0CB] animate-spring-modal text-[#2D1B22]">
             {/* Cabecera Fija */}
-            <div className="p-5 border-b border-rose-100 bg-white sticky top-0 z-10 flex items-center justify-between shrink-0">
+            <div className="p-5 border-b border-[#DFC0CB] bg-[#F5E5EA] sticky top-0 z-10 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
                   <Flower2 className="w-5 h-5" />
@@ -993,7 +993,7 @@ export default function AdminProductsPage() {
               </div>
 
               {/* Pie Fijo */}
-              <div className="p-4 border-t border-rose-100 bg-white sticky bottom-0 z-10 flex justify-end gap-3 shrink-0">
+              <div className="p-4 border-t border-[#DFC0CB] bg-[#F5E5EA] sticky bottom-0 z-10 flex justify-end gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
@@ -1028,9 +1028,9 @@ export default function AdminProductsPage() {
       {/* MODAL 2: Editar Producto Completo (Incluyendo Edición de Foto) */}
       {editingProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-ink-950/70 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[90vh] flex flex-col overflow-hidden border border-rose-100 animate-spring-modal text-ink-900">
+          <div className="bg-[#FAF0F3] rounded-2xl sm:rounded-3xl shadow-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[90vh] flex flex-col overflow-hidden border border-[#DFC0CB] animate-spring-modal text-[#2D1B22]">
             {/* Cabecera Fija */}
-            <div className="p-5 border-b border-rose-100 bg-white sticky top-0 z-10 flex items-center justify-between shrink-0">
+            <div className="p-5 border-b border-[#DFC0CB] bg-[#F5E5EA] sticky top-0 z-10 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
                   <Edit2 className="w-5 h-5" />
@@ -1187,7 +1187,7 @@ export default function AdminProductsPage() {
               </div>
 
               {/* Pie Fijo */}
-              <div className="p-4 border-t border-rose-100 bg-white sticky bottom-0 z-10 flex justify-end gap-3 shrink-0">
+              <div className="p-4 border-t border-[#DFC0CB] bg-[#F5E5EA] sticky bottom-0 z-10 flex justify-end gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setEditingProduct(null)}
@@ -1222,9 +1222,9 @@ export default function AdminProductsPage() {
       {/* MODAL 3: GESTIÓN DE CATEGORÍAS (TABLA PUBLIC.CATEGORIES EN SUPABASE) */}
       {isCategoriesModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-ink-950/70 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[90vh] flex flex-col overflow-hidden border border-rose-100 animate-spring-modal text-ink-900">
+          <div className="bg-[#FAF0F3] rounded-2xl sm:rounded-3xl shadow-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[90vh] flex flex-col overflow-hidden border border-[#DFC0CB] animate-spring-modal text-[#2D1B22]">
             {/* Cabecera Fija */}
-            <div className="p-5 border-b border-rose-100 bg-white sticky top-0 z-10 flex items-center justify-between shrink-0">
+            <div className="p-5 border-b border-[#DFC0CB] bg-[#F5E5EA] sticky top-0 z-10 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
                   <Tags className="w-5 h-5" />
@@ -1384,7 +1384,7 @@ export default function AdminProductsPage() {
             </div>
 
             {/* Pie Fijo */}
-            <div className="p-4 border-t border-rose-100 bg-white sticky bottom-0 z-10 flex justify-end gap-3 shrink-0">
+            <div className="p-4 border-t border-[#DFC0CB] bg-[#F5E5EA] sticky bottom-0 z-10 flex justify-end shrink-0">
               <button
                 type="button"
                 onClick={() => setIsCategoriesModalOpen(false)}

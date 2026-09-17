@@ -175,11 +175,19 @@ export default function HomePage() {
   // Banners editoriales de "¿Qué quieres celebrar?"
   const [celebrationBanners, setCelebrationBanners] = useState<CategoryBanner[]>(DEFAULT_CATEGORY_BANNERS);
   const celebrationCarouselRef = useRef<HTMLDivElement>(null);
+  const categoriesNavRef = useRef<HTMLDivElement>(null);
 
   const scrollCelebration = (direction: 'left' | 'right') => {
     if (celebrationCarouselRef.current) {
       const amount = direction === 'left' ? -320 : 320;
       celebrationCarouselRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+  };
+
+  const scrollCategoriesNav = (direction: 'left' | 'right') => {
+    if (categoriesNavRef.current) {
+      const amount = direction === 'left' ? -260 : 260;
+      categoriesNavRef.current.scrollBy({ left: amount, behavior: 'smooth' });
     }
   };
 
@@ -1017,38 +1025,66 @@ export default function HomePage() {
       {/* 3. Trust Bar Concéntrica */}
       <TrustBar />
 
-      {/* 1. FILTROS Y SEGMENTACIÓN DE CATEGORÍAS (Pestañas de Navegación Palo Rosa) */}
-      <nav id="catalogo" aria-label="Categorías" className="sticky top-[57px] sm:top-[61px] z-20 bg-[#F7E8EC]/95 backdrop-blur-md border-y border-[#E8D5DC] py-3.5 shadow-2xs">
-        <div className="max-w-6xl mx-auto px-4 flex gap-2.5 sm:gap-3 overflow-x-auto no-scrollbar">
-          {/* Pestaña "Todas" */}
+      {/* 1. FILTROS Y SEGMENTACIÓN DE CATEGORÍAS (Pestañas de Navegación Palo Rosa con Flechas) */}
+      <nav id="catalogo" aria-label="Categorías" className="sticky top-[57px] sm:top-[61px] z-20 bg-[#F7E8EC]/95 backdrop-blur-md border-y border-[#E8D5DC] py-3 shadow-2xs">
+        <div className="max-w-6xl mx-auto px-2 sm:px-4 flex items-center gap-2">
+          {/* Flecha Izquierda */}
           <button
-            onClick={() => setCategory('todos')}
-            className={`btn-tactile px-5 py-2.5 rounded-full whitespace-nowrap text-sm md:text-base font-bold tracking-wider uppercase transition-all duration-200 ${
-              category === 'todos'
-                ? 'bg-[#B85D6F] text-white shadow-md scale-105'
-                : 'bg-[#EBD2DA] text-[#3B1E26] hover:scale-105 hover:bg-[#DFC0CB]'
-            }`}
+            type="button"
+            onClick={() => scrollCategoriesNav('left')}
+            className="btn-tactile shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#FAF2F4] hover:bg-[#B85D6F] text-[#8B3B4D] hover:text-white border border-[#DFC0CB] shadow-2xs flex items-center justify-center transition-all cursor-pointer"
+            title="Desplazar categorías a la izquierda"
+            aria-label="Desplazar categorías a la izquierda"
           >
-            TODAS
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
           </button>
 
-          {/* Pestañas Dinámicas conectadas a public.categories */}
-          {activeCategories.map((tab) => {
-            const isActive = category.toLowerCase() === tab.slug.toLowerCase();
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setCategory(tab.slug)}
-                className={`btn-tactile px-5 py-2.5 rounded-full whitespace-nowrap text-sm md:text-base font-bold tracking-wider uppercase transition-all duration-200 ${
-                  isActive
-                    ? 'bg-[#B85D6F] text-white shadow-md scale-105'
-                    : 'bg-[#EBD2DA] text-[#3B1E26] hover:scale-105 hover:bg-[#DFC0CB]'
-                }`}
-              >
-                {tab.name.toUpperCase()}
-              </button>
-            );
-          })}
+          {/* Contenedor de Píldoras con scroll suave */}
+          <div
+            ref={categoriesNavRef}
+            className="flex-1 flex gap-2.5 sm:gap-3 overflow-x-auto no-scrollbar scroll-smooth py-1"
+          >
+            {/* Pestaña "Todas" */}
+            <button
+              onClick={() => setCategory('todos')}
+              className={`btn-tactile px-5 py-2.5 rounded-full whitespace-nowrap text-sm md:text-base font-bold tracking-wider uppercase transition-all duration-200 cursor-pointer ${
+                category === 'todos'
+                  ? 'bg-[#B85D6F] text-white shadow-md scale-105'
+                  : 'bg-[#EBD2DA] text-[#3B1E26] hover:scale-105 hover:bg-[#DFC0CB]'
+              }`}
+            >
+              TODAS
+            </button>
+
+            {/* Pestañas Dinámicas conectadas a public.categories */}
+            {activeCategories.map((tab) => {
+              const isActive = category.toLowerCase() === tab.slug.toLowerCase();
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setCategory(tab.slug)}
+                  className={`btn-tactile px-5 py-2.5 rounded-full whitespace-nowrap text-sm md:text-base font-bold tracking-wider uppercase transition-all duration-200 cursor-pointer ${
+                    isActive
+                      ? 'bg-[#B85D6F] text-white shadow-md scale-105'
+                      : 'bg-[#EBD2DA] text-[#3B1E26] hover:scale-105 hover:bg-[#DFC0CB]'
+                  }`}
+                >
+                  {tab.name.toUpperCase()}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Flecha Derecha */}
+          <button
+            type="button"
+            onClick={() => scrollCategoriesNav('right')}
+            className="btn-tactile shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#FAF2F4] hover:bg-[#B85D6F] text-[#8B3B4D] hover:text-white border border-[#DFC0CB] shadow-2xs flex items-center justify-center transition-all cursor-pointer"
+            title="Desplazar categorías a la derecha"
+            aria-label="Desplazar categorías a la derecha"
+          >
+            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
+          </button>
         </div>
       </nav>
 
@@ -1369,22 +1405,20 @@ export default function HomePage() {
       </section>
 
       {/* Campaña Activa con Contador Regresivo en Vivo */}
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-12">
-        <CampaignBanner
-          allProducts={products}
-          onCtaClick={() => {
-            const el = document.getElementById('catalogo');
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }}
-          onProductClick={(product) => {
-            setSelectedProduct(product);
-            setModalQuantity(1);
-          }}
-          onAddToCart={(product) => {
-            addToCart(product, 1);
-          }}
-        />
-      </div>
+      <CampaignBanner
+        allProducts={products}
+        onCtaClick={() => {
+          const el = document.getElementById('catalogo');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+        onProductClick={(product) => {
+          setSelectedProduct(product);
+          setModalQuantity(1);
+        }}
+        onAddToCart={(product) => {
+          addToCart(product, 1);
+        }}
+      />
 
       {/* 4. Hero Secundario — Efecto "Pinned Scroll Unfold" */}
       <PinnedScrollUnfold
@@ -1399,9 +1433,9 @@ export default function HomePage() {
 
       {/* MODAL: Vista Previa y Personalización de Producto */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden animate-in fade-in duration-200">
-          <div className="bg-white w-full sm:max-w-md rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto border border-warm-100 card-editorial animate-spring-modal">
-            <div className="flex justify-between items-center border-b border-warm-100 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden animate-in fade-in duration-200">
+          <div className="bg-[#FAF2F4] w-full sm:max-w-md rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto border border-[#DFC0CB] card-editorial animate-spring-modal">
+            <div className="flex justify-between items-center border-b border-[#DFC0CB] pb-3">
               <div>
                 <h3 className="font-bold text-base text-ink-900 tracking-tight">{selectedProduct.name}</h3>
                 <p className="text-xs text-warm-500">
@@ -1410,25 +1444,25 @@ export default function HomePage() {
               </div>
               <button
                 onClick={() => setSelectedProduct(null)}
-                className="btn-tactile p-1.5 rounded-lg text-warm-500 hover:text-ink-900 hover:bg-rose-100"
+                className="btn-tactile p-1.5 rounded-lg text-[#8B3B4D] hover:text-[#2D1B22] hover:bg-[#F5E5EA] transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Arreglo Preview (Hijo directo: rounded-lg, Nietos: rounded-md) */}
-            <div className="flex gap-3.5 items-center bg-rose-50 p-3 rounded-lg border border-warm-100">
+            {/* Arreglo Preview */}
+            <div className="flex gap-3.5 items-center bg-white p-3 rounded-xl border border-[#DFC0CB] shadow-xs">
               <img
                 src={selectedProduct.image_url}
                 alt={selectedProduct.name}
-                className="w-20 h-20 rounded-md object-cover border border-warm-100 shadow-2xs shrink-0"
+                className="w-20 h-20 rounded-lg object-cover border border-[#DFC0CB] shadow-2xs shrink-0"
               />
               <div className="flex-1">
                 <p className="text-xs text-warm-500">
                   {selectedProduct.description || 'Diseño floral artesanal con flores frescas de primera calidad'}
                 </p>
                 <div className="flex items-baseline gap-1.5 mt-2">
-                  <span className="text-ink-900 font-bold text-lg tabular-nums">
+                  <span className="text-[#8B3B4D] font-bold text-lg tabular-nums">
                     S/{' '}
                     {(selectedProduct.promotional_price || selectedProduct.price).toFixed(2)}
                   </span>
@@ -1441,14 +1475,14 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Selector de Cantidad (Hijo: rounded-lg, Botones: rounded-md) */}
-            <div className="bg-rose-100 p-3.5 rounded-lg border border-warm-100 flex items-center justify-between">
+            {/* Selector de Cantidad */}
+            <div className="bg-white p-3.5 rounded-xl border border-[#DFC0CB] shadow-xs flex items-center justify-between">
               <span className="text-xs font-semibold text-ink-900">Cantidad deseada:</span>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setModalQuantity((prev) => Math.max(1, prev - 1))}
-                  className="btn-tactile w-8 h-8 rounded-md bg-white border border-warm-100 text-ink-900 hover:bg-rose-50 flex items-center justify-center font-bold"
+                  className="btn-tactile w-8 h-8 rounded-lg bg-[#FAF2F4] border border-[#DFC0CB] text-[#3D1E26] hover:bg-[#F5E5EA] flex items-center justify-center font-bold transition"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
@@ -1458,7 +1492,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => setModalQuantity((prev) => prev + 1)}
-                  className="btn-tactile w-8 h-8 rounded-md bg-ink-900 text-white hover:bg-rose-600 flex items-center justify-center font-bold"
+                  className="btn-tactile w-8 h-8 rounded-lg bg-[#B85D6F] text-white hover:bg-[#9B4858] flex items-center justify-center font-bold transition shadow-xs"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
@@ -1569,11 +1603,11 @@ export default function HomePage() {
           }}
           className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex justify-end overflow-hidden animate-in fade-in duration-200"
         >
-          <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-spring-drawer border-l border-warm-100 overflow-hidden relative z-[1000]">
+          <div className="bg-[#FAF2F4] w-full max-w-md h-full shadow-2xl flex flex-col animate-spring-drawer border-l border-[#DFC0CB] overflow-hidden relative z-[1000]">
             {/* Header del Carrito */}
-            <div className="p-4 sm:p-5 border-b border-warm-100 flex items-center justify-between bg-rose-50">
+            <div className="p-4 sm:p-5 border-b border-[#DFC0CB] flex items-center justify-between bg-[#F5E5EA]">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center border border-warm-100">
+                <div className="w-9 h-9 rounded-xl bg-white text-[#B85D6F] flex items-center justify-center border border-[#DFC0CB] shadow-xs">
                   <ShoppingBag className="w-5 h-5" />
                 </div>
                 <div>
@@ -1585,7 +1619,7 @@ export default function HomePage() {
               </div>
               <button
                 onClick={() => setIsCartOpen(false)}
-                className="btn-tactile p-2 text-warm-500 hover:text-ink-900 hover:bg-rose-100 rounded-lg transition"
+                className="btn-tactile p-2 text-[#8B3B4D] hover:text-[#2D1B22] hover:bg-[#FAF2F4] rounded-lg transition"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1606,7 +1640,7 @@ export default function HomePage() {
                   </div>
                   <button
                     onClick={() => setIsCartOpen(false)}
-                    className="btn-tactile px-5 py-2.5 rounded-lg bg-ink-900 hover:bg-rose-600 text-white text-xs font-semibold shadow hover:text-ink-900"
+                    className="btn-tactile px-5 py-2.5 rounded-xl bg-[#B85D6F] hover:bg-[#9B4858] text-white text-xs font-bold shadow-md transition"
                   >
                     Ver Colección Floral
                   </button>
@@ -1618,26 +1652,26 @@ export default function HomePage() {
                   return (
                     <div
                       key={item.product.id}
-                      className="bg-rose-50 border border-warm-100 rounded-xl p-3 flex gap-3 items-center hover:border-rose-500/60 transition card-editorial"
+                      className="bg-white border border-[#DFC0CB] rounded-xl p-3 flex gap-3 items-center hover:border-[#B85D6F] transition shadow-xs"
                     >
                       <img
                         src={item.product.image_url}
                         alt={item.product.name}
-                        className="w-16 h-16 rounded-lg object-cover border border-warm-100 shadow-2xs shrink-0"
+                        className="w-16 h-16 rounded-lg object-cover border border-[#DFC0CB] shadow-2xs shrink-0"
                       />
                       <div className="flex-1 min-w-0">
                         <h4 className="font-bold text-xs text-ink-900 truncate tracking-tight">
                           {item.product.name}
                         </h4>
-                        <p className="text-[11px] text-warm-500 tabular-nums mt-0.5">
+                        <p className="text-[11px] text-[#8B3B4D] font-semibold tabular-nums mt-0.5">
                           S/ {finalPrice.toFixed(2)} c/u
                         </p>
                         <div className="flex items-center gap-2 mt-2">
-                          <div className="flex items-center border border-warm-100 bg-white rounded-md">
+                          <div className="flex items-center border border-[#DFC0CB] bg-[#FAF2F4] rounded-lg">
                             <button
                               type="button"
                               onClick={() => updateCartQuantity(item.product.id, -1)}
-                              className="btn-tactile p-1 hover:bg-rose-100 text-ink-900 rounded-l-md"
+                              className="btn-tactile p-1 hover:bg-[#F5E5EA] text-[#3D1E26] rounded-l-lg transition"
                               title="Disminuir"
                             >
                               <Minus className="w-3 h-3" />
@@ -1648,7 +1682,7 @@ export default function HomePage() {
                             <button
                               type="button"
                               onClick={() => updateCartQuantity(item.product.id, 1)}
-                              className="btn-tactile p-1 hover:bg-rose-100 text-ink-900 rounded-r-md"
+                              className="btn-tactile p-1 hover:bg-[#F5E5EA] text-[#3D1E26] rounded-r-lg transition"
                               title="Aumentar"
                             >
                               <Plus className="w-3 h-3" />
@@ -1657,7 +1691,7 @@ export default function HomePage() {
                           <button
                             type="button"
                             onClick={() => removeFromCart(item.product.id)}
-                            className="btn-tactile text-warm-500 hover:text-accent-carmine p-1"
+                            className="btn-tactile text-warm-500 hover:text-accent-carmine p-1 transition"
                             title="Eliminar del carrito"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -1665,7 +1699,7 @@ export default function HomePage() {
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="font-bold tabular-nums text-sm text-ink-900 block">
+                        <span className="font-bold tabular-nums text-sm text-[#8B3B4D] block">
                           S/ {itemTotal.toFixed(2)}
                         </span>
                       </div>
@@ -1677,7 +1711,7 @@ export default function HomePage() {
 
             {/* Cross-Selling en el Carrito (Add-ons rápidos: feedback táctil inmediato, tabular-nums) */}
             {cart.length > 0 && (
-              <div className="px-4 sm:px-5 py-3 border-t border-warm-100 bg-white">
+              <div className="px-4 sm:px-5 py-3 border-t border-[#DFC0CB] bg-[#F5E5EA]/70">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] font-bold text-ink-900 uppercase tracking-wider flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-rose-600" />
@@ -1770,7 +1804,7 @@ export default function HomePage() {
 
             {/* Footer con Subtotal y Checkout */}
             {cart.length > 0 && (
-              <div className="p-4 sm:p-5 border-t border-warm-100 bg-rose-50 space-y-3 shrink-0 relative z-20">
+              <div className="p-4 sm:p-5 border-t border-[#DFC0CB] bg-[#F5E5EA] space-y-3 shrink-0 relative z-20">
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center text-xs text-warm-500">
                     <span>Subtotal arreglos:</span>
@@ -1779,7 +1813,7 @@ export default function HomePage() {
                     </span>
                   </div>
                   {totalAddonsCount > 0 && (
-                    <div className="flex justify-between items-center text-xs text-rose-600 font-medium">
+                    <div className="flex justify-between items-center text-xs text-[#8B3B4D] font-medium">
                       <span>Complementos ({totalAddonsCount}):</span>
                       <span className="tabular-nums font-semibold">
                         + S/ {addOnsSubtotal.toFixed(2)}
@@ -1789,7 +1823,7 @@ export default function HomePage() {
                   <div className="pt-1.5 pb-0.5 space-y-1.5">
                     <div className="flex justify-between items-center text-xs text-warm-500">
                       <span className="flex items-center gap-1 font-medium text-ink-900">
-                        <Truck className="w-3.5 h-3.5 text-rose-600" />
+                        <Truck className="w-3.5 h-3.5 text-[#B85D6F]" />
                         <span>Flete de envío:</span>
                       </span>
                       <span className="text-ink-900 font-bold tabular-nums">
@@ -1804,7 +1838,7 @@ export default function HomePage() {
                         const zone = deliveryZones.find((z) => z.district === dist);
                         if (zone) setDeliveryFee(zone.cost);
                       }}
-                      className="w-full bg-white border border-warm-200 rounded-lg px-2.5 py-1.5 text-xs text-ink-900 font-medium focus:outline-none focus:border-rose-600 cursor-pointer"
+                      className="w-full bg-white border border-[#DFC0CB] rounded-xl px-2.5 py-1.5 text-xs text-ink-900 font-medium focus:outline-none focus:border-[#B85D6F] cursor-pointer"
                     >
                       {deliveryZones
                         .filter((z) => z.active !== false && z.is_active !== false)
@@ -1815,7 +1849,7 @@ export default function HomePage() {
                         ))}
                     </select>
                   </div>
-                  <div className="flex justify-between items-baseline pt-2 border-t border-warm-100 text-sm">
+                  <div className="flex justify-between items-baseline pt-2 border-t border-[#DFC0CB] text-sm">
                     <span className="font-bold text-ink-900">Total a pagar:</span>
                     <span className="font-bold tabular-nums text-lg text-[#9B324D]">
                       S/ {grandTotal.toFixed(2)}
@@ -1851,12 +1885,12 @@ export default function HomePage() {
       {/* MODAL: Checkout Unificado Multi-producto */}
       {isCheckoutModalOpen && (
         <div className="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden animate-in fade-in duration-200">
-          <div className="bg-white border border-warm-100 max-w-xl w-full rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[94vh] overflow-y-auto animate-spring-modal card-editorial">
+          <div className="bg-[#FAF2F4] border border-[#DFC0CB] max-w-xl w-full rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[94vh] overflow-y-auto animate-spring-modal card-editorial">
             {orderSuccessData ? (
               /* PANTALLA DE ÉXITO DE COMPRA */
               <div className="text-center space-y-4 py-4 animate-in zoom-in-95 duration-200">
-                <div className="w-14 h-14 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto shadow-xs border border-rose-500">
-                  <CheckCircle2 className="w-8 h-8" />
+                <div className="w-14 h-14 rounded-full bg-white text-[#B85D6F] flex items-center justify-center mx-auto shadow-xs border border-[#DFC0CB]">
+                  <CheckCircle2 className="w-8 h-8 text-[#B85D6F]" />
                 </div>
                 <div>
                   <h3 className="text-lg sm:text-xl font-bold text-ink-900 tracking-tight">
@@ -1868,12 +1902,12 @@ export default function HomePage() {
                 </div>
 
                 {/* Tarjeta de Código de Rastreo */}
-                <div className="bg-rose-50 border border-warm-100 rounded-lg p-4 max-w-sm mx-auto space-y-2">
+                <div className="bg-white border border-[#DFC0CB] rounded-xl p-4 max-w-sm mx-auto space-y-2 shadow-xs">
                   <span className="text-[11px] font-semibold text-warm-500 uppercase tracking-wider block">
                     Tu Código de Rastreo en Vivo
                   </span>
                   <div className="flex items-center justify-center gap-2">
-                    <span className="text-xl font-bold tabular-nums text-ink-900">
+                    <span className="text-xl font-bold tabular-nums text-[#8B3B4D]">
                       {orderSuccessData.trackingCode}
                     </span>
                     <button
@@ -1881,24 +1915,24 @@ export default function HomePage() {
                         navigator.clipboard.writeText(orderSuccessData.trackingCode);
                         alert('¡Código de rastreo copiado!');
                       }}
-                      className="btn-tactile p-1.5 rounded-md bg-white border border-warm-100 hover:bg-rose-100 text-warm-500"
+                      className="btn-tactile p-1.5 rounded-md bg-[#FAF2F4] border border-[#DFC0CB] hover:bg-[#F5E5EA] text-[#3D1E26] transition"
                       title="Copiar código"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
                   </div>
-                  <p className="text-[11px] text-warm-500">
-                    Total del pedido: <span className="tabular-nums font-semibold">S/ {orderSuccessData.total.toFixed(2)}</span>
+                  <p className="text-[10px] text-warm-500">
+                    Guarda este código para consultar el estado de elaboración y entrega de tus flores.
                   </p>
                 </div>
 
-                {/* Botón WhatsApp para confirmación y envío de voucher */}
+                {/* Botón Acción Directa WhatsApp */}
                 <div className="space-y-2 pt-2 max-w-md mx-auto">
                   <a
                     href={orderSuccessData.whatsappUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="btn-tactile w-full bg-[#25D366] hover:bg-[#20ba59] text-white font-semibold py-3.5 rounded-lg shadow-lg flex items-center justify-center gap-2 text-xs sm:text-sm border border-emerald-400/30"
+                    className="btn-tactile w-full bg-[#25D366] hover:bg-[#20ba59] text-white font-semibold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2 text-xs sm:text-sm border border-emerald-400/30 transition"
                   >
                     <MessageCircle className="w-5 h-5 fill-current opacity-90" />
                     <span>Enviar Comprobante a WhatsApp</span>
@@ -1914,7 +1948,7 @@ export default function HomePage() {
                       setIsTrackingModalOpen(true);
                       lookupTrackingOrder(code);
                     }}
-                    className="btn-tactile w-full py-2.5 rounded-lg border border-warm-100 bg-rose-100 hover:bg-rose-50 text-ink-900 text-xs font-semibold"
+                    className="btn-tactile w-full py-2.5 rounded-xl border border-[#DFC0CB] bg-white hover:bg-[#F5E5EA] text-[#3D1E26] text-xs font-semibold transition"
                   >
                     Ver Rastreo en Vivo
                   </button>
@@ -1924,10 +1958,10 @@ export default function HomePage() {
               /* FORMULARIO DE FINALIZACIÓN DE COMPRA */
               <form onSubmit={handleCheckoutSubmit} className="space-y-4">
                 {/* Header */}
-                <div className="flex items-center justify-between border-b border-warm-100 pb-3">
+                <div className="flex items-center justify-between border-b border-[#DFC0CB] pb-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-lg bg-ink-900 text-white flex items-center justify-center shadow-xs">
-                      <CreditCard className="w-4 h-4 text-rose-500" />
+                    <div className="w-9 h-9 rounded-xl bg-[#2D1B22] text-[#E5C378] flex items-center justify-center shadow-xs border border-[#E5C378]/30">
+                      <CreditCard className="w-4 h-4 text-[#E5C378]" />
                     </div>
                     <div>
                       <h3 className="text-base font-bold text-ink-900 tracking-tight">Finalizar Compra</h3>
@@ -1940,17 +1974,17 @@ export default function HomePage() {
                   <button
                     type="button"
                     onClick={() => setIsCheckoutModalOpen(false)}
-                    className="btn-tactile p-1.5 text-warm-500 hover:text-ink-900 rounded-lg hover:bg-rose-100"
+                    className="btn-tactile p-1.5 text-[#8B3B4D] hover:text-[#2D1B22] rounded-lg hover:bg-[#F5E5EA] transition"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                {/* Resumen Compacto y Desglose Económico (Hijo: rounded-lg) */}
-                <div className="bg-rose-50 rounded-lg p-3.5 border border-warm-100 space-y-2.5">
+                {/* Resumen Compacto y Desglose Económico */}
+                <div className="bg-white rounded-xl p-3.5 border border-[#DFC0CB] space-y-2.5 shadow-xs">
                   <div className="flex justify-between items-center text-xs">
                     <span className="font-bold text-ink-900">Desglose del Pedido:</span>
-                    <span className="tabular-nums font-bold text-ink-900 text-sm">
+                    <span className="tabular-nums font-bold text-[#8B3B4D] text-sm">
                       Total: S/ {grandTotal.toFixed(2)}
                     </span>
                   </div>
@@ -2324,7 +2358,7 @@ export default function HomePage() {
                   <button
                     type="submit"
                     disabled={isSubmittingOrder}
-                    className="btn-tactile w-full bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 font-semibold py-3.5 rounded-lg shadow-lg border border-ink-900 hover:border-rose-600 flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50"
+                    className="btn-tactile w-full bg-gradient-to-r from-[#B85D6F] to-[#9B4858] hover:from-[#9B4858] hover:to-[#8B3B4D] text-white font-bold py-3.5 rounded-xl shadow-lg border border-[#A85062] flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50 transition-all"
                   >
                     {isSubmittingOrder ? (
                       <>
@@ -2333,8 +2367,8 @@ export default function HomePage() {
                       </>
                     ) : (
                       <>
-                        <CheckCircle2 className="w-4 h-4 text-rose-500" />
-                        <span>Confirmar Pedido (<span className="tabular-nums">S/ {grandTotal.toFixed(2)}</span>)</span>
+                        <CheckCircle2 className="w-4 h-4 text-white" />
+                        <span>Confirmar Pedido (<span className="tabular-nums font-mono">S/ {grandTotal.toFixed(2)}</span>)</span>
                       </>
                     )}
                   </button>
@@ -2351,17 +2385,17 @@ export default function HomePage() {
       {totalCartItems > 0 && !isCartOpen && !isCheckoutModalOpen && (
         <button
           onClick={() => setIsCartOpen(true)}
-          className="btn-tactile floating-cart-btn fixed bottom-4 left-4 md:bottom-6 md:left-6 z-40 bg-ink-900 hover:bg-rose-600 text-white hover:text-ink-900 px-4 py-3 rounded-full shadow-lg flex items-center gap-2.5 border border-rose-600/60"
+          className="btn-tactile floating-cart-btn fixed bottom-4 left-4 md:bottom-6 md:left-6 z-40 bg-[#2D1B22] hover:bg-[#B85D6F] text-white px-4 py-3 rounded-full shadow-2xl flex items-center gap-3 border border-[#E5C378]/60 transition-all duration-300"
           title="Abrir Carrito de Compras"
         >
           <div className="relative">
-            <ShoppingCart className="w-4 h-4 text-rose-500" />
-            <span className="tabular-nums absolute -top-2 -right-2 bg-accent-carmine text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full">
+            <ShoppingCart className="w-5 h-5 text-[#E5C378]" />
+            <span className="tabular-nums absolute -top-2.5 -right-2.5 bg-[#B85D6F] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-white/40 shadow-sm">
               {totalCartItems}
             </span>
           </div>
-          <span className="text-xs font-semibold">
-            Ver Carrito • S/ <span className="tabular-nums">{cartSubtotal.toFixed(2)}</span>
+          <span className="text-xs font-bold tracking-wide">
+            Ver Carrito • <span className="text-[#E5C378] font-bold tabular-nums">S/ {cartSubtotal.toFixed(2)}</span>
           </span>
         </button>
       )}

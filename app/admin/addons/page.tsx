@@ -542,9 +542,9 @@ export default function AdminAddonsPage() {
       {/* MODAL CREAR / EDITAR COMPLEMENTO */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-ink-950/70 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[90vh] flex flex-col overflow-hidden border border-rose-100 animate-spring-modal text-ink-900">
+          <div className="bg-[#FAF0F3] rounded-2xl sm:rounded-3xl shadow-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[90vh] flex flex-col overflow-hidden border border-[#DFC0CB] animate-spring-modal text-[#2D1B22]">
             {/* Header Modal Fijo */}
-            <div className="p-5 border-b border-rose-100 bg-white sticky top-0 z-10 flex items-center justify-between shrink-0">
+            <div className="p-5 border-b border-[#DFC0CB] bg-[#F5E5EA] sticky top-0 z-10 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
                   <Gift className="w-4 h-4" />
@@ -711,7 +711,7 @@ export default function AdminAddonsPage() {
               </div>
 
               {/* Pie Fijo Modal */}
-              <div className="p-4 border-t border-rose-100 bg-white sticky bottom-0 z-10 flex justify-end gap-3 shrink-0">
+              <div className="p-4 border-t border-[#DFC0CB] bg-[#F5E5EA] sticky bottom-0 z-10 flex justify-end gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
@@ -736,7 +736,7 @@ export default function AdminAddonsPage() {
       {/* MODAL CONFIRMAR ELIMINACIÓN */}
       {deletingAddon && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-950/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full border border-warm-100 p-6 text-center space-y-4 animate-spring-modal">
+          <div className="bg-[#FAF0F3] rounded-2xl shadow-2xl max-w-sm w-full border border-[#DFC0CB] p-6 text-center space-y-4 animate-spring-modal text-[#2D1B22]">
             <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />
             </div>

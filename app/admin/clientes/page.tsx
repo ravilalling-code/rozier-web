@@ -336,9 +336,9 @@ export default function AdminClientesPage() {
       {/* Modal Añadir Foto */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border border-warm-200">
+          <div className="bg-[#FAF0F3] rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border border-[#DFC0CB] text-[#2D1B22]">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-5 border-b border-warm-100">
+            <div className="flex items-center justify-between p-5 border-b border-[#DFC0CB] bg-[#F5E5EA]">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-rose-600" />
                 <h3 className="font-serif font-bold text-lg text-ink-900">Añadir Foto de Cliente</h3>
