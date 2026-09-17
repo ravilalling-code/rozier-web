@@ -1489,13 +1489,32 @@ export default function HomePage() {
         }}
       />
 
-      {/* 4. Hero Secundario — Efecto "Pinned Scroll Unfold" */}
+      {/* 4. Hero Secundario — Manifiesto Floral ROZIER */}
       <PinnedScrollUnfold
         onExploreClick={() => {
           const el = document.getElementById('catalogo');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
       />
+
+      {/* Video Banner de Marca ROZIER */}
+      <section className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 my-8 overflow-hidden">
+        <div className="relative w-full h-[240px] sm:h-[360px] md:h-[480px] rounded-3xl overflow-hidden border border-[#E8CCD5] shadow-lg bg-[#2A161C]">
+          <video
+            src="/video%20banner.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="metadata"
+            className="w-full h-full object-cover object-center"
+          >
+            <source src="/video%20banner.mp4" type="video/mp4" />
+          </video>
+          {/* Overlay sutil para mantener armonía visual */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+        </div>
+      </section>
 
       {/* 5. Sección Momentos Reales — Carrusel Continuo de Clientes Felices */}
       <ClientReviewsCarousel />
